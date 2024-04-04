@@ -11,7 +11,7 @@ CURRENT_DIR=$(dirname "$0")
 CURRENT_DIR=$(realpath "${CURRENT_DIR}")
 cd "${CURRENT_DIR}"
 if [ -z "$VIRTUAL_ENV" ]; then
-    source ../.venv/bin/activate
+    source .venv/bin/activate
 fi
 ACTION=$1
 TEXT=$2
