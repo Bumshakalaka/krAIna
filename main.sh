@@ -15,4 +15,5 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 ACTION=$1
 TEXT=$2
-python main.py --action "${ACTION}" --text "${TEXT}"
+RET=$(python main.py --action "${ACTION}" --text "${TEXT}")
+echo -n "${RET}"

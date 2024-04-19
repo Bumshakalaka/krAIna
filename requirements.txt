@@ -5,3 +5,5 @@ langchain-openai~=0.1.0
 openai~=1.14.2
 PyYAML~=6.0.1
 cryptography~=42.0.5
+pygobject~=3.48.2
+pgi~=0.0.11.2
