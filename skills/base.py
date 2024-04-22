@@ -23,7 +23,7 @@ class Skills(dict):
         skills/
         ├── fix
         │     ├── prompt.md - skill system prompt, required
-        │     ├── model.yaml - skill LLM settings, optional
+        │     ├── config.yaml - skill LLM settings, optional
         │     ├── py_module.py - overwrite default behaviour of skill, specialisation - must be defined in model.yaml
         """
         super().__init__()
@@ -33,8 +33,8 @@ class Skills(dict):
                 continue
             skill_cls = BaseSkill
             settings = {}
-            if (skill / "model.yaml").exists():
-                with open(skill / "model.yaml") as fd:
+            if (skill / "config.yaml").exists():
+                with open(skill / "config.yaml") as fd:
                     settings = yaml.safe_load(fd.read())
                 if settings.get("specialisation", None):
                     if (
@@ -48,7 +48,7 @@ class Skills(dict):
                     del settings["specialisation"]
             else:
                 logger.debug(
-                    f"{skill.name} does not use model.yaml, default will be used."
+                    f"{skill.name} does not use config.yaml, default will be used."
                 )
             with open(skill / "prompt.md") as fd:
                 self[skill.name] = skill_cls(prompt=fd.read(), **settings)
