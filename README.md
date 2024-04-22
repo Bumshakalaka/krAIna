@@ -8,11 +8,10 @@ Set of AI tools for everyday use.
 2. create venv and install requirements.txt
 3. create `.env` file and add 
    1. `OPENAI_API_KEY=sk-...` - OpenAI API key
-   2. `DECRYPT_KEY=MagiCpRompts` - to decrypt prompts DB. If somebody would like to see the prompts, feel free to install, run, and check.
 
 ## Usage
 
-`./main.sh translate "Cześć, co słychać u Ciebie?"`
+`./kraina.sh translate "Cześć, co słychać u Ciebie?"`
 
 ### CopyQ
 

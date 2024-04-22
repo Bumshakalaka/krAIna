@@ -1,3 +1,4 @@
+"""Base skill class."""
 import logging
 from dataclasses import dataclass
 

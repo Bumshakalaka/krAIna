@@ -1,3 +1,4 @@
+"""Specialisation for response skill."""
 import logging
 from pathlib import Path
 
