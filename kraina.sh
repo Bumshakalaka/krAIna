@@ -15,5 +15,5 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 ACTION=$1
 TEXT=$2
-RET=$(python main.py --skill "${ACTION}" --text "${TEXT}")
+RET=$(python kraina.py --skill "${ACTION}" --text "${TEXT}")
 echo -n "${RET}"
