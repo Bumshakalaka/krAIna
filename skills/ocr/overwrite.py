@@ -15,18 +15,19 @@ class Response(BaseSkill):
     Overwritten BaseSkill class to customize run method.
     """
 
-    def run(self, text: str, /, **kwargs) -> str:
+    def run(self, query: str, /, **kwargs) -> str:
         """
         Overwritten BaseSkill run method by adding additional context to system prompt.
 
-        :param text:
+        :param query:
         :param kwargs:
         :return:
         """
-        if not (Path(text).is_file() and Path(text).exists()):
-            raise FileNotFoundError(text)
+        logger.info(f"{self.name}: {query=}, {kwargs=}")
+        if not (Path(query).is_file() and Path(query).exists()):
+            raise FileNotFoundError(query)
 
-        with open(Path(text), "rb") as image_file:
+        with open(Path(query), "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
         chat = ChatOpenAI(
@@ -40,5 +41,5 @@ class Response(BaseSkill):
             },
         ]
         ret = chat.invoke([HumanMessage(content=content)])
-        logger.debug(ret)
+        logger.info(f"{self.name}: ret={ret}")
         return ret.content

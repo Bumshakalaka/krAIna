@@ -16,6 +16,7 @@ class BaseSkill:
     Base class for all skills.
     """
 
+    name: str = ""
     prompt: str = None
     model: str = "gpt-3.5-turbo"
     temperature: float = 0.5
@@ -39,6 +40,7 @@ class BaseSkill:
         :param kwargs: additional key-value pairs to substitute in System prompt
         :return:
         """
+        logger.info(f"{self.name}: {query=}, {kwargs=}")
         chat = ChatOpenAI(
             model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
         )
@@ -50,5 +52,5 @@ class BaseSkill:
             ]
         )
         ret = chat.invoke(prompt.format_prompt(text=query, **kwargs))
-        logger.debug(ret)
+        logger.info(f"{self.name}: ret={ret}")
         return ret.content

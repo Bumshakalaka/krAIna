@@ -14,10 +14,15 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
     loggerFormatter = logging.Formatter(loggerFormat)
-    loggerLevel = logging.ERROR
-    logging.basicConfig(format=loggerFormat, level=loggerLevel)
+    loggerLevel = logging.INFO
+    file_handler = logging.FileHandler("kraina.log")
+    console_handler = logging.StreamHandler(sys.stderr)
+    logging.basicConfig(
+        format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler]
+    )
+    console_handler.setLevel(logging.ERROR)
 
-    parser = argparse.ArgumentParser(description="Do various actions with AI")
+    parser = argparse.ArgumentParser(description="Perform various operations with AI")
 
     skills = Skills()
     parser.add_argument(

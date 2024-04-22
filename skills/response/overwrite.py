@@ -12,11 +12,11 @@ class Response(BaseSkill):
     Overwritten BaseSkill class to customize run method.
     """
 
-    def run(self, text: str, /, **kwargs) -> str:
+    def run(self, query: str, /, **kwargs) -> str:
         """
         Overwritten BaseSkill run method by adding additional context to system prompt.
 
-        :param text:
+        :param query:
         :param kwargs:
         :return:
         """
@@ -26,4 +26,4 @@ class Response(BaseSkill):
                 about_me = fd.read()
         else:
             logger.warning("About me not found")
-        return super().run(text, about_me=about_me, **kwargs)
+        return super().run(query, about_me=about_me, **kwargs)

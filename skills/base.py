@@ -51,7 +51,9 @@ class Skills(dict):
                     f"{skill.name} does not use config.yaml, default will be used."
                 )
             with open(skill / "prompt.md") as fd:
-                self[skill.name] = skill_cls(prompt=fd.read(), **settings)
+                self[skill.name] = skill_cls(
+                    name=skill.name, prompt=fd.read(), **settings
+                )
 
 
 if __name__ == "__main__":
