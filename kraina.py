@@ -1,6 +1,7 @@
 """Main module."""
 import argparse
 import logging
+import sys
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -11,7 +12,7 @@ load_dotenv(find_dotenv())
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
-    loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)32s]: %(message)s"
+    loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
     loggerFormatter = logging.Formatter(loggerFormat)
     loggerLevel = logging.ERROR
     logging.basicConfig(format=loggerFormat, level=loggerLevel)
@@ -36,8 +37,11 @@ if __name__ == "__main__":
     else:
         desktop_notify = NotifyWorking(f"ai:{args.skill}")
         desktop_notify.start()
-
-        ret = skills[args.skill].run(args.text)
-
-        desktop_notify.join()
-        print(ret)
+        try:
+            ret = skills[args.skill].run(args.text)
+            print(ret)
+        except Exception as e:
+            logger.exception(e)
+            exit(1)
+        finally:
+            desktop_notify.join()

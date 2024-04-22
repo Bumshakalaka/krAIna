@@ -16,4 +16,4 @@ fi
 ACTION=$1
 TEXT=$2
 RET=$(python kraina.py --skill "${ACTION}" --text "${TEXT}")
-echo -n "${RET}"
+echo "${RET}"
