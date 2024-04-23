@@ -1,7 +1,7 @@
 ## Overview
 Set of AI-powered skills for everyday use.
 
-Skills are actions that can be performed on selected text.
+Skills are actions that can be performed on selected text. 
 
 KrAIna can be easily equipped with new skills. Check the `skills` folder. The structure is as follows:
 ```
@@ -12,13 +12,16 @@ skills/
 │     ├── py_module.py - overwrite default behavior of skill, specialization - must be defined in model.yaml
 ```
 
+However, AI-powered skills are nothing without a good user interface to make it possible to use them in any tool. 
+One way to boost your work performance is by performing skills on the clipboard context with a Clipboard manager.
+
 ## Install
 1. Clone the project.
 2. Create a virtual environment and install the requirements from requirements.txt.
 3. Create a `.env` file and add:
    1. `OPENAI_API_KEY=sk-...` - OpenAI API key
 
-### CopyQ Custom Action Installation
+### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
 1. Edit and save the `copyQ/ai_select.ini` file:
    * Adjust the path `~/krAIna/kraina.sh` to your needs.
