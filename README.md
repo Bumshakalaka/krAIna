@@ -22,7 +22,7 @@ skills/
 
 1. Edit and save the `copyQ/ai_select.ini` file:
    * Adjust the path `~/krAIna/kraina.sh` to your needs.
-   * Change or remove shortcuts if needed (global shortcut CTRL+SHIFT+1, CopyQ shortcut ALT+RETURN).
+   * Change or remove shortcuts if needed (global shortcut ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
 2. Open CopyQ and go to `Command/Global shortcuts...` <F6>.
 3. Select `Load Commands...` and import the `copyQ/ai_select.ini` file.
 
@@ -39,7 +39,7 @@ Also, check `copyQ/ai_translate.ini` to have the translation skill only as a Cop
 ### CopyQ Usage
 To use the krAIna CopyQ Custom Action **ai:select**:
 1. Select text.
-2. Press CTRL+SHIFT+1.
+2. Press ALT+SHIFT+1.
 3. Select the skill you'd like to use and press ENTER.
 4. Once the action finishes, the selected text is replaced with the transformed one.
 
