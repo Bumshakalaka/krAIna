@@ -31,7 +31,13 @@ One way to boost your work performance is by performing skills on the clipboard 
 
 ![ai:select Custom Action](img/CopyQ-command.jpg)
 
-Also, check `copyQ/ai_translate.ini` to have the translation skill only as a CopyQ Custom Action.
+Check also other CopyQ Custom Actions in `copyQ`.
+
+---
+*Note*:
+1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with main window focus)
+2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
+---
 
 ## Usage
 
@@ -52,4 +58,4 @@ Alternatively:
 1. Select and copy text to the clipboard.
 2. Open CopyQ.
 3. Right-click on the copied text and select the **ai:select** Custom Action (or press ALT+RETURN).
-4. Once the action finishes, the selected text is
+4. Once the action finishes, the selected text is replaced with the transformed one.
