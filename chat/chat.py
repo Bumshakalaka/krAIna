@@ -1,21 +1,23 @@
-import queue
+import enum
 import logging
+import queue
 import sys
 import threading
 import tkinter as tk
-from functools import partial
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
+
+from dotenv import load_dotenv, find_dotenv
 from ttkthemes import ThemedTk
 
 from assistants.base import Assistants
 from menu import Menu
-from dotenv import load_dotenv, find_dotenv
 
 
 class LeftSidebar(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.root = parent
         ttk.Button(self, text="NEW CHAT").pack(side=tk.TOP, fill=tk.X)
 
 
@@ -26,11 +28,8 @@ class ChatFrame(ttk.PanedWindow):
     def __init__(self, parent):
         super().__init__(parent, orient=tk.VERTICAL)
         self.root = parent
-        self.chat = ChatHistory(self, parent)
-        w = UserQuery(self, parent)
-        self.query = w.text
-        self.add(self.chat)
-        self.add(w)
+        self.add(ChatHistory(self, parent))
+        self.add(UserQuery(self, parent))
 
 
 class ChatHistory(ScrolledText):
@@ -39,23 +38,23 @@ class ChatHistory(ScrolledText):
         self.tag_config("HUMAN", background="SeaGreen1")
         self.tag_config("AI", background="salmon")
         self.root = root
-        self.root.bind("<<HumanAsk>>", self.human_message)
-        self.root.bind("<<AiMsgReady>>", self.ai_message)
+        self.root.bind(APP_EVENTS.QUERY_CREATED.value, self.human_message)
+        self.root.bind(APP_EVENTS.QUERY_RECV.value, self.ai_message)
 
     def ai_message(self, event):
-        print(f"ai_message: {event}")
         query = app_queue.get()
+        print(f"ai_message: {query=}")
         self.add(query, "AI")
 
     def human_message(self, event):
-        print(f"human_message: {event}")
         query = app_queue.get()
+        print(f"human_message: {query=}")
         self.add(query, "HUMAN")
         app_queue.put(query)
-        self.root.event_generate("<<AskAi>>")
+        self.root.event_generate(APP_EVENTS.QUERY_SEND.value, when="tail")
 
-    def add(self, text, tag, event=None):
-        self.insert(tk.END, f"\n{tag}: {text}", tag)
+    def add(self, text, tag):
+        self.insert(tk.END, f"{tag}: {text}", tag, "\n", "")
 
 
 class UserQuery(ttk.Frame):
@@ -69,17 +68,19 @@ class UserQuery(ttk.Frame):
         self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE)
 
     def invoke(self, event=None):
-        query = self.text.get("1.0", tk.END)
+        query = self.text.get("1.0", tk.END)[:-1]
         self.text.delete("1.0", tk.END)
-        self.update()
+
         app_queue.put(query)
-        self.root.event_generate("<<HumanAsk>>")
-        print("invoke")
+        self.root.event_generate(APP_EVENTS.QUERY_CREATED.value, when="tail")
+        print(f"invoke: {query=}")
+        return "break"  # stop other events associate with bind to execute
 
 
 class StatusBar(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent, padx=2, pady=2)
+        self.root = parent
         ttk.Separator(self).pack(side=tk.TOP, fill=tk.X)
         self.variable = tk.StringVar()
         self.label = ttk.Label(
@@ -114,11 +115,11 @@ class App(ThemedTk):
 
         StatusBar(self).pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.bind("<<AskAi>>", self.call_assistant)
+        self.bind(APP_EVENTS.QUERY_SEND.value, self.call_assistant)
 
     def call_assistant(self, event):
         query = app_queue.get()
-        tid = threading.Thread(
+        threading.Thread(
             target=call_assistant, args=("echo", query, self), daemon=True
         ).start()
 
@@ -126,7 +127,13 @@ class App(ThemedTk):
 def call_assistant(assistant, query, root):
     ret = ai_assistants[assistant].run(query)
     app_queue.put(ret)
-    root.event_generate("<<AiMsgReady>>")
+    root.event_generate(APP_EVENTS.QUERY_RECV.value, when="tail")
+
+
+class APP_EVENTS(enum.Enum):
+    QUERY_CREATED = "<<QueryCreated>>"
+    QUERY_SEND = "<<QuerySend>>"
+    QUERY_RECV = "<<QueryReceived>>"
 
 
 if __name__ == "__main__":
