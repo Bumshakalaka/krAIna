@@ -1,4 +1,5 @@
 import enum
+import functools
 import logging
 import queue
 import sys
@@ -6,6 +7,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
+from typing import Callable
 
 from dotenv import load_dotenv, find_dotenv
 from ttkthemes import ThemedTk
@@ -38,20 +40,15 @@ class ChatHistory(ScrolledText):
         self.tag_config("HUMAN", background="SeaGreen1")
         self.tag_config("AI", background="salmon")
         self.root = root
-        self.root.bind(APP_EVENTS.QUERY_CREATED.value, self.human_message)
-        self.root.bind(APP_EVENTS.QUERY_RECV.value, self.ai_message)
+        self.root.on_event(APP_EVENTS.QUERY_CREATED, self.human_message)
+        self.root.on_event(APP_EVENTS.QUERY_RECV, self.ai_message)
 
-    def ai_message(self, event):
-        query = app_queue.get()
-        print(f"ai_message: {query=}")
-        self.add(query, "AI")
+    def ai_message(self, data):
+        self.add(data, "AI")
 
-    def human_message(self, event):
-        query = app_queue.get()
-        print(f"human_message: {query=}")
-        self.add(query, "HUMAN")
-        app_queue.put(query)
-        self.root.event_generate(APP_EVENTS.QUERY_SEND.value, when="tail")
+    def human_message(self, data):
+        self.add(data, "HUMAN")
+        self.root.post_event(APP_EVENTS.QUERY_SEND, data)
 
     def add(self, text, tag):
         self.insert(tk.END, f"{tag}: {text}", tag, "\n", "")
@@ -71,9 +68,7 @@ class UserQuery(ttk.Frame):
         query = self.text.get("1.0", tk.END)[:-1]
         self.text.delete("1.0", tk.END)
 
-        app_queue.put(query)
-        self.root.event_generate(APP_EVENTS.QUERY_CREATED.value, when="tail")
-        print(f"invoke: {query=}")
+        self.root.post_event(APP_EVENTS.QUERY_CREATED, query)
         return "break"  # stop other events associate with bind to execute
 
 
@@ -99,9 +94,11 @@ class App(ThemedTk):
     def __init__(self):
         """Create MVC application."""
         super().__init__()
+        self._app_queue = queue.Queue(maxsize=1)
+
         self.title("KrAIna CHAT")
         self.set_theme("arc")
-        # create menu
+
         Menu(self)
         pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL)
 
@@ -115,19 +112,34 @@ class App(ThemedTk):
 
         StatusBar(self).pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.bind(APP_EVENTS.QUERY_SEND.value, self.call_assistant)
+        self.on_event(APP_EVENTS.QUERY_SEND, self.call_assistant)
 
-    def call_assistant(self, event):
-        query = app_queue.get()
+    def on_event(self, ev: "APP_EVENTS", cmd: Callable):
+        self.bind(ev.value, self._event(cmd))
+
+    def post_event(self, ev: "APP_EVENTS", data):
+        app_queue.put(data)
+        self.event_generate(ev.value, when="tail")
+
+    def _event(self, ev_cmd):
+        def wrapper(event):
+            _data = app_queue.get()
+            print(f"{event=}, {_data=}")
+            ret = ev_cmd(_data)
+            print(f"{ret=}")
+            return ret
+
+        return wrapper
+
+    def call_assistant(self, data):
         threading.Thread(
-            target=call_assistant, args=("echo", query, self), daemon=True
+            target=call_assistant, args=("echo", data, self), daemon=True
         ).start()
 
 
 def call_assistant(assistant, query, root):
     ret = ai_assistants[assistant].run(query)
-    app_queue.put(ret)
-    root.event_generate(APP_EVENTS.QUERY_RECV.value, when="tail")
+    root.post_event(APP_EVENTS.QUERY_RECV, ret)
 
 
 class APP_EVENTS(enum.Enum):
