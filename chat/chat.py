@@ -15,6 +15,7 @@ from ttkthemes import ThemedTk
 
 from assistants.base import Assistants
 from menu import Menu
+from skills.base import Skills
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 class LeftSidebar(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.master: "App"
         self.root = parent
         ttk.Button(self, text="NEW CHAT").pack(side=tk.TOP, fill=tk.X)
 
@@ -53,8 +55,9 @@ class ChatHistory(ScrolledText):
         super().__init__(parent, height=15)
         self.tag_config("HUMAN", background="SeaGreen1")
         self.tag_config("AI", background="salmon")
+        self.tag_raise("sel")
         self.root = parent.master
-        self.root.bind_on_event(APP_EVENTS.QUERY_CREATED, self.human_message)
+        self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
 
     def ai_message(self, data):
@@ -72,18 +75,48 @@ class UserQuery(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.root = parent.master
-        self.text = ScrolledText(self, height=5)
-        self.text.bind("<Control-Return>", self.invoke)
+        self.root.bind_on_event(APP_EVENTS.RESP_FROM_SKILL, self.skill_message)
+        self.text = ScrolledText(
+            self, height=5, selectbackground="lightblue", undo=True
+        )
+        self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
+        self.text.bind("<ButtonRelease-3>", self.context_menu)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.send_btn = ttk.Button(self, text="Send", command=self.invoke)
+        self.send_btn = ttk.Button(
+            self, text="Send", command=functools.partial(self.invoke, "assistant")
+        )
         self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE)
 
-    def invoke(self, event=None):
-        query = self.text.get("1.0", tk.END)[:-1]
-        self.text.delete("1.0", tk.END)
-
-        self.root.post_event(APP_EVENTS.QUERY_CREATED, query)
+    def invoke(self, entity, event=None):
+        if entity == "assistant":
+            query = self.text.get("1.0", tk.END)[:-1]
+            self.text.delete("1.0", tk.END)
+            self.root.post_event(APP_EVENTS.QUERY_ASSIST_CREATED, query)
+        else:
+            range_ = (
+                (tk.SEL_FIRST, tk.SEL_LAST)
+                if self.text.tag_ranges(tk.SEL)
+                else ("1.0", tk.END)
+            )
+            query = self.text.get(*range_)
+            self.text.delete(*range_)
+            self.root.post_event(
+                APP_EVENTS.QUERY_SKILL, dict(entity=entity, query=query)
+            )
         return "break"  # stop other events associate with bind to execute
+
+    def context_menu(self, event: tk.Event):
+        w = tk.Menu(self, tearoff=False)
+        w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
+        for skill in ai_skills.keys():
+            w.add_command(label=skill, command=functools.partial(self.invoke, skill))
+        try:
+            w.tk_popup(event.x_root, event.y_root)
+        finally:
+            w.grab_release()
+
+    def skill_message(self, data):
+        self.text.insert(self.text.index(tk.INSERT), data)
 
 
 class StatusBar(tk.Frame):
@@ -129,6 +162,12 @@ class App(ThemedTk):
         StatusBar(self).pack(side=tk.BOTTOM, fill=tk.X)
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
+        self.bind_on_event(APP_EVENTS.QUERY_SKILL, self.call_skill)
+        self.bind_class(
+            "Text",
+            "<Control-a>",
+            lambda event: event.widget.event_generate("<<SelectAll>>"),
+        )
 
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         self._bind_table[ev].append(self._event(cmd))
@@ -162,26 +201,28 @@ class App(ThemedTk):
             daemon=True,
         ).start()
 
+    def call_skill(self, data):
+        _call = lambda skill, query: self.post_event(
+            APP_EVENTS.RESP_FROM_SKILL, ai_skills[skill].run(query)
+        )
+        threading.Thread(
+            target=_call,
+            args=(data["entity"], data["query"]),
+            daemon=True,
+        ).start()
+
 
 class APP_EVENTS(enum.Enum):
-    QUERY_CREATED = "<<QueryCreated>>"
+    QUERY_ASSIST_CREATED = "<<QueryAssistantCreated>>"
     QUERY_TO_ASSISTANT = "<<QueryAssistant>>"
     RESP_FROM_ASSISTANT = "<<AssistantResp>>"
+    RESP_FROM_SKILL = "<<SkillResp>>"
+    QUERY_SKILL = "<<QuerySkill>>"
 
 
 EVENT = namedtuple("EVENT", "event data")
 
 if __name__ == "__main__":
-    # TODO: Error handling - queue block
-    # TODO: SQLAlechemy and message history + memories
-    # TODO: Chat management
-    # TODO: Select different assistants
-    # TODO: Use of skills - shall it goes to chat memory? e.g. type: /fix, will switch to fix skill
-    # TODO: streaming of response
-    # TODO: spinning box when waiting for respone
-    # TODO: clipboard manager
-    # TODO: statusbar information - no of tokens, resp time, etc
-    # TODO: save/restore geometry and other settings
     loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
     loggerFormatter = logging.Formatter(loggerFormat)
     loggerLevel = logging.INFO
@@ -193,5 +234,6 @@ if __name__ == "__main__":
     console_handler.setLevel(logging.INFO)
     load_dotenv(find_dotenv())
     ai_assistants = Assistants()
+    ai_skills = Skills()
     app = App()
     app.mainloop()
