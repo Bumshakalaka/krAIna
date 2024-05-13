@@ -16,6 +16,7 @@ class APP_EVENTS(enum.Enum):
     RESP_FROM_SNIPPET = "<<SkillResp>>"
     QUERY_SNIPPET = "<<QuerySkill>>"
     NEW_CHAT = "<<NewChat>>"
+    UNBLOCK_USER = "<<unblockUser>>"
 
 
 ai_assistants = Assistants()

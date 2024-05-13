@@ -41,6 +41,7 @@ class ChatHistory(ScrolledText):
         """
         self._insert_message(data["query"], "AI")
         self.see(tk.END)
+        self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
 
     def human_message(self, data: Dict):
         """
@@ -91,12 +92,14 @@ class UserQuery(ttk.Frame):
         super().__init__(parent)
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_SNIPPET, self.skill_message)
+        self.root.bind_on_event(APP_EVENTS.UNBLOCK_USER, self.unblock)
         self.text = ScrolledText(
             self, height=5, selectbackground="lightblue", undo=True
         )
         self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
         self.send_btn = ttk.Button(
             self, text="Send", command=functools.partial(self.invoke, "assistant")
         )
@@ -131,6 +134,7 @@ class UserQuery(ttk.Frame):
             self.root.post_event(
                 APP_EVENTS.QUERY_SNIPPET, dict(entity=entity, query=query)
             )
+        self.block()
         return "break"  # stop other events associate with bind to execute
 
     def _snippets_menu(self, event: tk.Event):
@@ -150,7 +154,18 @@ class UserQuery(ttk.Frame):
         :param data: message to insert
         :return:
         """
+        self.unblock()
         self.text.insert(self.text.index(tk.INSERT), data)
+
+    def unblock(self, data=None):
+        self.pb.stop()
+        self.pb.forget()
+        self.text.configure(state="normal", background="white")
+
+    def block(self, data=None):
+        self.pb.pack(side=tk.TOP, fill=tk.X)
+        self.pb.start(interval=2)
+        self.text.configure(state="disabled", background="grey")
 
 
 class ChatFrame(ttk.PanedWindow):
