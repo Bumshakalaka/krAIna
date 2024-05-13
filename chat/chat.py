@@ -1,10 +1,12 @@
 """Chat with LLM."""
+import json
 import logging
 import queue
 import sys
 import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
+from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union
 
@@ -33,7 +35,7 @@ class App(ThemedTk):
         self.title("KrAIna CHAT")
         self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
-
+        self.protocol("WM_DELETE_WINDOW", self._exito)
         Menu(self)
         pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL)
 
@@ -54,6 +56,51 @@ class App(ThemedTk):
             "<Control-a>",
             lambda event: event.widget.event_generate("<<SelectAll>>"),
         )
+        self._persistent_read()
+
+    def _persistent_write(self):
+        """
+        Save settings on application exit.
+
+        :return:
+        """
+        persist_file = Path(__file__).parent / "settings.json"
+        data = {"window": {"geometry": self.wm_geometry()}}
+        with open(persist_file, "w") as fd:
+            json.dump(data, fd)
+
+    def _persistent_read(self):
+        """
+        Restore settings from persistence if exists.
+
+        :return:
+        """
+        persist_file = Path(__file__).parent / "settings.json"
+        if not persist_file.exists():
+            return
+
+        with open(persist_file, "r") as fd:
+            data = json.load(fd)
+
+        # Prevent that chat will always be visible
+        new_geometry = data["window"]["geometry"]
+        w_size, offset_x, offset_y = new_geometry.split("+")
+        if (
+            int(offset_x) > self.winfo_screenwidth()
+            or int(offset_y) > self.winfo_screenheight()
+        ):
+            new_geometry = "708x437+0+0"
+        elif (
+            int(w_size.split("x")[0]) > self.winfo_screenwidth()
+            or int(w_size.split("x")[1]) > self.winfo_screenheight()
+        ):
+            new_geometry = "708x437+0+0"
+        self.wm_geometry(new_geometry)
+        self.update()
+
+    def _exito(self):
+        self._persistent_write()
+        self.destroy()
 
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         """
