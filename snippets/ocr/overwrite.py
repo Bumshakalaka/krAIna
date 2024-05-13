@@ -2,9 +2,9 @@
 import base64
 import logging
 from pathlib import Path
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
+from libs.llm import chat_llm
 from snippets.snippet import BaseSnippet
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class Response(BaseSnippet):
         with open(Path(query), "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
-        chat = ChatOpenAI(
+        chat = chat_llm(
             model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
         )
         content = [
