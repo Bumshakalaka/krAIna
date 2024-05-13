@@ -1,4 +1,4 @@
-"""Base skill class."""
+"""Base snippet class."""
 import logging
 from dataclasses import dataclass
 
@@ -7,13 +7,13 @@ from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
 
-SPECIALIZED_SKILLS = {}
+SPECIALIZED_SNIPPETS = {}
 
 
 @dataclass(eq=False)
-class BaseSkill:
+class BaseSnippet:
     """
-    Base class for all skills.
+    Base class for all snippets.
     """
 
     name: str = ""
@@ -24,17 +24,17 @@ class BaseSkill:
 
     def __init_subclass__(cls, **kwargs):
         """
-        Automatically add all subclasses of this class to `SPECIALIZED_SKILLS` dict.
+        Automatically add all subclasses of this class to `SPECIALIZED_SNIPPETS` dict.
 
         Add only class which names do not start with _
         """
         super().__init_subclass__(**kwargs)
         if not cls.__name__.startswith("_"):
-            SPECIALIZED_SKILLS[cls.__name__] = cls
+            SPECIALIZED_SNIPPETS[cls.__name__] = cls
 
     def run(self, query: str, /, **kwargs) -> str:
         """
-        Run the skill with user query.
+        Run the snippet with a user query.
 
         :param query: text which is passed as Human text to LLM chat.
         :param kwargs: additional key-value pairs to substitute in System prompt

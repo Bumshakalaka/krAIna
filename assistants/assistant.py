@@ -1,4 +1,4 @@
-"""Base skill class."""
+"""Base assistant class."""
 import logging
 from dataclasses import dataclass
 from typing import List
@@ -14,7 +14,7 @@ SPECIALIZED_ASSISTANT = {}
 @dataclass(eq=False)
 class BaseAssistant:
     """
-    Base class for all skills.
+    Base class for all assistants.
     """
 
     name: str = ""

@@ -6,7 +6,7 @@ import sys
 from dotenv import load_dotenv, find_dotenv
 
 from libs.MyNotify import NotifyWorking
-from skills.base import Skills
+from snippets.base import Snippets
 
 load_dotenv(find_dotenv())
 
@@ -24,12 +24,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Perform various operations with AI")
 
-    skills = Skills()
+    snippets = Snippets()
     parser.add_argument(
-        "--skill",
+        "--snippet",
         type=str,
         required=False,
-        choices=list(skills.keys()) + [""],
+        choices=list(snippets.keys()) + [""],
         default="",
         help="Action to perform",
     )
@@ -37,13 +37,13 @@ if __name__ == "__main__":
         "--text", type=str, required=False, default="", help="User query"
     )
     args = parser.parse_args()
-    if args.text == "" and args.skill == "":
-        print(",".join(skills.keys()))
+    if args.text == "" and args.snippet == "":
+        print(",".join(snippets.keys()))
     else:
-        desktop_notify = NotifyWorking(f"ai:{args.skill}")
+        desktop_notify = NotifyWorking(f"ai:{args.snippet}")
         desktop_notify.start()
         try:
-            ret = skills[args.skill].run(args.text)
+            ret = snippets[args.snippet].run(args.text)
             print(ret)
         except Exception as e:
             logger.exception(e)

@@ -1,4 +1,4 @@
-"""Base class for skills."""
+"""Base class for assistants."""
 import logging
 import sys
 from pathlib import Path
@@ -14,18 +14,18 @@ logger = logging.getLogger(__name__)
 
 
 class Assistants(dict):
-    """Base skills."""
+    """Base assistants."""
 
     def __init__(self):
         """
-        Initialize skills.
+        Initialize assistants.
 
-        Iterate over all folders inside skills folder.
+        Iterate over all folders inside assistants folder.
         assistants/
         ├── fix
-        │     ├── prompt.md - skill system prompt, required
-        │     ├── config.yaml - skill LLM settings, optional
-        │     ├── py_module.py - overwrite default behaviour of skill, specialisation - must be defined in model.yaml
+        │     ├── prompt.md - assistant system prompt, required
+        │     ├── config.yaml - assistant LLM settings, optional
+        │     ├── py_module.py - overwrite default behaviour of assistant, specialisation - must be defined in model.yaml
         """
         super().__init__()
         for assistant in Path(__file__).parent.glob("*"):

@@ -1,19 +1,19 @@
 ## Overview
-Set of AI-powered skills for everyday use.
+Set of AI-powered tools for everyday use.
 
-Skills are actions that can be performed on selected text. 
+Snippets are actions that can be performed on selected text. 
 
-KrAIna can be easily equipped with new skills. Check the `skills` folder. The structure is as follows:
+KrAIna can be easily equipped with new snippets. Check the `snippets` folder. The structure is as follows:
 ```
-skills/
+snipptes/
 ├── fix
-│     ├── prompt.md - skill system prompt, required
-│     ├── config.yaml - skill and LLM settings, optional
-│     ├── py_module.py - overwrite default behavior of skill, specialization - must be defined in model.yaml
+│     ├── prompt.md - snippet system prompt, required
+│     ├── config.yaml - snippet and LLM settings, optional
+│     ├── py_module.py - overwrite default behavior of snippet, specialization - must be defined in model.yaml
 ```
 
-However, AI-powered skills are nothing without a good user interface to make it possible to use them in any tool. 
-One way to boost your work performance is by performing skills on the clipboard context with a Clipboard manager.
+However, AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
+One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
 ## Install
 1. Clone the project.
@@ -41,7 +41,7 @@ Check also other CopyQ Custom Actions in `copyQ`.
 
 ## Usage
 
-1. Get all supported skills: `./kraina.sh`
+1. Get all supported snippets: `./kraina.sh`
 2. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"`
 3. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"`
 
@@ -49,7 +49,7 @@ Check also other CopyQ Custom Actions in `copyQ`.
 To use the krAIna CopyQ Custom Action **ai:select**:
 1. Select text.
 2. Press ALT+SHIFT+1.
-3. Select the skill you'd like to use and press ENTER.
+3. Select the snippet you'd like to use and press ENTER.
 4. Once the action finishes, the selected text is replaced with the transformed one.
 
 ![KrAIna and CopyQ in action](img/kraina-in-action.gif)

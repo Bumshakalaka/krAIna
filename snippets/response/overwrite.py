@@ -2,12 +2,12 @@
 import logging
 from pathlib import Path
 
-from skills.skill import BaseSkill
+from snippets.snippet import BaseSnippet
 
 logger = logging.getLogger(__name__)
 
 
-class Response(BaseSkill):
+class Response(BaseSnippet):
     """
     Overwritten BaseSkill class to customize run method.
     """

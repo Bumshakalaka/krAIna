@@ -2,7 +2,7 @@
 import enum
 
 from assistants.base import Assistants
-from skills.base import Skills
+from snippets.base import Snippets
 
 
 class APP_EVENTS(enum.Enum):
@@ -19,4 +19,4 @@ class APP_EVENTS(enum.Enum):
 
 
 ai_assistants = Assistants()
-ai_snippets = Skills()
+ai_snippets = Snippets()
