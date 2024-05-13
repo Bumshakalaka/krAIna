@@ -34,7 +34,9 @@ class LeftSidebar(ttk.Frame):
         super().__init__(parent)
         self.master: "App"
         self.root = parent
-        ttk.Button(self, text="NEW CHAT").pack(side=tk.TOP, fill=tk.X)
+        ttk.Button(self, text="NEW CHAT", command=self.new_chat).pack(
+            side=tk.TOP, fill=tk.X
+        )
 
         fr = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
         for assistant in ai_assistants.keys():
@@ -46,6 +48,9 @@ class LeftSidebar(ttk.Frame):
             ).pack(side=tk.TOP, fill=tk.X)
         ttk.Button(fr, text="RELOAD").pack(side=tk.BOTTOM, fill=tk.X)
         fr.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def new_chat(self):
+        self.root.post_event(APP_EVENTS.NEW_CHAT, None)
 
 
 class ChatFrame(ttk.PanedWindow):
@@ -83,26 +88,39 @@ class ChatHistory(ScrolledText):
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
+        self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.clear_messages)
 
-    def ai_message(self, data: str):
+    def ai_message(self, data: Dict):
         """
         Insert an AT-tagged message.
 
         :param data: Message to add to chat history
         """
-        self._insert_message(data, "AI")
+        self._insert_message(data["query"], "AI")
+        self.see(tk.END)
 
-    def human_message(self, data: str):
+    def human_message(self, data: Dict):
         """
         Insert a HUMAN-tagged message.
 
         :param data: Message to add to chat history
         """
-        self._insert_message(data, "HUMAN")
+        self._insert_message(data["query"], "HUMAN")
+        data["hist"] = self.get_history()
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, data)
 
     def _insert_message(self, text, tag):
         self.insert(tk.END, f"{tag}: ", f"{tag}_prefix", text, tag, "\n", "")
+
+    def clear_messages(self, data: str):
+        """
+        Cleat chat history
+
+        :param data: Not used
+        :return:
+        """
+        self.delete(1.0, tk.END)
+        self.see(tk.END)
 
     def get_history(self) -> list:
         """
@@ -156,7 +174,9 @@ class UserQuery(ttk.Frame):
         if entity == "assistant":
             query = self.text.get("1.0", tk.END)[:-1]
             self.text.delete("1.0", tk.END)
-            self.root.post_event(APP_EVENTS.QUERY_ASSIST_CREATED, query)
+            self.root.post_event(
+                APP_EVENTS.QUERY_ASSIST_CREATED, dict(hist=None, query=query)
+            )
         else:
             range_ = (
                 (tk.SEL_FIRST, tk.SEL_LAST)
@@ -284,7 +304,7 @@ class App(ThemedTk):
 
         return wrapper
 
-    def call_assistant(self, data: str):
+    def call_assistant(self, data: Dict):
         """
         Call AI assistant in separate thread.
 
@@ -293,12 +313,13 @@ class App(ThemedTk):
         :param data: Query to be answered by assistant
         :return:
         """
-        _call = lambda assistant, query: self.post_event(
-            APP_EVENTS.RESP_FROM_ASSISTANT, ai_assistants[assistant].run(query)
+        _call = lambda assistant, query, hist: self.post_event(
+            APP_EVENTS.RESP_FROM_ASSISTANT,
+            dict(hist=None, query=ai_assistants[assistant].run(query, hist)),
         )
         threading.Thread(
             target=_call,
-            args=(self.selected_assistant.get(), data),
+            args=(self.selected_assistant.get(), data["query"], data["hist"]),
             daemon=True,
         ).start()
 
@@ -331,6 +352,7 @@ class APP_EVENTS(enum.Enum):
     RESP_FROM_ASSISTANT = "<<AssistantResp>>"
     RESP_FROM_SNIPPET = "<<SkillResp>>"
     QUERY_SNIPPET = "<<QuerySkill>>"
+    NEW_CHAT = "<<NewChat>>"
 
 
 EVENT = namedtuple("EVENT", "event data")
