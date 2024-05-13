@@ -174,10 +174,14 @@ class App(ThemedTk):
         :param data: Query to be answered by assistant
         :return:
         """
-        _call = lambda assistant, query, hist: self.post_event(
-            APP_EVENTS.RESP_FROM_ASSISTANT,
-            dict(hist=None, query=ai_assistants[assistant].run(query, hist)),
-        )
+
+        def _call(assistant, query, hist):
+            try:
+                ret = ai_assistants[assistant].run(query, hist)
+            except Exception as e:
+                ret = str(e)
+            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, dict(hist=None, query=ret))
+
         threading.Thread(
             target=_call,
             args=(self.selected_assistant.get(), data["query"], data["hist"]),
@@ -193,9 +197,14 @@ class App(ThemedTk):
         :param data: Dict(entity=snippet name, query=data to transform)
         :return:
         """
-        _call = lambda skill, query: self.post_event(
-            APP_EVENTS.RESP_FROM_SNIPPET, ai_snippets[skill].run(query)
-        )
+
+        def _call(snippet, query):
+            try:
+                ret = ai_snippets[snippet].run(query)
+            except Exception as e:
+                ret = str(e)
+            self.post_event(APP_EVENTS.RESP_FROM_SNIPPET, ret)
+
         threading.Thread(
             target=_call,
             args=(data["entity"], data["query"]),
