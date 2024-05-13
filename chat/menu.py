@@ -12,10 +12,7 @@ class FileMenu(ttk.Menu):
         """Create menu."""
         super().__init__(parent, *args, **kwargs)
         self.add_command(
-            label="Open DB...",
-        )
-        self.add_command(
-            label="Key DB...",
+            label="Settings...",
         )
         self.add_separator()
         self.add_command(label="Exit", command=parent.destroy)
