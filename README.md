@@ -1,6 +1,10 @@
 ## Overview
-Set of AI-powered tools for everyday use.
+Set of AI-powered tools for everyday use with OpenAi or Azure OpenAI LLMs.
+1. **Snippets** — the actions that can be performed on selected text.
+2. **Assistants** — your own specialized assistants to talk with.
+3. **chat** — Chat GUI application build using tkinter.
 
+### Snippets
 Snippets are actions that can be performed on selected text. 
 
 KrAIna can be easily equipped with new snippets. Check the `snippets` folder. The structure is as follows:
@@ -15,11 +19,35 @@ snipptes/
 However, AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
 One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
+### Assistants
+Create your own assistant to talk with. It can be a causal assistant or prompt engineer.
+
+The assistants have been created similar to Snippets. Check the `assistants` folder.
+
+### Chat GUI application
+Chat GUI application build using tkinter
+
+![Chat main window](img/chat_main.gif)
+
+features:
+* Chat with history
+* Assistant selection
+* Support for snippets — right-click in user query widget to apply transformation on text
+* minimize to the system tray on close
+* persist window size on exit
+* progress bar to visualize that LLM is working
+
 ## Install
 1. Clone the project.
-2. Create a virtual environment and install the requirements from requirements.txt.
-3. Create a `.env` file and add:
+2. Create a virtual environment and install the requirements from requirements.txt `pip install -r requirements.txt`.
+3. Optional: If you'd like to use Chat GUI, please install also requirements for it `pip install -r chat/requirements.txt` 
+4. Create a `.env` file and add:
    1. `OPENAI_API_KEY=sk-...` - OpenAI API key
+   2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` - AzureAI API key if you'd like to use it
+---
+*Note*:
+If the `AZURE_*` environment variable exists, AzureAI is used; otherwise, OpenAI.
+---
 
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
@@ -41,6 +69,7 @@ Check also other CopyQ Custom Actions in `copyQ`.
 
 ## Usage
 
+### CLI
 1. Get all supported snippets: `./kraina.sh`
 2. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"`
 3. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"`
@@ -59,3 +88,34 @@ Alternatively:
 2. Open CopyQ.
 3. Right-click on the copied text and select the **ai:select** Custom Action (or press ALT+RETURN).
 4. Once the action finishes, the selected text is replaced with the transformed one.
+
+### Chat
+
+1. Run `./chat.sh`
+2. Use it
+
+### Code
+
+#### Snippets
+```python
+from dotenv import load_dotenv, find_dotenv
+from snippets.base import Snippets
+
+load_dotenv(find_dotenv())
+snippets = Snippets()
+action = snippets["fix"]
+print(action.run("I'd like to speak something interest"))
+```
+
+#### Assistants
+```python
+from dotenv import load_dotenv, find_dotenv
+from assistants.base import Assistants
+
+load_dotenv(find_dotenv())
+assistants = Assistants()
+action = assistants["echo"]
+print(action.run("2+2"))
+# with history
+print(action.run("What's my name?", [("human", "Hi my name is Paul"), ("ai", "Hello Paul! It's nice to meet you. How can I assist you today?")]))
+```
