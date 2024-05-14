@@ -39,8 +39,9 @@ class ChatHistory(ScrolledText):
 
         :param data: Message to add to chat history
         """
-        self._insert_message(data["query"], "AI")
-        self.see(tk.END)
+        if data["query"]:
+            self._insert_message(data["query"], "AI")
+            self.see(tk.END)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
 
     def human_message(self, data: Dict):
@@ -171,9 +172,6 @@ class UserQuery(ttk.Frame):
 class ChatFrame(ttk.PanedWindow):
     """Right side chat frame."""
 
-    chat: ScrolledText
-    query: ScrolledText
-
     def __init__(self, parent):
         """
         Initialize the chat frame.
@@ -181,5 +179,8 @@ class ChatFrame(ttk.PanedWindow):
         """
         super().__init__(parent, orient=tk.VERTICAL)
         self.root = parent
-        self.add(ChatHistory(self))
-        self.add(UserQuery(self))
+        self.chatW = ChatHistory(self)
+        self.add(self.chatW)
+
+        self.userW = UserQuery(self)
+        self.add(self.userW)

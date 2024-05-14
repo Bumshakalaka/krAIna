@@ -20,6 +20,7 @@ from status_bar import StatusBar
 from menu import Menu
 import pystray
 from PIL import Image
+from langchain_core.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -34,23 +35,24 @@ class App(ThemedTk):
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=1)
         self.icon = None
-
         self.title("KrAIna CHAT")
         self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
+
         Menu(self)
         pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL)
 
-        left_sidebar = LeftSidebar(self)
-        pw_main.add(left_sidebar)
+        self.leftsidebarW = LeftSidebar(self)
+        pw_main.add(self.leftsidebarW)
 
-        chat_frame = ChatFrame(self)
-        pw_main.add(chat_frame)
+        self.chatW = ChatFrame(self)
+        pw_main.add(self.chatW)
 
         pw_main.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        StatusBar(self).pack(side=tk.BOTTOM, fill=tk.X)
+        self.status = StatusBar(self)
+        self.status.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
@@ -60,6 +62,7 @@ class App(ThemedTk):
             lambda event: event.widget.event_generate("<<SelectAll>>"),
         )
         self._persistent_read()
+        self.chatW.userW.text.focus_force()
 
     def _persistent_write(self):
         """
@@ -174,13 +177,19 @@ class App(ThemedTk):
         :param data: Query to be answered by assistant
         :return:
         """
+        DummyBaseMessage = namedtuple("Dummy", "content response_metadata")
 
         def _call(assistant, query, hist):
             try:
                 ret = ai_assistants[assistant].run(query, hist)
             except Exception as e:
-                ret = str(e)
-            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, dict(hist=None, query=ret))
+                logger.exception(e)
+                _err = f"FAIL: {type(e).__name__}: {e}"
+                ret = DummyBaseMessage("", {"token_usage": _err})
+            self.post_event(
+                APP_EVENTS.RESP_FROM_ASSISTANT, dict(hist=None, query=ret.content)
+            )
+            self.status.update_statusbar(ret.response_metadata)
 
         threading.Thread(
             target=_call,

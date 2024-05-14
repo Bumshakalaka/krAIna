@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import BaseMessage
 
 from libs.llm import chat_llm
 
@@ -34,18 +35,20 @@ class BaseAssistant:
         if not cls.__name__.startswith("_"):
             SPECIALIZED_ASSISTANT[cls.__name__] = cls
 
-    def run(self, query: str, hist: List = None, /, **kwargs):
+    def run(self, query: str, hist: List = None, /, **kwargs) -> BaseMessage:
         """
         Run the skill with user query.
 
         :param query: text which is passed as Human text to LLM chat.
         :param hist: Chat history
         :param kwargs: additional key-value pairs to substitute in System prompt
-        :return:
+        :return: langChain BaseMessage
         """
         logger.info(f"{self.name}: {query=}, {kwargs=}")
         chat = chat_llm(
-            model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
+            model=self.model,
+            temperature=float(self.temperature),
+            max_tokens=float(self.max_tokens),
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -57,4 +60,4 @@ class BaseAssistant:
         )
         ret = chat.invoke(prompt.format_prompt(text=query, hist=hist, **kwargs))
         logger.info(f"{self.name}: ret={ret}")
-        return ret.content
+        return ret
