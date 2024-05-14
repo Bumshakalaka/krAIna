@@ -60,7 +60,7 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI]:
 
     """
     for k, v in OVERWRITE_LLM_SETTINGS.items():
-        if OVERWRITE_LLM_SETTINGS.get(k, "") != "":
+        if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
             kwargs[k] = v
     if isAzureAI():
         kwargs["model"] = map_model(kwargs["model"])
