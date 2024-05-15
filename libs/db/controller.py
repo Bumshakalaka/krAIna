@@ -96,11 +96,12 @@ class Db:
             s.execute(update(Conversations).where(Conversations.conversation_id == conv_id).values(**kwargs))
             s.commit()
 
-    def list_conversations(self, active: Union[bool, None] = True) -> List[Tuple[int, str, str, bool]]:
+    def list_conversations(self, active: Union[bool, None] = True, limit=10) -> List[Tuple[int, str, str, bool]]:
         """
-        Get all conversations.
+        Get all conversations from the newest to oldest.
 
         :param active: Fileter by active state. If None passed, return all conversations.
+        :param limit: How many conversations return
         :return: List of tuples(conv_id, name, description, active)
         """
         with Session(self.engine) as s:
@@ -108,7 +109,10 @@ class Db:
                 stmt = select(Conversations).order_by(Conversations.conversation_id)
             else:
                 stmt = (
-                    select(Conversations).where(Conversations.active == active).order_by(Conversations.conversation_id)
+                    select(Conversations)
+                    .where(Conversations.active == active)
+                    .order_by(Conversations.conversation_id.desc())
+                    .limit(limit)
                 )
             data = s.execute(stmt).scalars()
             ret = []
