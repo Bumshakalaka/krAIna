@@ -1,5 +1,8 @@
 """Chat window."""
 import functools
+import json
+
+import yaml
 import logging
 import tkinter as tk
 from tkinter import ttk
@@ -32,6 +35,8 @@ class ChatHistory(ScrolledText):
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.clear_messages)
+        self.root.bind_on_event(APP_EVENTS.SAVE_CHAT, self.save_chat)
+        self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
 
     def ai_message(self, data: Dict):
         """
@@ -79,6 +84,31 @@ class ChatHistory(ScrolledText):
             hist.append(HumanMessage(self.get(human_start, next(it))))
             hist.append(AIMessage(self.get(ai_start, next(it2))))
         return hist
+
+    def undump(self, dump_data):
+        tags = []
+        for key, value, index in dump_data:
+            if key == "tagon":
+                tags.append(value)
+            elif key == "tagoff":
+                tags.remove(value)
+            elif key == "mark":
+                self.mark_set(value, index)
+            elif key == "text":
+                self.insert(index, value, tags)
+
+    def save_chat(self, data: Dict):
+        with open(data["file_path"], "w") as fd:
+            fd.write(f"description: {data['description']}\n")
+            fd.write("chat: |\n  ")
+            fd.write(json.dumps(self.dump(1.0, tk.END)))
+        self.root.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, None)
+
+    def load_chat(self, file_path: str):
+        with open(file_path, "r") as fd:
+            data = yaml.safe_load(fd)
+        self.delete(1.0, tk.END)
+        self.undump(json.loads(data["chat"]))
 
 
 class UserQuery(ttk.Frame):
