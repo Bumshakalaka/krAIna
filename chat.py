@@ -14,7 +14,7 @@ if __name__ == "__main__":
     file_handler = logging.FileHandler(Path(__file__).parent / "chat.log")
     console_handler = logging.StreamHandler(sys.stderr)
     logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.ERROR)
     load_dotenv(find_dotenv())
     app = App()
     app.mainloop()
