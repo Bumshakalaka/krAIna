@@ -51,17 +51,17 @@ class LeftSidebar(ttk.Frame):
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
         for conversation in conversations:
+            name = conversation[1] if conversation[1] else f"ID:{conversation[0]}"
             but = ttk.Button(
                 self.chats,
-                text=conversation[0],
+                text=name,
                 command=functools.partial(self.get_chat, conversation[0]),
             )
-            but.bind("<ButtonRelease-3>", self.deactivate_chat)
+            but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation[0]))
             but.pack(side=tk.TOP, fill=tk.X)
 
-    def deactivate_chat(self, event: tk.Event):
+    def deactivate_chat(self, conv_id: int, event: tk.Event):
         """Deactivate chat."""
-        conv_id = event.widget["text"]
         self.root.post_event(APP_EVENTS.DEL_CHAT, int(conv_id))
 
     def new_chat(self):

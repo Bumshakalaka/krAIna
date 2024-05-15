@@ -58,6 +58,7 @@ class App(ThemedTk):
         self.bind_on_event(APP_EVENTS.GET_CHAT, self.get_chat)
         self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
         self.bind_on_event(APP_EVENTS.DEL_CHAT, self.deactivate_chat)
+        self.bind_on_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.describe_chat)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -65,6 +66,30 @@ class App(ThemedTk):
         )
         self._persistent_read()
         self.chatW.userW.text.focus_force()
+
+    def describe_chat(self, chat_dump: str):
+        """
+        Callback on DESCRIBE_NEW_CHAT event to set name and description of the chat.
+
+        :param chat_dump:
+        :return:
+        """
+        if self.ai_db.get_conversation(self.conv_id)[0]:
+            return
+
+        def _call(query):
+            try:
+                ret = json.loads(ai_snippets["nameit"].run(query))
+                self.ai_db.update_conversation(self.conv_id, **ret)
+            except Exception as e:
+                logger.exception(e)
+            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
+
+        threading.Thread(
+            target=_call,
+            args=(chat_dump,),
+            daemon=True,
+        ).start()
 
     def deactivate_chat(self, conv_id: int):
         """

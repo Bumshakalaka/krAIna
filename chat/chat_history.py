@@ -49,6 +49,8 @@ class ChatHistory(ScrolledText):
         if len(self.tag_ranges("AI")) == 2:
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
+        if len(self.tag_ranges("AI")) == 4:
+            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END))
 
     def human_message(self, message: str):
         """
@@ -90,6 +92,8 @@ class ChatHistory(ScrolledText):
                 self._insert_message(message[1], "HUMAN")
             else:
                 self._insert_message(message[1], "AI")
+        if len(self.tag_ranges("AI")) >= 4:
+            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END))
         self.see(tk.END)
 
     def undump(self, dump_data):
