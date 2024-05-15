@@ -7,3 +7,5 @@ __pycache__/
 .venv
 .env
 /chat/settings.json
+/kraina.db
+/*.log

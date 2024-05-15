@@ -1,0 +1,4 @@
+[flake8]
+extend-ignore = D203, E203, W503
+exclude = .git,__pycache__,./bts/common,./utils/sid_pc_link,./venv, ./bts/ble_observer/SnifferAPI
+max-line-length = 120
