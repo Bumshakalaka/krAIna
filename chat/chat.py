@@ -2,7 +2,6 @@
 import json
 import logging
 import queue
-import sys
 import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
@@ -10,16 +9,15 @@ from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
 
-from dotenv import load_dotenv, find_dotenv
+from chat.chat_history import ChatFrame
 from ttkthemes import ThemedTk
 
 from assistants.assistant import AssistantResp
-from base import APP_EVENTS, ai_snippets, ai_assistants
-from chat_history import ChatFrame
-from leftsidebar import LeftSidebar
+from chat.base import APP_EVENTS, ai_snippets, ai_assistants
+from chat.leftsidebar import LeftSidebar
+from chat.menu import Menu
+from chat.status_bar import StatusBar
 from libs.db.controller import Db
-from status_bar import StatusBar
-from menu import Menu
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -31,6 +29,7 @@ class App(ThemedTk):
     def __init__(self):
         """Create application."""
         super().__init__()
+        self.ai_db = Db()
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=10)
         self.conv_id: Union[int, None] = None
@@ -72,7 +71,7 @@ class App(ThemedTk):
 
         ADD_NEW_CHAT_ENTRY is post without data.
         """
-        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, ai_db.list_conversations(active=True))
+        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.ai_db.list_conversations(active=True))
 
     def get_chat(self, conv_id: int):
         """
@@ -82,7 +81,7 @@ class App(ThemedTk):
         :return:
         """
         self.conv_id = conv_id
-        self.post_event(APP_EVENTS.LOAD_CHAT, ai_db.get_conversation(conv_id))
+        self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
 
     def _persistent_write(self):
         """
@@ -90,7 +89,7 @@ class App(ThemedTk):
 
         :return:
         """
-        persist_file = Path(__file__).parent / "settings.json"
+        persist_file = Path(__file__).parent / "../settings.json"
         data = {"window": {"geometry": self.wm_geometry()}}
         with open(persist_file, "w") as fd:
             json.dump(data, fd)
@@ -101,7 +100,7 @@ class App(ThemedTk):
 
         :return:
         """
-        persist_file = Path(__file__).parent / "settings.json"
+        persist_file = Path(__file__).parent / "../settings.json"
         if not persist_file.exists():
             return
 
@@ -213,17 +212,3 @@ class App(ThemedTk):
             args=(data["entity"], data["query"]),
             daemon=True,
         ).start()
-
-
-if __name__ == "__main__":
-    loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
-    loggerFormatter = logging.Formatter(loggerFormat)
-    loggerLevel = logging.INFO
-    file_handler = logging.FileHandler(Path(__file__).parent / "chat.log")
-    console_handler = logging.StreamHandler(sys.stderr)
-    logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
-    console_handler.setLevel(logging.INFO)
-    load_dotenv(find_dotenv())
-    ai_db = Db()
-    app = App()
-    app.mainloop()

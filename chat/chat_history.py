@@ -6,7 +6,7 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from typing import Tuple, List
 
-from base import APP_EVENTS, ai_snippets
+from chat.base import APP_EVENTS, ai_snippets
 
 logger = logging.getLogger(__name__)
 

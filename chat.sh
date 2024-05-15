@@ -13,4 +13,4 @@ cd "${CURRENT_DIR}"
 if [ -z "$VIRTUAL_ENV" ]; then
     source .venv/bin/activate
 fi
-PYTHONPATH=. python chat/chat.py &
+python chat.py &

@@ -6,7 +6,7 @@ from tkinter import ttk
 import tkinter as tk
 from typing import List, Tuple
 
-from base import ai_assistants, APP_EVENTS
+from chat.base import ai_assistants, APP_EVENTS
 
 logger = logging.getLogger(__name__)
 
