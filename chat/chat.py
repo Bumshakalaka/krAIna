@@ -20,8 +20,6 @@ from leftsidebar import LeftSidebar
 from libs.db.controller import Db
 from status_bar import StatusBar
 from menu import Menu
-import pystray
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -35,12 +33,11 @@ class App(ThemedTk):
         super().__init__()
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=10)
-        self.icon = None
         self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
         self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
-        self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
+        self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         Menu(self)
         pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL)
@@ -124,32 +121,10 @@ class App(ThemedTk):
         self.wm_geometry(new_geometry)
         self.update()
 
-    def minimize_to_tray(self):
-        """
-        React on X (close) press.
-
-        :return:
-        """
-        self.withdraw()
-        image = Image.open(Path(__file__).parent / "krAIna.ico")
-        menu = (
-            pystray.MenuItem("Show", action=self.show_app, default=True),
-            pystray.MenuItem("Quit", self.quit_app, default=False),
-        )
-        self.icon = pystray.Icon("name", image, "KrAIna chat", menu)
-        # threading.Thread(target=lambda: self.icon.run(), daemon=True).start()
-        self.icon.run()
-
     def quit_app(self, *args):
         """Quit application handler."""
         self._persistent_write()
-        self.icon.stop()
         self.destroy()
-
-    def show_app(self, *args):
-        """Show application handler."""
-        self.icon.stop()
-        self.after(0, self.deiconify)
 
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         """

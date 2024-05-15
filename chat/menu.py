@@ -17,7 +17,7 @@ class FileMenu(tk.Menu):
             label="Settings...",
         )
         self.add_separator()
-        self.add_command(label="Exit", command=parent.destroy)
+        self.add_command(label="Exit", command=parent.quit_app)
 
 
 class LlmModel(tk.Menu):
