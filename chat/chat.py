@@ -57,6 +57,7 @@ class App(ThemedTk):
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
         self.bind_on_event(APP_EVENTS.GET_CHAT, self.get_chat)
         self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
+        self.bind_on_event(APP_EVENTS.DEL_CHAT, self.deactivate_chat)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -64,6 +65,18 @@ class App(ThemedTk):
         )
         self._persistent_read()
         self.chatW.userW.text.focus_force()
+
+    def deactivate_chat(self, conv_id: int):
+        """
+        Callback on DEL_CHAT event.
+
+        Deactivate conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
+
+        :param conv_id:
+        :return:
+        """
+        self.ai_db.update_conversation(conv_id, active=False)
+        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
 
     def update_chat_lists(self, *args):
         """
@@ -136,7 +149,7 @@ class App(ThemedTk):
         self._bind_table[ev].append(self._event(cmd))
         self.bind(ev.value, self._event(cmd))
 
-    def post_event(self, ev: "APP_EVENTS", data: Union[str, Dict, Iterable]):
+    def post_event(self, ev: "APP_EVENTS", data: Union[str, Dict, Iterable, None]):
         """
         Post virtual event with data.
 

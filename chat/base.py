@@ -18,6 +18,7 @@ class APP_EVENTS(enum.Enum):
     NEW_CHAT = "<<NewChat>>"
     GET_CHAT = "<<GetChat>>"
     LOAD_CHAT = "<<LoadChat>>"
+    DEL_CHAT = "<<DeactivateChat>>"
     UPDATE_SAVED_CHATS = "<<UpdateSavedChats>>"
     ADD_NEW_CHAT_ENTRY = "<<NewChatEntry>>"
     UNBLOCK_USER = "<<UnblockUser>>"

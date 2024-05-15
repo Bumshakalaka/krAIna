@@ -25,7 +25,7 @@ class LeftSidebar(ttk.Frame):
         self.root = parent
         self.root.bind_on_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.list_saved_chats)
         ttk.Button(self, text="NEW CHAT", command=self.new_chat).pack(side=tk.TOP, fill=tk.X)
-        self.chats = ttk.LabelFrame(self, text="Saved chats")
+        self.chats = ttk.LabelFrame(self, text="Last chats")
         self.chats.pack(side=tk.TOP, fill=tk.X)
 
         fr = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
@@ -51,11 +51,18 @@ class LeftSidebar(ttk.Frame):
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
         for conversation in conversations:
-            ttk.Button(
+            but = ttk.Button(
                 self.chats,
                 text=conversation[0],
                 command=functools.partial(self.get_chat, conversation[0]),
-            ).pack(side=tk.TOP, fill=tk.X)
+            )
+            but.bind("<ButtonRelease-3>", self.deactivate_chat)
+            but.pack(side=tk.TOP, fill=tk.X)
+
+    def deactivate_chat(self, event: tk.Event):
+        """Deactivate chat."""
+        conv_id = event.widget["text"]
+        self.root.post_event(APP_EVENTS.DEL_CHAT, int(conv_id))
 
     def new_chat(self):
         """New chat."""
