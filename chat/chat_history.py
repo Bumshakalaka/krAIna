@@ -1,15 +1,10 @@
 """Chat window."""
 import functools
-import json
-
-import yaml
 import logging
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-from typing import Dict
-
-from langchain_core.messages import AIMessage, HumanMessage
+from typing import Tuple, List
 
 from base import APP_EVENTS, ai_snippets
 
@@ -34,58 +29,76 @@ class ChatHistory(ScrolledText):
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
-        self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.clear_messages)
-        self.root.bind_on_event(APP_EVENTS.SAVE_CHAT, self.save_chat)
+        self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
 
-    def ai_message(self, data: Dict):
+    def ai_message(self, message: str):
         """
-        Insert an AT-tagged message.
+        Callback on RESP_FROM_ASSISTANT event (LLM response ready).
 
-        :param data: Message to add to chat history
+        1. Insert AI message into chat
+        2. Unblock user query window
+        3. Post ADD_NEW_CHAT_ENTRY event on first the AI message. This event updates chat history entries
+
+        :param message: Message to add to chat from RESP_FROM_ASSISTANT event
         """
-        if data["query"]:
-            self._insert_message(data["query"], "AI")
+        if message:
+            self._insert_message(message, "AI")
             self.see(tk.END)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
+        if len(self.tag_ranges("AI")) == 2:
+            # update chat history after first AI response
+            self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
 
-    def human_message(self, data: Dict):
+    def human_message(self, message: str):
         """
-        Insert a HUMAN-tagged message.
+        Callback on QUERY_ASSIST_CREATED event (query LLM sent).
 
-        :param data: Message to add to chat history
+        1. Insert HUMAN message into chat
+        2. Post QUERY_TO_ASSISTANT event to trigger LLM to response.
+
+        :param message: Message to add to chat from QUERY_ASSIST_CREATED event
         """
-        self._insert_message(data["query"], "HUMAN")
-        data["hist"] = self.get_history()
-        self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, data)
+        self._insert_message(message, "HUMAN")
+        self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def _insert_message(self, text, tag):
         self.insert(tk.END, f"{tag}: ", f"{tag}_prefix", text, tag, "\n", "")
 
-    def clear_messages(self, data: str):
+    def new_chat(self, *args):
         """
-        Cleat chat history
+        Callback on NEW_CHAT event.
 
-        :param data: Not used
+        Clear chat and reset conversion ID.
+
         :return:
         """
         self.delete(1.0, tk.END)
         self.see(tk.END)
+        self.root.conv_id = None
 
-    def get_history(self) -> list:
+    def load_chat(self, conversation: Tuple[str, str, List[Tuple[bool, str]]]):
         """
-        Get chat history understandable for LLM.
-        :return: List of AI and HUman messages
+        Callback on LOAD_CHAT event which is trigger on entry chat click.
+
+        :param conversation: List of messages
+        :return:
         """
-        hist = []
-        for human_start, ai_start in zip(
-            (it := iter(self.tag_ranges("HUMAN"))), (it2 := iter(self.tag_ranges("AI")))
-        ):
-            hist.append(HumanMessage(self.get(human_start, next(it))))
-            hist.append(AIMessage(self.get(ai_start, next(it2))))
-        return hist
+        self.delete(1.0, tk.END)
+        for message in conversation[2]:
+            if message[0]:
+                self._insert_message(message[1], "HUMAN")
+            else:
+                self._insert_message(message[1], "AI")
+        self.see(tk.END)
 
     def undump(self, dump_data):
+        """
+        Restore chat from dump.
+
+        :param dump_data: Text.dump()
+        :return:
+        """
         tags = []
         for key, value, index in dump_data:
             if key == "tagon":
@@ -96,19 +109,6 @@ class ChatHistory(ScrolledText):
                 self.mark_set(value, index)
             elif key == "text":
                 self.insert(index, value, tags)
-
-    def save_chat(self, data: Dict):
-        with open(data["file_path"], "w") as fd:
-            fd.write(f"description: {data['description']}\n")
-            fd.write("chat: |\n  ")
-            fd.write(json.dumps(self.dump(1.0, tk.END)))
-        self.root.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, None)
-
-    def load_chat(self, file_path: str):
-        with open(file_path, "r") as fd:
-            data = yaml.safe_load(fd)
-        self.delete(1.0, tk.END)
-        self.undump(json.loads(data["chat"]))
 
 
 class UserQuery(ttk.Frame):
@@ -124,16 +124,12 @@ class UserQuery(ttk.Frame):
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_SNIPPET, self.skill_message)
         self.root.bind_on_event(APP_EVENTS.UNBLOCK_USER, self.unblock)
-        self.text = ScrolledText(
-            self, height=5, selectbackground="lightblue", undo=True
-        )
+        self.text = ScrolledText(self, height=5, selectbackground="lightblue", undo=True)
         self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
-        self.send_btn = ttk.Button(
-            self, text="Send", command=functools.partial(self.invoke, "assistant")
-        )
+        self.send_btn = ttk.Button(self, text="Send", command=functools.partial(self.invoke, "assistant"))
         self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE)
 
     def invoke(self, entity: str, event=None):
@@ -151,20 +147,12 @@ class UserQuery(ttk.Frame):
         if entity == "assistant":
             query = self.text.get("1.0", tk.END)[:-1]
             self.text.delete("1.0", tk.END)
-            self.root.post_event(
-                APP_EVENTS.QUERY_ASSIST_CREATED, dict(hist=None, query=query)
-            )
+            self.root.post_event(APP_EVENTS.QUERY_ASSIST_CREATED, query)
         else:
-            range_ = (
-                (tk.SEL_FIRST, tk.SEL_LAST)
-                if self.text.tag_ranges(tk.SEL)
-                else ("1.0", tk.END)
-            )
+            range_ = (tk.SEL_FIRST, tk.SEL_LAST) if self.text.tag_ranges(tk.SEL) else ("1.0", tk.END)
             query = self.text.get(*range_)
             self.text.delete(*range_)
-            self.root.post_event(
-                APP_EVENTS.QUERY_SNIPPET, dict(entity=entity, query=query)
-            )
+            self.root.post_event(APP_EVENTS.QUERY_SNIPPET, dict(entity=entity, query=query))
         self.block()
         return "break"  # stop other events associate with bind to execute
 

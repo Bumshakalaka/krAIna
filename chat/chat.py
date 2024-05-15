@@ -8,19 +8,20 @@ import tkinter as tk
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Union, Iterable
 
 from dotenv import load_dotenv, find_dotenv
 from ttkthemes import ThemedTk
 
+from assistants.assistant import AssistantResp
 from base import APP_EVENTS, ai_snippets, ai_assistants
 from chat_history import ChatFrame
 from leftsidebar import LeftSidebar
+from libs.db.controller import Db
 from status_bar import StatusBar
 from menu import Menu
 import pystray
 from PIL import Image
-from langchain_core.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -33,8 +34,9 @@ class App(ThemedTk):
         """Create application."""
         super().__init__()
         self._bind_table = defaultdict(list)
-        self._event_queue = queue.Queue(maxsize=1)
+        self._event_queue = queue.Queue(maxsize=10)
         self.icon = None
+        self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
         self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
@@ -53,9 +55,12 @@ class App(ThemedTk):
 
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
+        self.update_chat_lists()
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
+        self.bind_on_event(APP_EVENTS.GET_CHAT, self.get_chat)
+        self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -63,6 +68,24 @@ class App(ThemedTk):
         )
         self._persistent_read()
         self.chatW.userW.text.focus_force()
+
+    def update_chat_lists(self, *args):
+        """
+        Callback in ADD_NEW_CHAT_ENTRY event to get the active conversation list.
+
+        ADD_NEW_CHAT_ENTRY is post without data.
+        """
+        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, ai_db.list_conversations(active=True))
+
+    def get_chat(self, conv_id: int):
+        """
+        Callback on GET_CHAT event.
+
+        :param conv_id: conversation_id from GET_CHAT event
+        :return:
+        """
+        self.conv_id = conv_id
+        self.post_event(APP_EVENTS.LOAD_CHAT, ai_db.get_conversation(conv_id))
 
     def _persistent_write(self):
         """
@@ -91,10 +114,7 @@ class App(ThemedTk):
         # Prevent that chat will always be visible
         new_geometry = data["window"]["geometry"]
         w_size, offset_x, offset_y = new_geometry.split("+")
-        if (
-            int(offset_x) > self.winfo_screenwidth()
-            or int(offset_y) > self.winfo_screenheight()
-        ):
+        if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
             new_geometry = "708x437+0+0"
         elif (
             int(w_size.split("x")[0]) > self.winfo_screenwidth()
@@ -142,7 +162,7 @@ class App(ThemedTk):
         self._bind_table[ev].append(self._event(cmd))
         self.bind(ev.value, self._event(cmd))
 
-    def post_event(self, ev: "APP_EVENTS", data: Union[str, Dict]):
+    def post_event(self, ev: "APP_EVENTS", data: Union[str, Dict, Iterable]):
         """
         Post virtual event with data.
 
@@ -179,21 +199,20 @@ class App(ThemedTk):
         """
         DummyBaseMessage = namedtuple("Dummy", "content response_metadata")
 
-        def _call(assistant, query, hist):
+        def _call(assistant, query, conv_id):
             try:
-                ret = ai_assistants[assistant].run(query, hist)
+                ret = ai_assistants[assistant].run(query, conv_id)
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
-                ret = DummyBaseMessage("", {"token_usage": _err})
-            self.post_event(
-                APP_EVENTS.RESP_FROM_ASSISTANT, dict(hist=None, query=ret.content)
-            )
-            self.status.update_statusbar(ret.response_metadata)
+                ret = AssistantResp(self.conv_id, DummyBaseMessage("", {"token_usage": _err}))
+            self.conv_id = ret.conv_id
+            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.data.content)
+            self.status.update_statusbar(ret.data.response_metadata)
 
         threading.Thread(
             target=_call,
-            args=(self.selected_assistant.get(), data["query"], data["hist"]),
+            args=(self.selected_assistant.get(), data, self.conv_id),
             daemon=True,
         ).start()
 
@@ -225,12 +244,11 @@ if __name__ == "__main__":
     loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
     loggerFormatter = logging.Formatter(loggerFormat)
     loggerLevel = logging.INFO
-    file_handler = logging.FileHandler("chat.log")
+    file_handler = logging.FileHandler(Path(__file__).parent / "chat.log")
     console_handler = logging.StreamHandler(sys.stderr)
-    logging.basicConfig(
-        format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler]
-    )
+    logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
     console_handler.setLevel(logging.INFO)
     load_dotenv(find_dotenv())
+    ai_db = Db()
     app = App()
     app.mainloop()
