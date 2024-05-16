@@ -88,6 +88,8 @@ class ChatHistory(ScrolledText):
         :return:
         """
         self.delete(1.0, tk.END)
+        if conversation.assistant:
+            self.root.selected_assistant.set(conversation.assistant)
         for message in conversation.messages:
             if message.human:
                 self._insert_message(message.message, "HUMAN")

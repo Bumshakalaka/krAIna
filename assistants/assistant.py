@@ -75,7 +75,7 @@ class BaseAssistant:
             # TODO: validate conv_id. If not exists, create new_conversation
             ai_db.conv_id = conv_id
         else:
-            ai_db.new_conversation()
+            ai_db.new_conversation(assistant=self.name)
         conversation = ai_db.get_conversation()
         hist = []
         for message in conversation.messages:

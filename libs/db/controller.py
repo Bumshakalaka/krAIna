@@ -66,16 +66,17 @@ class Db:
             ).scalar()
         return bool(data)
 
-    def new_conversation(self, name: str = None, description: str = None):
+    def new_conversation(self, name: str = None, description: str = None, assistant: str = None):
         """
         Create a new conversation in the database and set the last conv_id.
 
         :param name: Name of the conversation
         :param description: Conversation description
+        :param assistant: Used Assistant
         :return:
         """
         with Session(self.engine) as s:
-            obj = Conversations(name=name, description=description)
+            obj = Conversations(name=name, description=description, assistant=assistant)
             s.add(obj)
             s.commit()
             s.refresh(obj)
@@ -130,16 +131,9 @@ class Db:
         if not self.is_conversation_id_valid(conv_id):
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
         with Session(self.engine) as s:
-            data = s.execute(
-                select(Conversations.name, Conversations.description).where(Conversations.conversation_id == conv_id)
-            ).one()
-            name, description = data
-            messages = []
-            for row in s.execute(
-                select(Messages).where(Messages.conversation_id == conv_id).order_by(Messages.message_id)
-            ):
-                messages.append(row[0])
-            return Conversations(name=name, description=description, messages=messages)
+            conv = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).one()[0]
+            len(conv.messages)
+            return conv
 
     def add_message(self, human: bool, message: str, conv_id: Union[int, None] = None):
         """

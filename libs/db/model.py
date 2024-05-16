@@ -37,6 +37,7 @@ class Conversations(Base):
     description: Mapped[str] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(nullable=True)
     active: Mapped[bool] = mapped_column(default=True)
+    assistant: Mapped[str] = mapped_column(nullable=True)
     messages: Mapped[List["Messages"]] = relationship(back_populates="conversation")
 
 
