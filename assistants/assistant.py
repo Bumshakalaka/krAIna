@@ -53,7 +53,7 @@ class BaseAssistant:
         if not cls.__name__.startswith("_"):
             SPECIALIZED_ASSISTANT[cls.__name__] = cls
 
-    def run(self, query: str, conv_id: Union[int, None] = None, /, **kwargs) -> AssistantResp:
+    def run(self, query: str, use_db=True, conv_id: Union[int, None] = None, **kwargs) -> AssistantResp:
         """
         Query LLM as assistant.
 
@@ -65,21 +65,27 @@ class BaseAssistant:
         :return: AssistantResp dataclass
         """
         logger.info(f"{self.name}: {query=}, {kwargs=}")
-        ai_db = Db()
         chat = chat_llm(
             model=self.model,
             temperature=float(self.temperature),
             max_tokens=float(self.max_tokens),
         )
-        if conv_id:
-            # TODO: validate conv_id. If not exists, create new_conversation
-            ai_db.conv_id = conv_id
+        if use_db:
+            ai_db = Db()
+            if conv_id:
+                # TODO: validate conv_id. If not exists, create new_conversation
+                ai_db.conv_id = conv_id
+            else:
+                ai_db.new_conversation(assistant=self.name)
+                conv_id = ai_db.conv_id
+            hist = [
+                HumanMessage(message.message) if message.human else AIMessage(message.message)
+                for message in ai_db.get_conversation().messages
+            ]
+            ai_db.add_message(True, query)
         else:
-            ai_db.new_conversation(assistant=self.name)
-        conversation = ai_db.get_conversation()
-        hist = []
-        for message in conversation.messages:
-            hist.append(HumanMessage(message.message) if message.human else AIMessage(message.message))
+            hist = []
+            conv_id = None
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", self.prompt),
@@ -87,8 +93,8 @@ class BaseAssistant:
                 ("human", "{text}"),
             ]
         )
-        ai_db.add_message(True, query)
         ret = chat.invoke(prompt.format_prompt(text=query, hist=hist, **kwargs))
-        ai_db.add_message(False, ret.content)
+        if use_db:
+            ai_db.add_message(False, ret.content)
         logger.info(f"{self.name}: ret={ret}")
-        return AssistantResp(ai_db.conv_id, ret)
+        return AssistantResp(conv_id, ret)

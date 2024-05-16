@@ -217,7 +217,7 @@ class App(ThemedTk):
 
         def _call(assistant, query, conv_id):
             try:
-                ret = ai_assistants[assistant].run(query, conv_id)
+                ret = ai_assistants[assistant].run(query, conv_id=conv_id)
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
