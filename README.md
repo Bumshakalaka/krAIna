@@ -1,8 +1,11 @@
+![logo](img/logo.png)
 ## Overview
 Set of AI-powered tools for everyday use with OpenAi or Azure OpenAI LLMs.
 1. **Snippets** — the actions that can be performed on selected text.
 2. **Assistants** — your own specialized assistants to talk with.
-3. **chat** — Chat GUI application build using tkinter.
+3. **Chat** - Chat GUI application built using tkinter for Assistants and Snippets.
+
+**Currently on available on Linux**
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -20,9 +23,10 @@ However, AI-powered snippets are nothing without a good user interface to make i
 One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
 ### Assistants
-Create your own assistant to talk with. It can be a causal assistant or prompt engineer.
+Your personal AI assistant. It can be a causal assistant or prompt engineer or storyteller.
+Assistant can be run as one-shot, similar to snippets or can use its memory and remember the conversation.
 
-The assistants have been created similar to Snippets. Check the `assistants` folder.
+The assistants have been designed similar to Snippets. Check the `assistants` folder.
 
 ### Chat GUI application
 Chat GUI application build using tkinter
@@ -31,11 +35,13 @@ Chat GUI application build using tkinter
 
 features:
 * Chat with history
+* Last 10 chats which can be recalled. They are auto-named and describe
 * Assistant selection
-* Support for snippets — right-click in user query widget to apply transformation on text
-* minimize to the system tray on close
-* persist window size on exit
+* Support for snippets — right-click in user query widget to apply transformation on a text
+* Overwrite Assistant settings
+* persistence storage on exit
 * progress bar to visualize that LLM is working
+* status bar
 
 ## Install
 1. Clone the project.
@@ -114,8 +120,13 @@ from assistants.base import Assistants
 
 load_dotenv(find_dotenv())
 assistants = Assistants()
+# one shot, do not use database
 action = assistants["echo"]
-print(action.run("2+2"))
+ret = action.run("2+2", use_db=False)
+print(ret)  # AssistantResp(conv_id=None, data=AIMessage(content='2 + 2 equals 4.', response_metadata=...
 # with history
-print(action.run("What's my name?", [("human", "Hi my name is Paul"), ("ai", "Hello Paul! It's nice to meet you. How can I assist you today?")]))
+first = action.run("My name is Paul")  # First call without conv_id creates new conversation
+print(first)  # AssistantResp(conv_id=3, data=AIMessage(content='Nice to meet you, Paul! How can I assist you today?', response_metadata=...
+ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
+print(ret)  # AssistantResp(conv_id=3, data=AIMessage(content='Your name is Paul.', response_metadata=...
 ```
