@@ -68,6 +68,21 @@ class LlmType(tk.Menu):
         overwrite_llm_settings(api_type="" if _var == "-" else _var)
 
 
+class SettingsMenu(tk.Menu):
+    def __init__(self, parent, *args, **kwargs):
+        """Create sub-menu for quick settings."""
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        self._var = tk.BooleanVar(self, False)
+        self._var.trace("w", self.always_on_top)
+        self.add_checkbutton(label="Always on top", variable=self._var, onvalue=True, offvalue=False)
+
+    def always_on_top(self, *args):
+        """Change Always on top setting."""
+        _var = self.getvar(name=args[0])
+        self.parent.wm_attributes("-topmost", _var)
+
+
 class LlmMenu(tk.Menu):
     """LLM sub-menu class."""
 
@@ -88,3 +103,4 @@ class Menu(tk.Menu):
         parent.config(menu=self)
         self.add_cascade(label="File", menu=FileMenu(parent, tearoff=0))
         self.add_cascade(label="Llm", menu=LlmMenu(parent, tearoff=0))
+        self.add_cascade(label="Settings", menu=SettingsMenu(parent, tearoff=0))
