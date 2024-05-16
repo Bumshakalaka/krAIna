@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import ttk
 import tkinter as tk
 from typing import List, Tuple
+from tktooltip import ToolTip
 
 from chat.base import ai_assistants, APP_EVENTS
 
@@ -57,6 +58,7 @@ class LeftSidebar(ttk.Frame):
                 text=name,
                 command=functools.partial(self.get_chat, conversation[0]),
             )
+            ToolTip(but, msg=conversation[2], delay=0.5, follow=False)
             but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation[0]))
             but.pack(side=tk.TOP, fill=tk.X)
 
