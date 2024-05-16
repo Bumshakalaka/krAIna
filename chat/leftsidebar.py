@@ -30,13 +30,15 @@ class LeftSidebar(ttk.Frame):
         self.chats.pack(side=tk.TOP, fill=tk.X)
 
         fr = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
-        for assistant in ai_assistants.keys():
-            ttk.Radiobutton(
+        for name, assistant in ai_assistants.items():
+            rbut = ttk.Radiobutton(
                 fr,
-                text=assistant,
+                text=name,
                 variable=self.root.selected_assistant,
-                value=assistant,
-            ).pack(side=tk.TOP, fill=tk.X)
+                value=name,
+            )
+            ToolTip(rbut, msg=assistant.description if assistant.description else name, follow=False, delay=0.5)
+            rbut.pack(side=tk.TOP, fill=tk.X)
         ttk.Button(fr, text="RELOAD").pack(side=tk.BOTTOM, fill=tk.X)
         fr.pack(side=tk.BOTTOM, fill=tk.X)
 

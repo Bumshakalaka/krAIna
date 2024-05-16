@@ -32,6 +32,8 @@ class BaseAssistant:
 
     name: str = ""
     """Assistant name"""
+    description: str = ""
+    """Description of the assistant"""
     prompt: str = None
     """Assistant system prompt"""
     model: str = "gpt-3.5-turbo"

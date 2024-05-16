@@ -1,0 +1,5 @@
+model: gpt-4-turbo
+temperature: 0.7
+description: |
+  Hi, I'm your casual assistant.
+  How can I help you today?
