@@ -18,6 +18,7 @@ from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
 from libs.db.controller import Db
+from PIL import ImageTk, Image
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -34,6 +35,9 @@ class App(ThemedTk):
         self._event_queue = queue.Queue(maxsize=10)
         self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
+        self.tk.call(
+            "wm", "iconphoto", self._w, ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "../logo.png")))
+        )
         self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
