@@ -40,7 +40,7 @@ class Db:
         """handle current conversation_id"""
         self.conv_id: Union[int, None] = None
 
-    def is_conversation_active(self, conv_id: Union[int, None] = None):
+    def is_conversation_active(self, conv_id: Union[int, None] = None) -> bool:
         """
         Return true if conversation_id is active, otherwise False.
 
@@ -52,7 +52,7 @@ class Db:
             data = s.execute(select(Conversations.active).where(Conversations.conversation_id == conv_id)).scalar()
         return bool(data)
 
-    def is_conversation_id_valid(self, conv_id: Union[int, None] = None):
+    def is_conversation_id_valid(self, conv_id: Union[int, None] = None) -> bool:
         """
         Return true if conversation_id is valid, otherwise False.
 
@@ -96,13 +96,13 @@ class Db:
             s.execute(update(Conversations).where(Conversations.conversation_id == conv_id).values(**kwargs))
             s.commit()
 
-    def list_conversations(self, active: Union[bool, None] = True, limit=10) -> List[Tuple[int, str, str, bool]]:
+    def list_conversations(self, active: Union[bool, None] = True, limit=10) -> List[Conversations]:
         """
         Get all conversations from the newest to oldest.
 
         :param active: Fileter by active state. If None passed, return all conversations.
         :param limit: How many conversations return
-        :return: List of tuples(conv_id, name, description, active)
+        :return: List of Conversations dataclass from db.model
         """
         with Session(self.engine) as s:
             if active is None:
@@ -114,18 +114,17 @@ class Db:
                     .order_by(Conversations.conversation_id.desc())
                     .limit(limit)
                 )
-            data = s.execute(stmt).scalars()
             ret = []
-            for row in data:
-                ret.append((row.conversation_id, row.name, row.description, row.active))
+            for row in s.execute(stmt):
+                ret.append(row[0])
             return ret
 
-    def get_conversation(self, conv_id: Union[int, None] = None) -> Tuple[str, str, List[Tuple[bool, str]]]:
+    def get_conversation(self, conv_id: Union[int, None] = None) -> Conversations:
         """
         Get all messages from the conversation.
 
         :param conv_id: Conversation_id. If None, use the last known conv_id
-        :return: Tuple(name, description, List of tuple(human, message)
+        :return: Conversations dataclass from db.model
         """
         conv_id = self.conv_id if conv_id is None else conv_id
         if not self.is_conversation_id_valid(conv_id):
@@ -134,15 +133,13 @@ class Db:
             data = s.execute(
                 select(Conversations.name, Conversations.description).where(Conversations.conversation_id == conv_id)
             ).one()
-            name = data[0]
-            description = data[1]
-            data = s.execute(
+            name, description = data
+            messages = []
+            for row in s.execute(
                 select(Messages).where(Messages.conversation_id == conv_id).order_by(Messages.message_id)
-            ).scalars()
-            ret = []
-            for row in data:
-                ret.append((row.human, row.message))
-            return name, description, ret
+            ):
+                messages.append(row[0])
+            return Conversations(name=name, description=description, messages=messages)
 
     def add_message(self, human: bool, message: str, conv_id: Union[int, None] = None):
         """

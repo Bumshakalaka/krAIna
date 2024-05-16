@@ -76,10 +76,10 @@ class BaseAssistant:
             ai_db.conv_id = conv_id
         else:
             ai_db.new_conversation()
-        name, descr, conversation = ai_db.get_conversation()
+        conversation = ai_db.get_conversation()
         hist = []
-        for message in conversation:
-            hist.append(HumanMessage(message[1]) if message[0] else AIMessage(message[1]))
+        for message in conversation.messages:
+            hist.append(HumanMessage(message.message) if message.human else AIMessage(message.message))
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", self.prompt),

@@ -7,6 +7,7 @@ from tkinter.scrolledtext import ScrolledText
 from typing import Tuple, List
 
 from chat.base import APP_EVENTS, ai_snippets
+from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class ChatHistory(ScrolledText):
         self.see(tk.END)
         self.root.conv_id = None
 
-    def load_chat(self, conversation: Tuple[str, str, List[Tuple[bool, str]]]):
+    def load_chat(self, conversation: Conversations):
         """
         Callback on LOAD_CHAT event which is trigger on entry chat click.
 
@@ -87,11 +88,11 @@ class ChatHistory(ScrolledText):
         :return:
         """
         self.delete(1.0, tk.END)
-        for message in conversation[2]:
-            if message[0]:
-                self._insert_message(message[1], "HUMAN")
+        for message in conversation.messages:
+            if message.human:
+                self._insert_message(message.message, "HUMAN")
             else:
-                self._insert_message(message[1], "AI")
+                self._insert_message(message.message, "AI")
         if len(self.tag_ranges("AI")) >= 4:
             self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END))
         self.see(tk.END)

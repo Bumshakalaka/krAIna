@@ -8,6 +8,7 @@ from typing import List, Tuple
 from tktooltip import ToolTip
 
 from chat.base import ai_assistants, APP_EVENTS
+from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class LeftSidebar(ttk.Frame):
         ttk.Button(fr, text="RELOAD").pack(side=tk.BOTTOM, fill=tk.X)
         fr.pack(side=tk.BOTTOM, fill=tk.X)
 
-    def list_saved_chats(self, conversations: List[Tuple[int, str, str, bool]]):
+    def list_saved_chats(self, conversations: List[Conversations]):
         """
         Callback on UPDATE_SAVED_CHATS event.
 
@@ -54,14 +55,14 @@ class LeftSidebar(ttk.Frame):
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
         for conversation in conversations:
-            name = conversation[1] if conversation[1] else f"ID:{conversation[0]}"
+            name = conversation.name if conversation.name else f"ID:{conversation.conversation_id}"
             but = ttk.Button(
                 self.chats,
                 text=name,
-                command=functools.partial(self.get_chat, conversation[0]),
+                command=functools.partial(self.get_chat, conversation.conversation_id),
             )
-            ToolTip(but, msg=conversation[2], delay=0.5, follow=False)
-            but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation[0]))
+            ToolTip(but, msg=conversation.description, delay=0.5, follow=False)
+            but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation.conversation_id))
             but.pack(side=tk.TOP, fill=tk.X)
 
     def deactivate_chat(self, conv_id: int, event: tk.Event):

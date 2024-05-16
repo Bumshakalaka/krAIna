@@ -78,7 +78,7 @@ class App(ThemedTk):
         :param chat_dump:
         :return:
         """
-        if self.ai_db.get_conversation(self.conv_id)[0]:
+        if self.ai_db.get_conversation(self.conv_id).name:
             return
 
         def _call(query):
