@@ -34,21 +34,14 @@ def map_model(model: str) -> str:
     :param model: openAI model name
     :return: AzureAI model name
     """
-    map_models = {"gpt-4-turbo": "gpt-4-turbo-128k", "gpt-3.5-turbo": "gpt-35-turbo"}
+    map_models = {"gpt-4-turbo": "gpt-4-turbo-128k", "gpt-3.5-turbo": "gpt-35-turbo", "gpt-4o": ""}
     return map_models.get(model, model) if isAzureAI() else model
 
 
 def isAzureAI() -> bool:
     """Is Azure LLM in use?"""
     azure = True if OVERWRITE_LLM_SETTINGS["api_type"] == "azure" else False
-    return (
-        True
-        if azure
-        else bool(
-            os.environ.get("AZURE_OPENAI_API_KEY")
-            and os.environ.get("AZURE_OPENAI_ENDPOINT")
-        )
-    )
+    return True if azure else bool(os.environ.get("AZURE_OPENAI_API_KEY") and os.environ.get("AZURE_OPENAI_ENDPOINT"))
 
 
 def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI]:

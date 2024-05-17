@@ -1,4 +1,4 @@
-model: gpt-4-turbo
+model: gpt-4o
 temperature: 0.7
 description: |
   I'm here to help refine your system prompt. 
