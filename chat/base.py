@@ -1,5 +1,6 @@
 """Base functions."""
 import enum
+from typing import List
 
 from assistants.base import Assistants
 from snippets.base import Snippets
@@ -23,6 +24,12 @@ class APP_EVENTS(enum.Enum):
     UPDATE_SAVED_CHATS = "<<UpdateSavedChats>>"
     ADD_NEW_CHAT_ENTRY = "<<NewChatEntry>>"
     UNBLOCK_USER = "<<UnblockUser>>"
+    SHOW_APP = "<<ShowApp>>"
+    HIDE_APP = "<<MinimizeApp>>"
+
+
+def api_public() -> List:
+    return [APP_EVENTS.SHOW_APP.name, APP_EVENTS.HIDE_APP.name]
 
 
 ai_assistants = Assistants()

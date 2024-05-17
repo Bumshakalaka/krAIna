@@ -20,6 +20,7 @@ from chat.status_bar import StatusBar
 from libs.db.controller import Db
 from PIL import ImageTk, Image
 
+
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
 
@@ -28,8 +29,13 @@ class App(ThemedTk):
     """Main application."""
 
     def __init__(self):
-        """Create application."""
+        """
+        Create application.
+
+        IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
+        """
         super().__init__()
+        self.withdraw()
         self.ai_db = Db()
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=10)
@@ -63,6 +69,8 @@ class App(ThemedTk):
         self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
         self.bind_on_event(APP_EVENTS.DEL_CHAT, self.deactivate_chat)
         self.bind_on_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.describe_chat)
+        self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
+        self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -70,6 +78,15 @@ class App(ThemedTk):
         )
         self._persistent_read()
         self.chatW.userW.text.focus_force()
+
+    def show_app(self, *args):
+        self.withdraw()
+        self.deiconify()
+        self.lift()
+
+    def hide_app(self, *args):
+        self.wm_state("iconic")
+        self.withdraw()
 
     def describe_chat(self, chat_dump: str):
         """
