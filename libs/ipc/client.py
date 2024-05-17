@@ -3,7 +3,7 @@ import logging
 
 from ipyc import IPyCClient
 
-from chat.base import api_public
+from chat.base import app_interface
 from libs.ipc.base import APP_KEY
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class AppClient:
         :param message: Tk virtual event name which is listed as application Public API
         :return:
         """
-        if message not in api_public():
+        if message not in app_interface().keys():
             logger.error(f"'{message}' not supported")
             return
         self._send(message)

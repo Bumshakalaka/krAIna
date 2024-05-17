@@ -42,6 +42,7 @@ features:
 * persistence storage on exit
 * progress bar to visualize that LLM is working
 * status bar
+* Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
 
 ## Install
 1. Clone the project.
@@ -97,9 +98,14 @@ Alternatively:
 
 ### Chat
 
-1. Run `./chat.sh`
-2. Use it
-
+1. Start the application by running `./chat.sh`.
+2. Utilize its features.
+3. You can also use `./chat.sh COMMAND` to control the application with the following supported commands:
+```text
+SHOW_APP - Trigger to display the application
+HIDE_APP - Trigger to minimize the application
+No argument - Run the GUI app. If the app is already running, it will be shown
+```
 ### Code
 
 #### Snippets

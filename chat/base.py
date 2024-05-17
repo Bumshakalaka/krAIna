@@ -1,6 +1,6 @@
 """Base functions."""
 import enum
-from typing import List
+from typing import List, Dict
 
 from assistants.base import Assistants
 from snippets.base import Snippets
@@ -28,8 +28,16 @@ class APP_EVENTS(enum.Enum):
     HIDE_APP = "<<MinimizeApp>>"
 
 
-def api_public() -> List:
-    return [APP_EVENTS.SHOW_APP.name, APP_EVENTS.HIDE_APP.name]
+def app_interface() -> Dict:
+    """
+    Return App interface.
+
+    :return: Dict(command, description)
+    """
+    return {
+        APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
+        APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
+    }
 
 
 ai_assistants = Assistants()

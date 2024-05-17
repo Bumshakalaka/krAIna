@@ -4,8 +4,10 @@ import logging
 import os
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
+from chat.base import app_interface
 from libs.ipc.client import AppClient
 from libs.ipc.host import AppHost
 from dotenv import load_dotenv, find_dotenv
@@ -35,12 +37,15 @@ if __name__ == "__main__":
     console_handler = logging.StreamHandler(sys.stderr)
     logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
     console_handler.setLevel(logging.ERROR)
+    descr = "KraIna chat application.\nCommands:\n"
+    for cmd, cmd_descr in app_interface().items():
+        descr += f"\t{cmd} - {cmd_descr}\n"
+    descr += "\tNo argument - run GUI app. If app is already run, show it"
     parser = argparse.ArgumentParser(
-        description="""KraIna chat application.
-        Arguments:
-            SHOW_APP - show running app
-            HIDE_APP - hide running app
-            No arguments - run GUI app. If app is already run, show it"""
+        prog="chat.sh",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=descr,
+        usage="chat.sh command",
     )
     _, args = parser.parse_known_args()
     if not args or len(args) > 1:

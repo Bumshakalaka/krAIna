@@ -4,7 +4,7 @@ import logging
 
 from ipyc import IPyCHost
 
-from chat.base import APP_EVENTS, api_public
+from chat.base import APP_EVENTS, app_interface
 from libs.ipc.base import APP_KEY
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class AppHost(threading.Thread):
         if (message := payload.split("|"))[0] != APP_KEY:
             logger.error("Receive invalid message")
             return False
-        if message[1] not in api_public():
+        if message[1] not in app_interface().keys():
             return False
         self._app.post_event(APP_EVENTS[message[1]], None)
         return True
