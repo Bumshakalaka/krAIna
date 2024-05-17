@@ -86,7 +86,6 @@ class App(ThemedTk):
 
     def hide_app(self, *args):
         self.wm_state("iconic")
-        self.withdraw()
 
     def describe_chat(self, chat_dump: str):
         """

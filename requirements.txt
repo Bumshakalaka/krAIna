@@ -8,3 +8,6 @@ cryptography~=42.0.5
 pygobject~=3.48.2
 pgi~=0.0.11.2
 SQLAlchemy~=2.0.30
+ttkthemes~=3.2.2
+pillow~=10.3.0
+IPyC~=1.1.1
