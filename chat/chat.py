@@ -71,6 +71,7 @@ class App(ThemedTk):
         self.bind_on_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.describe_chat)
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
+        self.bind_all("<Escape>", self.hide_app)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -83,9 +84,10 @@ class App(ThemedTk):
         self.withdraw()
         self.deiconify()
         self.lift()
+        self.chatW.userW.text.focus_force()
 
     def hide_app(self, *args):
-        self.wm_state("iconic")
+        self.iconify()
 
     def describe_chat(self, chat_dump: str):
         """
