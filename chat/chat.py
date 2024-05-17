@@ -9,17 +9,19 @@ from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
 
+from assistants.base import Assistants
 from chat.chat_history import ChatFrame
 from ttkthemes import ThemedTk
 
 from assistants.assistant import AssistantResp
-from chat.base import APP_EVENTS, ai_snippets, ai_assistants
+from chat.base import APP_EVENTS
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
 from libs.db.controller import Db
 from PIL import ImageTk, Image
 
+from snippets.base import Snippets
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -37,6 +39,8 @@ class App(ThemedTk):
         super().__init__()
         self.withdraw()
         self.ai_db = Db()
+        self.ai_assistants = Assistants()
+        self.ai_snippets = Snippets()
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=10)
         self.conv_id: Union[int, None] = None
@@ -45,7 +49,7 @@ class App(ThemedTk):
             "wm", "iconphoto", self._w, ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "../logo.png")))
         )
         self.set_theme("arc")
-        self.selected_assistant = tk.StringVar(self, list(ai_assistants.keys())[0])
+        self.selected_assistant = tk.StringVar(self, list(self.ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         Menu(self)
@@ -71,6 +75,7 @@ class App(ThemedTk):
         self.bind_on_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.describe_chat)
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
+        self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
         self.bind_all("<Escape>", self.hide_app)
         self.bind_class(
             "Text",
@@ -79,6 +84,11 @@ class App(ThemedTk):
         )
         self._persistent_read()
         self.chatW.userW.text.focus_force()
+
+    def reload_ai(self, *args):
+        self.ai_assistants = Assistants()
+        self.ai_snippets = Snippets()
+        self.post_event(APP_EVENTS.UPDATE_AI, None)
 
     def show_app(self, *args):
         self.withdraw()
@@ -101,7 +111,7 @@ class App(ThemedTk):
 
         def _call(query):
             try:
-                ret = json.loads(ai_snippets["nameit"].run(query))
+                ret = json.loads(self.ai_snippets["nameit"].run(query))
                 self.ai_db.update_conversation(self.conv_id, **ret)
             except Exception as e:
                 logger.exception(e)
@@ -235,7 +245,7 @@ class App(ThemedTk):
 
         def _call(assistant, query, conv_id):
             try:
-                ret = ai_assistants[assistant].run(query, conv_id=conv_id)
+                ret = self.ai_assistants[assistant].run(query, conv_id=conv_id)
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
@@ -262,7 +272,7 @@ class App(ThemedTk):
 
         def _call(snippet, query):
             try:
-                ret = ai_snippets[snippet].run(query)
+                ret = self.ai_snippets[snippet].run(query)
             except Exception as e:
                 ret = str(e)
             self.post_event(APP_EVENTS.RESP_FROM_SNIPPET, ret)

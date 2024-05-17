@@ -1,9 +1,6 @@
 """Base functions."""
 import enum
-from typing import List, Dict
-
-from assistants.base import Assistants
-from snippets.base import Snippets
+from typing import Dict
 
 
 class APP_EVENTS(enum.Enum):
@@ -26,6 +23,8 @@ class APP_EVENTS(enum.Enum):
     UNBLOCK_USER = "<<UnblockUser>>"
     SHOW_APP = "<<ShowApp>>"
     HIDE_APP = "<<MinimizeApp>>"
+    RELOAD_AI = "<<ReloadAIStuff>>"
+    UPDATE_AI = "<<UpdateAIStuff>>"
 
 
 def app_interface() -> Dict:
@@ -38,7 +37,3 @@ def app_interface() -> Dict:
         APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
         APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
     }
-
-
-ai_assistants = Assistants()
-ai_snippets = Snippets()

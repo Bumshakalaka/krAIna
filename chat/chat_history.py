@@ -4,9 +4,8 @@ import logging
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-from typing import Tuple, List
 
-from chat.base import APP_EVENTS, ai_snippets
+from chat.base import APP_EVENTS
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
@@ -166,7 +165,7 @@ class UserQuery(ttk.Frame):
     def _snippets_menu(self, event: tk.Event):
         w = tk.Menu(self, tearoff=False)
         w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
-        for skill in ai_snippets.keys():
+        for skill in self.root.ai_snippets.keys():
             w.add_command(label=skill, command=functools.partial(self.invoke, skill))
         try:
             w.tk_popup(event.x_root, event.y_root)

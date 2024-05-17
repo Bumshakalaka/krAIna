@@ -1,21 +1,21 @@
 """KrAIna chat."""
 import argparse
 import logging
-import os
 import subprocess
 import sys
-import textwrap
 from pathlib import Path
 
 from chat.base import app_interface
 from libs.ipc.client import AppClient
 from libs.ipc.host import AppHost
-from dotenv import load_dotenv, find_dotenv
-from chat.chat import App
 
 
 def run_app():
     # Run Chat application.
+    # longChain import takes around 900ms. Thus, it's place here to have Client IPC fast
+    from dotenv import load_dotenv, find_dotenv
+    from chat.chat import App
+
     load_dotenv(find_dotenv())
     app = App()
     try:
