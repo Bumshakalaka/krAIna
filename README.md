@@ -29,12 +29,15 @@ Assistant can be run as one-shot, similar to snippets or can use its memory and 
 The assistants have been designed similar to Snippets. Check the `assistants` folder.
 
 ### Chat GUI application
-Chat GUI application build using tkinter
+Chat GUI application build using tkinter.
+
+![chat light theme](img/chat_light_theme.png) ![chat dark theme](img/chat_dark_theme.png)
 
 ![Chat main window](img/chat_main.gif)
 
 features:
 * Chat with history
+* Light/Dark theme
 * Last 10 chats which can be recalled. They are auto-named and describe
 * Assistant selection
 * Support for snippets — right-click in user query widget to apply transformation on a text
@@ -106,6 +109,7 @@ SHOW_APP - Trigger to display the application
 HIDE_APP - Trigger to minimize the application
 No argument - Run the GUI app. If the app is already running, it will be shown
 ```
+Assign `./cat.sh SHOW_APP` to system global shortkey to summon KrAIna Chat quickly, press Escape in application to minimalize it.
 ### Code
 
 #### Snippets
