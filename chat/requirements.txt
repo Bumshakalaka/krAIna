@@ -1,2 +1,2 @@
-ttkthemes
 tkinter-tooltip~=3.1.0
+sv-ttk~=2.6.0

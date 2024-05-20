@@ -21,16 +21,24 @@ class ChatHistory(ScrolledText):
         :param parent: Chat frame.
         """
         super().__init__(parent, height=15)
-        self.tag_config("HUMAN", background="SeaGreen1")
-        self.tag_config("AI", background="salmon")
-        self.tag_config("HUMAN_prefix", background="SeaGreen1")
-        self.tag_config("AI_prefix", background="salmon")
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        self.tag_config("HUMAN", foreground=col, spacing3=5)
+        self.tag_config("HUMAN_prefix", spacing3=5)
+        self.tag_config("AI", lmargin1=10, lmargin2=10)
+        self.tag_config("AI_prefix")
         self.tag_raise("sel")
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
+        self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
+
+    def update_tags(self, theme: str):
+        """Update text tags when theme changed."""
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        self.tag_config("HUMAN", foreground=col)
 
     def ai_message(self, message: str):
         """
@@ -65,7 +73,10 @@ class ChatHistory(ScrolledText):
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def _insert_message(self, text, tag):
-        self.insert(tk.END, f"{tag}: ", f"{tag}_prefix", text, tag, "\n", "")
+        for tt in text.splitlines(keepends=False):
+            self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
+        if tag == "AI":
+            self.insert(tk.END, "\n")
 
     def new_chat(self, *args):
         """
@@ -136,7 +147,7 @@ class UserQuery(ttk.Frame):
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
         self.send_btn = ttk.Button(self, text="Send", command=functools.partial(self.invoke, "assistant"))
-        self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE)
+        self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE, padx=2, pady=2)
 
     def invoke(self, entity: str, event=None):
         """
@@ -185,12 +196,16 @@ class UserQuery(ttk.Frame):
     def unblock(self, data=None):
         self.pb.stop()
         self.pb.forget()
-        self.text.configure(state="normal", background="white")
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
+        self.text.configure(state="normal", background=col)
 
     def block(self, data=None):
         self.pb.pack(side=tk.TOP, fill=tk.X)
-        self.pb.start(interval=2)
-        self.text.configure(state="disabled", background="grey")
+        self.pb.start(interval=20)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-disfg)")
+        self.text.configure(state="disabled", background=col)
 
 
 class ChatFrame(ttk.PanedWindow):

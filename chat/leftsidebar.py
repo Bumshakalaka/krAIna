@@ -27,14 +27,14 @@ class LeftSidebar(ttk.Frame):
         self.root = parent
         self.root.bind_on_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.list_saved_chats)
         self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistsnts)
-        ttk.Button(self, text="NEW CHAT", command=self.new_chat).pack(side=tk.TOP, fill=tk.X)
+        ttk.Button(self, text="NEW CHAT", command=self.new_chat).pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
         self.chats = ttk.LabelFrame(self, text="Last chats")
         self.chats.pack(side=tk.TOP, fill=tk.X)
 
         self.assistants = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
         self.list_assistsnts()
         self.assistants.pack(side=tk.BOTTOM, fill=tk.X)
-        ttk.Button(self, text="RELOAD", command=self.reload_ai).pack(side=tk.BOTTOM, fill=tk.X)
+        ttk.Button(self, text="RELOAD", command=self.reload_ai).pack(side=tk.BOTTOM, fill=tk.X, padx=2, pady=2)
 
     def list_assistsnts(self, *args):
         for n in list(self.assistants.children.keys()):
@@ -70,7 +70,7 @@ class LeftSidebar(ttk.Frame):
             if conversation.description:
                 ToolTip(but, msg=conversation.description, delay=0.5, follow=False)
             but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation.conversation_id))
-            but.pack(side=tk.TOP, fill=tk.X)
+            but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=4)
 
     def deactivate_chat(self, conv_id: int, event: tk.Event):
         """Deactivate chat."""

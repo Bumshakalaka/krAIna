@@ -2,6 +2,9 @@
 import logging
 import tkinter as tk
 
+import sv_ttk
+
+from chat.base import APP_EVENTS
 from libs.llm import overwrite_llm_settings
 
 logger = logging.getLogger(__name__)
@@ -73,14 +76,26 @@ class SettingsMenu(tk.Menu):
         """Create sub-menu for quick settings."""
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self._var = tk.BooleanVar(self, False)
-        self._var.trace("w", self.always_on_top)
-        self.add_checkbutton(label="Always on top", variable=self._var, onvalue=True, offvalue=False)
+        self._always_on_top = tk.BooleanVar(self, False)
+        self._always_on_top.trace("w", self.always_on_top)
+        self._light_mode = tk.BooleanVar(self, False)
+        self._light_mode.trace("w", self.light_mode)
+        self.add_checkbutton(label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False)
+        self.add_checkbutton(label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False)
 
     def always_on_top(self, *args):
         """Change Always on top setting."""
         _var = self.getvar(name=args[0])
         self.parent.wm_attributes("-topmost", _var)
+
+    def light_mode(self, *args):
+        """Change Always on top setting."""
+        _var = self.getvar(name=args[0])
+        if _var:
+            sv_ttk.set_theme("light")
+        else:
+            sv_ttk.set_theme("dark")
+        self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())
 
 
 class LlmMenu(tk.Menu):

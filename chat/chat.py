@@ -9,9 +9,10 @@ from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
 
+import sv_ttk
+
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
-from ttkthemes import ThemedTk
 
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
 
 
-class App(ThemedTk):
+class App(tk.Tk):
     """Main application."""
 
     def __init__(self):
@@ -37,6 +38,7 @@ class App(ThemedTk):
         IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
         """
         super().__init__()
+        sv_ttk.set_theme("dark")
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
@@ -48,7 +50,6 @@ class App(ThemedTk):
         self.tk.call(
             "wm", "iconphoto", self._w, ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "../logo.png")))
         )
-        self.set_theme("arc")
         self.selected_assistant = tk.StringVar(self, list(self.ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 

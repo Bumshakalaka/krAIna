@@ -25,6 +25,7 @@ class APP_EVENTS(enum.Enum):
     HIDE_APP = "<<MinimizeApp>>"
     RELOAD_AI = "<<ReloadAIStuff>>"
     UPDATE_AI = "<<UpdateAIStuff>>"
+    UPDATE_THEME = "<<UpdateTheme>>"
 
 
 def app_interface() -> Dict:
