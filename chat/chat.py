@@ -6,6 +6,7 @@ import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
 from dataclasses import asdict, replace
+from json import JSONDecodeError
 from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
@@ -120,11 +121,15 @@ class App(tk.Tk):
             return
 
         def _call(query):
-            try:
-                ret = json.loads(self.ai_snippets["nameit"].run(query))
-                self.ai_db.update_conversation(self.conv_id, **ret)
-            except Exception as e:
-                logger.exception(e)
+            for _ in range(2):
+                try:
+                    ret = json.loads(self.ai_snippets["nameit"].run(query))
+                    self.ai_db.update_conversation(self.conv_id, **ret)
+                except (Exception, JSONDecodeError) as e:
+                    logger.exception(e)
+                    continue
+                else:
+                    break
             self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
 
         threading.Thread(
@@ -160,9 +165,13 @@ class App(tk.Tk):
         :param conv_id: conversation_id from GET_CHAT event
         :return:
         """
-        self.conv_id = conv_id
-        self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
-        chat_settings.SETTINGS.last_conv_id = self.conv_id
+        if self.ai_db.is_conversation_id_valid(conv_id):
+            self.conv_id = conv_id
+            self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
+            chat_settings.SETTINGS.last_conv_id = self.conv_id
+        else:
+            logger.error("conversation_id not know")
+            self.conv_id = None
 
     def _persistent_write(self):
         """

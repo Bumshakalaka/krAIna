@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
+from tktooltip import ToolTip
+
 from chat.base import APP_EVENTS
 from libs.db.model import Conversations
 
@@ -147,6 +149,7 @@ class UserQuery(ttk.Frame):
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
         self.send_btn = ttk.Button(self, text="Send", command=functools.partial(self.invoke, "assistant"))
+        ToolTip(self.send_btn, msg="Ask Assistant. <Ctrl+Enter>", follow=False, delay=0.5)
         self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE, padx=2, pady=2)
 
     def invoke(self, entity: str, event=None):
