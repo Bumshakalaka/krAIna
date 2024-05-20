@@ -5,6 +5,7 @@ import queue
 import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
+from dataclasses import asdict, replace
 from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
@@ -15,6 +16,7 @@ from assistants.base import Assistants
 from chat.chat_history import ChatFrame
 
 from assistants.assistant import AssistantResp
+import chat.chat_settings as chat_settings
 from chat.base import APP_EVENTS
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
@@ -38,7 +40,8 @@ class App(tk.Tk):
         IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
         """
         super().__init__()
-        sv_ttk.set_theme("dark")
+        self._persistent_read()
+        sv_ttk.set_theme(chat_settings.SETTINGS.theme)
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
@@ -83,7 +86,11 @@ class App(tk.Tk):
             "<Control-a>",
             lambda event: event.widget.event_generate("<<SelectAll>>"),
         )
-        self._persistent_read()
+        self._update_geometry()
+        if chat_settings.SETTINGS.last_conv_id:
+            self.post_event(APP_EVENTS.GET_CHAT, chat_settings.SETTINGS.last_conv_id)
+        if chat_settings.SETTINGS.last_assistant:
+            self.selected_assistant.set(chat_settings.SETTINGS.last_assistant)
         self.chatW.userW.text.focus_force()
 
     def reload_ai(self, *args):
@@ -95,6 +102,8 @@ class App(tk.Tk):
         self.withdraw()
         self.deiconify()
         self.lift()
+        if chat_settings.SETTINGS.always_on_top:
+            self.wm_attributes("-topmost", True)
         self.chatW.userW.text.focus_force()
 
     def hide_app(self, *args):
@@ -153,6 +162,7 @@ class App(tk.Tk):
         """
         self.conv_id = conv_id
         self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
+        chat_settings.SETTINGS.last_conv_id = self.conv_id
 
     def _persistent_write(self):
         """
@@ -161,9 +171,8 @@ class App(tk.Tk):
         :return:
         """
         persist_file = Path(__file__).parent / "../settings.json"
-        data = {"window": {"geometry": self.wm_geometry()}}
         with open(persist_file, "w") as fd:
-            json.dump(data, fd)
+            json.dump(asdict(chat_settings.SETTINGS), fd)
 
     def _persistent_read(self):
         """
@@ -176,23 +185,30 @@ class App(tk.Tk):
             return
 
         with open(persist_file, "r") as fd:
-            data = json.load(fd)
+            try:
+                chat_settings.SETTINGS = replace(
+                    chat_settings.SETTINGS,
+                    **{k: v for k, v in json.load(fd).items() if k in chat_settings.SETTINGS.keys()},
+                )
+            except TypeError as e:
+                logger.error("Invalid settings.json format")
 
+    def _update_geometry(self):
         # Prevent that chat will always be visible
-        new_geometry = data["window"]["geometry"]
-        w_size, offset_x, offset_y = new_geometry.split("+")
+        w_size, offset_x, offset_y = chat_settings.SETTINGS.geometry.split("+")
         if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
-            new_geometry = "708x437+0+0"
+            chat_settings.SETTINGS.geometry = "708x437+0+0"
         elif (
             int(w_size.split("x")[0]) > self.winfo_screenwidth()
             or int(w_size.split("x")[1]) > self.winfo_screenheight()
         ):
-            new_geometry = "708x437+0+0"
-        self.wm_geometry(new_geometry)
+            chat_settings.SETTINGS.geometry = "708x437+0+0"
+        self.wm_geometry(chat_settings.SETTINGS.geometry)
         self.update()
 
     def quit_app(self, *args):
         """Quit application handler."""
+        chat_settings.SETTINGS.geometry = self.wm_geometry()
         self._persistent_write()
         self.destroy()
 

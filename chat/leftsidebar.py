@@ -8,6 +8,7 @@ from typing import List
 from tktooltip import ToolTip
 
 from chat.base import APP_EVENTS
+import chat.chat_settings as chat_settings
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
@@ -45,9 +46,13 @@ class LeftSidebar(ttk.Frame):
                 text=name,
                 variable=self.root.selected_assistant,
                 value=name,
+                command=self.assistant_change,
             )
             ToolTip(rbut, msg=assistant.description if assistant.description else name, follow=False, delay=0.5)
             rbut.pack(side=tk.TOP, fill=tk.X)
+
+    def assistant_change(self, *args):
+        chat_settings.SETTINGS.last_assistant = self.root.selected_assistant.get()
 
     def list_saved_chats(self, conversations: List[Conversations]):
         """
