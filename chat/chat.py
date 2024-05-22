@@ -9,7 +9,7 @@ from dataclasses import asdict, replace
 from json import JSONDecodeError
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable, Dict, Union, Iterable
+from typing import Callable, Dict, Union, Iterable, Any
 
 import sv_ttk
 
@@ -245,7 +245,7 @@ class App(tk.Tk):
             return
         self._event_queue.put(EVENT(ev, data))
         self.event_generate(ev.value, when="tail")
-        logger.debug(f"Post event={ev.name} with data='{data}'")
+        logger.debug(f"Post event={ev.name} with data='{self._shortening(data)}'")
 
     def _event(self, ev_cmd):
         def wrapper(event):
@@ -253,10 +253,16 @@ class App(tk.Tk):
             _data: EVENT = self._event_queue.get()
 
             ret = ev_cmd(_data.data)
-            logger.debug(f"React on={_data.event.name} with data='{_data.data}': {ret=}")
+            logger.debug(f"React on={_data.event.name} with data='{self._shortening(_data.data)}': {ret=}")
             return ret
 
         return wrapper
+
+    def _shortening(self, data: Any, limit=128) -> str:
+        data = str(data).replace("\n", "\\n")
+        if len(data) > limit:
+            return data[0 : int(limit / 2)] + "..." + data[len(data) - int(limit / 2) :]
+        return data
 
     def call_assistant(self, data: Dict):
         """

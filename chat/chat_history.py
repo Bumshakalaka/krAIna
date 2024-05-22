@@ -29,6 +29,7 @@ class ChatHistory(ScrolledText):
         self.tag_config("HUMAN_prefix", spacing3=5)
         self.tag_config("AI", lmargin1=10, lmargin2=10)
         self.tag_config("AI_prefix")
+        self.tag_config("AI_end")
         self.tag_raise("sel")
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
@@ -56,11 +57,11 @@ class ChatHistory(ScrolledText):
             self._insert_message(message, "AI")
             self.see(tk.END)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
-        if len(self.tag_ranges("AI")) == 2:
+        if len(self.tag_ranges("AI_end")) == 2:
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
-        if len(self.tag_ranges("AI")) == 4:
-            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END))
+        if len(self.tag_ranges("AI_end")) == 4:
+            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END)[0:14000])
 
     def human_message(self, message: str):
         """
@@ -78,7 +79,7 @@ class ChatHistory(ScrolledText):
         for tt in text.splitlines(keepends=False):
             self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
         if tag == "AI":
-            self.insert(tk.END, "\n")
+            self.insert(tk.END, "\n", "AI_end")
 
     def new_chat(self, *args):
         """
@@ -107,8 +108,8 @@ class ChatHistory(ScrolledText):
                 self._insert_message(message.message, "HUMAN")
             else:
                 self._insert_message(message.message, "AI")
-        if len(self.tag_ranges("AI")) >= 4:
-            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END))
+        if len(self.tag_ranges("AI_end")) >= 4:
+            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END)[0:14000])
         self.see(tk.END)
 
     def undump(self, dump_data):
