@@ -1,8 +1,11 @@
 """Base snippet class."""
 import logging
 from dataclasses import dataclass
+from typing import Union
 
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
 
 from libs.llm import chat_llm
 
@@ -33,6 +36,33 @@ class BaseSnippet:
         if not cls.__name__.startswith("_"):
             SPECIALIZED_SNIPPETS[cls.__name__] = cls
 
+    def invoke(
+        self, chat: Union[ChatOpenAI, AzureChatOpenAI], prompt: ChatPromptTemplate, text, **kwargs
+    ) -> BaseMessage:
+        """
+        LLM request for completions with support to continue generation when max_tokens response has been reached.
+
+        :param chat: LLM Chat object
+        :param prompt: LLM prompt to use
+        :param text: query text
+        :param kwargs: additonal args
+        :return:
+        """
+        ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))
+        if ret.response_metadata["finish_reason"] == "stop":
+            # complete response received
+            return ret
+        else:
+            # max tokens reached. Consider setting larger max_tokens
+            while not ret.response_metadata["finish_reason"] == "stop":
+                # ask for the next chunk
+                prompt.append(ret)  # add the previous chunk to the conversation
+                prompt.append(HumanMessage("The response is not complete, continue"))  # ask for more
+                ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))  # send request to LLM
+            # now wwe have all chunks. Concatenate all AI responses and return them together with last response from LLM
+            ret.content = "".join([ai_msg.content for ai_msg in prompt.messages if isinstance(ai_msg, AIMessage)])
+            return ret
+
     def run(self, query: str, /, **kwargs) -> str:
         """
         Run the snippet with a user query.
@@ -42,16 +72,17 @@ class BaseSnippet:
         :return:
         """
         logger.info(f"{self.name}: {query=}, {kwargs=}")
-        chat = chat_llm(
-            model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
-        )
+        chat = chat_llm(model=self.model, temperature=self.temperature, max_tokens=self.max_tokens)
 
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", self.prompt),
+                (
+                    "system",
+                    self.prompt,
+                ),
                 ("human", "{text}"),
             ]
         )
-        ret = chat.invoke(prompt.format_prompt(text=query, **kwargs))
+        ret = self.invoke(chat, prompt, text=query, **kwargs)
         logger.info(f"{self.name}: ret={ret}")
         return ret.content
