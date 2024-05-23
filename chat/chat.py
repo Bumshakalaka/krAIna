@@ -245,7 +245,7 @@ class App(tk.Tk):
             return
         self._event_queue.put(EVENT(ev, data))
         self.event_generate(ev.value, when="tail")
-        logger.debug(f"Post event={ev.name} with data='{self._shortening(data)}'")
+        logger.info(f"Post event={ev.name} with data='{self._shortening(data)}'")
 
     def _event(self, ev_cmd):
         def wrapper(event):
@@ -253,7 +253,7 @@ class App(tk.Tk):
             _data: EVENT = self._event_queue.get()
 
             ret = ev_cmd(_data.data)
-            logger.debug(f"React on={_data.event.name} with data='{self._shortening(_data.data)}': {ret=}")
+            logger.info(f"React on={_data.event.name} with data='{self._shortening(_data.data)}': {ret=}")
             return ret
 
         return wrapper
