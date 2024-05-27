@@ -7,6 +7,7 @@ import tkinter as tk
 from typing import List
 from tktooltip import ToolTip
 
+from assistants.assistant import AssistantType
 from chat.base import APP_EVENTS
 import chat.chat_settings as chat_settings
 from libs.db.model import Conversations
@@ -45,14 +46,15 @@ class LeftSidebar(ttk.Frame):
         for n in list(self.assistants.children.keys()):
             self.assistants.children[n].destroy()
         for name, assistant in self.root.ai_assistants.items():
+            name_ = name if assistant.type == AssistantType.SIMPLE else f"{name}(tools)"
             rbut = ttk.Radiobutton(
                 self.assistants,
-                text=name,
+                text=name_,
                 variable=self.root.selected_assistant,
                 value=name,
                 command=self.assistant_change,
             )
-            ToolTip(rbut, msg=assistant.description if assistant.description else name, follow=False, delay=0.5)
+            ToolTip(rbut, msg=assistant.description if assistant.description else name_, follow=False, delay=0.5)
             rbut.pack(side=tk.TOP, fill=tk.X)
 
     def assistant_change(self, *args):

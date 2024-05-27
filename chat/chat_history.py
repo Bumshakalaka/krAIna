@@ -8,7 +8,9 @@ from tkinter.scrolledtext import ScrolledText
 from tktooltip import ToolTip
 
 from chat.base import APP_EVENTS
+from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
+from libs.utils import str_shortening
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +32,13 @@ class ChatHistory(ScrolledText):
         self.tag_config("AI", lmargin1=10, lmargin2=10)
         self.tag_config("AI_prefix")
         self.tag_config("AI_end")
+        self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
+        self.tag_config("TOOL_prefix")
         self.tag_raise("sel")
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
+        self.root.bind_on_event(APP_EVENTS.RESP_FROM_TOOL, self.tool_message)
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
         self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
@@ -75,7 +80,18 @@ class ChatHistory(ScrolledText):
         self._insert_message(message, "HUMAN")
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
+    def tool_message(self, message: str):
+        """
+        Callback on RESP_FROM_TOOL event (tool message).
+
+        1. Insert TOOL message into chat
+
+        :param message: Message to add to chat from RESP_FROM_TOOL event
+        """
+        self._insert_message(message, "TOOL")
+
     def _insert_message(self, text, tag):
+        text = str_shortening(text) if tag == "TOOL" else text
         for tt in text.splitlines(keepends=False):
             self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
         if tag == "AI":
@@ -104,10 +120,7 @@ class ChatHistory(ScrolledText):
         if conversation.assistant:
             self.root.selected_assistant.set(conversation.assistant)
         for message in conversation.messages:
-            if message.human:
-                self._insert_message(message.message, "HUMAN")
-            else:
-                self._insert_message(message.message, "AI")
+            self._insert_message(message.message, LlmMessageType(message.type).name)
         if len(self.tag_ranges("AI_end")) >= 4:
             self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END)[0:14000])
         self.see(tk.END)

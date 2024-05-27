@@ -1,4 +1,5 @@
 """Chat with LLM."""
+import functools
 import json
 import logging
 import queue
@@ -9,14 +10,14 @@ from dataclasses import asdict, replace
 from json import JSONDecodeError
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable, Dict, Union, Iterable, Any
+from typing import Callable, Dict, Union, Iterable
 
 import sv_ttk
 
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
 
-from assistants.assistant import AssistantResp
+from assistants.assistant import AssistantResp, AssistantType
 import chat.chat_settings as chat_settings
 from chat.base import APP_EVENTS
 from chat.leftsidebar import LeftSidebar
@@ -25,6 +26,7 @@ from chat.status_bar import StatusBar
 from libs.db.controller import Db
 from PIL import ImageTk, Image
 
+from libs.utils import str_shortening
 from snippets.base import Snippets
 
 logger = logging.getLogger(__name__)
@@ -245,7 +247,7 @@ class App(tk.Tk):
             return
         self._event_queue.put(EVENT(ev, data))
         self.event_generate(ev.value, when="tail")
-        logger.info(f"Post event={ev.name} with data='{self._shortening(data)}'")
+        logger.info(f"Post event={ev.name} with data='{str_shortening(data)}'")
 
     def _event(self, ev_cmd):
         def wrapper(event):
@@ -253,16 +255,10 @@ class App(tk.Tk):
             _data: EVENT = self._event_queue.get()
 
             ret = ev_cmd(_data.data)
-            logger.info(f"React on={_data.event.name} with data='{self._shortening(_data.data)}': {ret=}")
+            logger.info(f"React on={_data.event.name} with data='{str_shortening(_data.data)}': {ret=}")
             return ret
 
         return wrapper
-
-    def _shortening(self, data: Any, limit=128) -> str:
-        data = str(data).replace("\n", "\\n")
-        if len(data) > limit:
-            return data[0 : int(limit / 2)] + "..." + data[len(data) - int(limit / 2) :]
-        return data
 
     def call_assistant(self, data: Dict):
         """
@@ -277,6 +273,15 @@ class App(tk.Tk):
 
         def _call(assistant, query, conv_id):
             try:
+                if self.ai_assistants[assistant].type == AssistantType.WITH_TOOLS:
+                    # When assistant with tools is called,
+                    # we can assign callback for assistant events to visualize
+                    # invoking of the tools
+                    self.ai_assistants[assistant].callbacks = dict(
+                        action=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_TOOL),
+                        observation=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_TOOL),
+                        output=None,
+                    )
                 ret = self.ai_assistants[assistant].run(query, conv_id=conv_id)
             except Exception as e:
                 logger.exception(e)

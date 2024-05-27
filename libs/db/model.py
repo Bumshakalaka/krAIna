@@ -47,7 +47,7 @@ class Messages(Base):
     __tablename__ = "messages"
     message_id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.conversation_id"), index=True)
-    human: Mapped[bool]
+    type: Mapped[int]
     message: Mapped[str]
     create_at: Mapped[datetime.datetime] = mapped_column(comment="Timestamp as float")
     conversation: Mapped["Conversations"] = relationship(back_populates="messages")

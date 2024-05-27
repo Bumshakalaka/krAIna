@@ -12,6 +12,7 @@ class APP_EVENTS(enum.Enum):
     QUERY_TO_ASSISTANT = "<<QueryAssistant>>"
     RESP_FROM_ASSISTANT = "<<AssistantResp>>"
     RESP_FROM_SNIPPET = "<<SkillResp>>"
+    RESP_FROM_TOOL = "<<ToolResp>>"
     QUERY_SNIPPET = "<<QuerySkill>>"
     NEW_CHAT = "<<NewChat>>"
     GET_CHAT = "<<GetChat>>"

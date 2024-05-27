@@ -10,3 +10,4 @@ __pycache__/
 /kraina.db
 /*.log
 /settings.json
+/kraina-*/

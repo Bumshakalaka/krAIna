@@ -1,5 +1,6 @@
 """KrAIna database controller module."""
 import datetime
+import enum
 from pathlib import Path
 from typing import List, Union, Tuple
 
@@ -23,6 +24,15 @@ class ConversationNotFound(KrainaDbError):
     """Conversation ID not exists exception."""
 
     pass
+
+
+class LlmMessageType(enum.IntEnum):
+    SYSTEM = 0
+    HUMAN = 1
+    AI = 2
+    TOOL = 3
+    FUNCTION = 4
+    CHAT = 5
 
 
 class Db:
@@ -135,12 +145,12 @@ class Db:
             len(conv.messages)
             return conv
 
-    def add_message(self, human: bool, message: str, conv_id: Union[int, None] = None):
+    def add_message(self, message_type: LlmMessageType, message: str, conv_id: Union[int, None] = None):
         """
         Add a new message to the conversation.
 
-        :param human: True if Human message, False if AI.
-        :param message: Messgae to add
+        :param message_type: Message type
+        :param message: Message to add
         :param conv_id: Conversation_id. If None, use the last known conv_id
         :return:
         """
@@ -151,18 +161,18 @@ class Db:
             conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
             conv_obj.messages.append(
                 Messages(
-                    human=human,
+                    type=message_type,
                     message=message,
                     create_at=datetime.datetime.now(),
                 )
             )
             s.commit()
 
-    def add_messages(self, messages: List[Tuple[bool, str]], conv_id: Union[int, None] = None):
+    def add_messages(self, messages: List[Tuple[LlmMessageType, str]], conv_id: Union[int, None] = None):
         """
         Add a list of messages to the conversation.
 
-        :param messages: List of Tuple(human, message) to add
+        :param messages: List of Tuple(message_type, message) to add
         :param conv_id: Conversation_id. If None, use the last known conv_id
         :return:
         """
@@ -174,7 +184,7 @@ class Db:
             for message in messages:
                 conv_obj.messages.append(
                     Messages(
-                        human=message[0],
+                        type=message[0],
                         message=message[1],
                         create_at=datetime.datetime.now(),
                     )
