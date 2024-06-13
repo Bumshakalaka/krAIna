@@ -30,9 +30,12 @@ class LlmModel(tk.Menu):
         super().__init__(parent, *args, **kwargs)
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
-        self.add_radiobutton(label="Default", variable=self._var, value="")
-        self.add_radiobutton(label="GPT-3", variable=self._var, value="gpt-3.5-turbo")
-        self.add_radiobutton(label="GPT-4", variable=self._var, value="gpt-4-turbo")
+        self.add_radiobutton(label="Default", variable=self._var, value="-")
+        self.add_radiobutton(label="GPT-3.5-turbo", variable=self._var, value="gpt-3.5-turbo")
+        self.add_radiobutton(label="GPT-4-turbo", variable=self._var, value="gpt-4-turbo")
+        self.add_radiobutton(label="GPT-4", variable=self._var, value="gpt-4")
+        self.add_radiobutton(label="GPT-4o", variable=self._var, value="gpt-4o")
+        self._var.set("-")
 
     def update_var(self, *args):
         """Callback on radiobutton change."""
@@ -46,9 +49,10 @@ class LlmTemperature(tk.Menu):
         super().__init__(parent, *args, **kwargs)
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
-        self.add_radiobutton(label="Default", variable=self._var, value="")
-        for t in [0.1, 0.3, 0.5, 0.7, 1.0]:
+        self.add_radiobutton(label="Default", variable=self._var, value="-")
+        for t in [0, 0.1, 0.3, 0.5, 0.7, 1.0]:
             self.add_radiobutton(label=str(t), variable=self._var, value=t)
+        self._var.set("-")
 
     def update_var(self, *args):
         """Callback on radiobutton change."""
@@ -65,6 +69,7 @@ class LlmType(tk.Menu):
         self.add_radiobutton(label="Default", variable=self._var, value="-")
         self.add_radiobutton(label="Azure", variable=self._var, value="azure")
         self.add_radiobutton(label="OpenAI", variable=self._var, value="openai")
+        self._var.set("-")
 
     def update_var(self, *args):
         """Callback on radiobutton change."""

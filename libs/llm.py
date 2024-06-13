@@ -40,8 +40,20 @@ def map_model(model: str) -> str:
 
 def isAzureAI() -> bool:
     """Is Azure LLM in use?"""
-    azure = True if OVERWRITE_LLM_SETTINGS["api_type"] == "azure" else False
-    return True if azure else bool(os.environ.get("AZURE_OPENAI_API_KEY") and os.environ.get("AZURE_OPENAI_ENDPOINT"))
+    os_env_azure_ok = bool(
+        os.environ.get("AZURE_OPENAI_API_KEY")
+        and os.environ.get("AZURE_OPENAI_ENDPOINT")
+        and os.environ.get("OPENAI_API_VERSION")
+    )
+    if OVERWRITE_LLM_SETTINGS["api_type"] == "azure" and os_env_azure_ok:
+        # Application force to use Azure
+        ret = True
+    elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_azure_ok:
+        # Application does not force, so check env variable
+        ret = True
+    else:
+        ret = False
+    return ret
 
 
 def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI]:
