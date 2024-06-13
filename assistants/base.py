@@ -1,6 +1,5 @@
 """Base class for assistants."""
 import logging
-import sys
 from pathlib import Path
 from pprint import pprint
 
@@ -21,7 +20,7 @@ class Assistants(dict):
         """
         Initialize assistants.
 
-        Iterate over all folders inside assistants folder.
+        Iterate over all folders inside assistants folder and also search in folders with file tag `.kraina-land`.
         assistants/
         ├── fix
         │     ├── prompt.md - assistant system prompt, required

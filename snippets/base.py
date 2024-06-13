@@ -19,7 +19,7 @@ class Snippets(dict):
         """
         Initialize snippets.
 
-        Iterate over all folders inside snippets folder.
+        Iterate over all folders inside snippets folder and also search in folders with file tag `.kraina-land`.
         snippets/
         ├── fix
         │     ├── prompt.md - snippet system prompt, required

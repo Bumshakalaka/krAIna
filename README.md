@@ -3,7 +3,34 @@
 Set of AI-powered tools for everyday use with OpenAi or Azure OpenAI LLMs.
 1. **Snippets** — the actions that can be performed on selected text.
 2. **Assistants** — your own specialized assistants to talk with.
-3. **Chat** - Chat GUI application built using tkinter for Assistants and Snippets.
+3. **Tools** — your own specialized tools to use with Assistants.
+
+KrAIna can be easily extended by personal, third-party sets of the above beings by creating folder (or create symlink) in KrAIna.
+
+1. The folder must contain file named `.kraina-land` - this is tag file for KrAIna to scan the folder
+2. To extend KrAIna with new snippets, assistants or tools create the respective folders names
+3. Follow KrAIna structure of these new sets
+4. Example folder structure
+   ```
+    ├── kraina
+            ├──kraina-personal
+                   ├── .kraina-land
+                   ├── snippets
+                   │     ├── create_jira 
+                   │          ├── prompt.md
+                   │          ├── config.yaml
+                   ├── assistants
+                   │        ├── database 
+                   │            ├── prompt.md
+                   │            ├── config.yaml
+                   ├── tools
+                   │     ├── database 
+                   │          ├── __init__.py
+                   │          ├── ...
+                   │     ├── include.py
+   ```
+
+**Chat** - Chat GUI application built using tkinter for Assistants and Snippets.
 
 **Currently on available on Linux**
 
@@ -27,6 +54,30 @@ Your personal AI assistant. It can be a causal assistant or prompt engineer or s
 Assistant can be run as one-shot, similar to snippets or can use its memory and remember the conversation.
 
 The assistants have been designed similar to Snippets. Check the `assistants` folder.
+
+The assistants can use tools. To do this:
+1. In `config.yaml`, add `type: with_tools` entry (by default is `type: simple`)
+2. Assign tools (LangChain BaseTools) by listing them in `config.yaml` `tools` key
+   ```yaml
+   type: with_tools
+   tools:
+     - jenkins
+   ```
+3. Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
+
+### Tools
+
+Set of tools available to others in krAIna. 
+
+To make such a tool, you need to follow these steps:
+1. Find or develop a tool derived from BaseTool.
+2. Create an initialization function that:
+   1. Must accept one parameter, `tool_settings` (even if you don't have any settings).
+   2. Must return `BaseTool` or `List[BaseTool]`.
+3. Add your tool to the `SUPPORTED_TOOLS` dictionary in **tools/include.py**. The name of your tool is the key of the `SUPPORTED_TOOLS` dictionary.
+
+The initialization of the tool (calling the init function) occurs when an Assistant is called, 
+not when it is initialized.
 
 ### Chat GUI application
 Chat GUI application build using tkinter.
@@ -76,6 +127,33 @@ Check also other CopyQ Custom Actions in `copyQ`.
 1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with main window focus)
 2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
 ---
+
+## Configuration
+
+The configuration is handled by `config.yaml` file.
+
+File Schema:
+```yaml
+chat:
+   # chat settings
+   # aren't implemented yet
+assistants:
+   # assistants settings
+   # assistant name:
+   #    settings
+   # aren't implemented yet
+snippets:
+   # snippets settings
+   # snippet name:
+   #    settings
+   # aren't implemented yet
+tools:
+   # tools settings
+   # tool name:
+   #    settings
+  brave_web:
+    count: 3
+```
 
 ## Usage
 
