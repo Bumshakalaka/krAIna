@@ -1,0 +1,6 @@
+model: gpt-4o
+temperature: 0.7
+max_tokens: 1024
+description: |
+  Hi, I'm Kodi.
+  I will assists you in software development.
