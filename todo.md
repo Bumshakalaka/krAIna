@@ -2,7 +2,6 @@
 
 ## Core Tasks
 - Implement a notification system for Windows, considering either native OS notifications or a custom tkinter solution.
-- Integrate additional tools such as web search, calculator, and Todoist.
 - Enhance asynchronous processing.
 - windows support
 - Add current date to assistant prompts
@@ -21,7 +20,7 @@
 - Add clipboard support.
 - Develop a settings window for user preferences.
 - Make hidden chats visible.
-- Include a welcome message in the chat window.
+- Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
 - Support for markdown in chat history.
 - Check spelling in the user query window.
 - Persist other settings:
@@ -30,7 +29,7 @@
 ## Miscellaneous
 - Introduce textual inline chat.
 - Develop a REST API for external integrations.
-- Joplin loader -base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
+- Joplin loader - base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
 
 # Fixes
 - When creating new chat, always get default Assistant
