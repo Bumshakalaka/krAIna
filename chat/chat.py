@@ -13,6 +13,7 @@ from tkinter import ttk
 from typing import Callable, Dict, Union, Iterable
 
 import sv_ttk
+import yaml
 
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
@@ -181,9 +182,9 @@ class App(tk.Tk):
 
         :return:
         """
-        persist_file = Path(__file__).parent / "../settings.json"
+        persist_file = Path(__file__).parent / "../.settings.yaml"
         with open(persist_file, "w") as fd:
-            json.dump(asdict(chat_settings.SETTINGS), fd)
+            yaml.dump(dict(chat=asdict(chat_settings.SETTINGS)), fd)
 
     def _persistent_read(self):
         """
@@ -191,18 +192,19 @@ class App(tk.Tk):
 
         :return:
         """
-        persist_file = Path(__file__).parent / "../settings.json"
+        persist_file = Path(__file__).parent / "../.settings.yaml"
         if not persist_file.exists():
             return
 
         with open(persist_file, "r") as fd:
             try:
+                data = yaml.load(fd, Loader=yaml.SafeLoader)["chat"]
                 chat_settings.SETTINGS = replace(
                     chat_settings.SETTINGS,
-                    **{k: v for k, v in json.load(fd).items() if k in chat_settings.SETTINGS.keys()},
+                    **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
                 )
             except TypeError as e:
-                logger.error("Invalid settings.json format")
+                logger.error("Invalid .settings.yaml format")
 
     def _update_geometry(self):
         # Prevent that chat will always be visible

@@ -9,5 +9,5 @@ __pycache__/
 /chat/settings.json
 /kraina.db
 /*.log
-/settings.json
+/.settings.yaml
 /kraina-*/
