@@ -56,14 +56,12 @@ Assistant can be run as one-shot, similar to snippets or can use its memory and 
 The assistants have been designed similar to Snippets. Check the `assistants` folder.
 
 The assistants can use tools. To do this:
-1. In `config.yaml`, add `type: with_tools` entry (by default is `type: simple`)
-2. Assign tools (LangChain BaseTools) by listing them in `config.yaml` `tools` key
+1. Assign tools (LangChain BaseTools) by listing them in assistant `config.yaml` key
    ```yaml
-   type: with_tools
    tools:
      - jenkins
    ```
-3. Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
+2Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 
 ### Tools
 

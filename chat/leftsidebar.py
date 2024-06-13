@@ -54,7 +54,11 @@ class LeftSidebar(ttk.Frame):
                 value=name,
                 command=self.assistant_change,
             )
-            ToolTip(rbut, msg=assistant.description if assistant.description else name_, follow=False, delay=0.5)
+            msg_ = assistant.description if assistant.description else name_
+            if assistant.type == AssistantType.WITH_TOOLS:
+                tools_ = "\n- " + "\n- ".join(assistant.tools)
+                msg_ += f"\nTools:{tools_}"
+            ToolTip(rbut, msg=msg_, follow=False, delay=0.5)
             rbut.pack(side=tk.TOP, fill=tk.X)
 
     def assistant_change(self, *args):

@@ -43,23 +43,14 @@ class Assistants(dict):
                 if (assistant / "config.yaml").exists():
                     with open(assistant / "config.yaml") as fd:
                         settings = yaml.safe_load(fd.read())
-                    if settings.get("type", None):
-                        try:
-                            settings["type"] = AssistantType[settings["type"].upper()]
-                        except KeyError:
-                            raise KeyError(
-                                f"type={settings['type']} is invalid. Supported type: {[e.name.lower() for e in AssistantType]}"
-                            )
-                    if (
-                        settings.get("type", None)
-                        and settings["type"] == AssistantType.WITH_TOOLS
-                        and settings.get("tools", None)
-                    ):
+                    settings["type"] = AssistantType.SIMPLE
+                    if settings.get("tools", None):
                         settings["tools"] = [x.lower() for x in settings["tools"]]
                         if not set(settings["tools"]).issubset(get_available_tools()):
                             raise KeyError(
                                 f"One of the tools={settings['tools']} is unsupported. Supported tools: {get_available_tools()}"
                             )
+                        settings["type"] = AssistantType.WITH_TOOLS
                     if settings.get("specialisation", None):
                         if (_file := (assistant / settings["specialisation"].get("file", "not_exists"))).exists():
                             assistant_cls = getattr(import_module(_file), settings["specialisation"]["class"])
