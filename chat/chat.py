@@ -19,7 +19,7 @@ from assistants.base import Assistants
 from chat.chat_history import ChatFrame
 
 from assistants.assistant import AssistantResp, AssistantType
-import chat.chat_settings as chat_settings
+import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
@@ -46,7 +46,7 @@ class App(tk.Tk):
         """
         super().__init__()
         self._persistent_read()
-        sv_ttk.set_theme(chat_settings.SETTINGS.theme)
+        sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
@@ -92,10 +92,10 @@ class App(tk.Tk):
             lambda event: event.widget.event_generate("<<SelectAll>>"),
         )
         self._update_geometry()
-        if chat_settings.SETTINGS.last_conv_id:
-            self.post_event(APP_EVENTS.GET_CHAT, chat_settings.SETTINGS.last_conv_id)
-        if chat_settings.SETTINGS.last_assistant:
-            self.selected_assistant.set(chat_settings.SETTINGS.last_assistant)
+        if chat_persistence.SETTINGS.last_conv_id:
+            self.post_event(APP_EVENTS.GET_CHAT, chat_persistence.SETTINGS.last_conv_id)
+        if chat_persistence.SETTINGS.last_assistant:
+            self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
         self.post_event(APP_EVENTS.UPDATE_STATUS_BAR, self.getvar("selected_api_type"))
         self.chatW.userW.text.focus_force()
 
@@ -108,7 +108,7 @@ class App(tk.Tk):
         self.withdraw()
         self.deiconify()
         self.lift()
-        if chat_settings.SETTINGS.always_on_top:
+        if chat_persistence.SETTINGS.always_on_top:
             self.wm_attributes("-topmost", True)
         self.chatW.userW.text.focus_force()
 
@@ -179,7 +179,7 @@ class App(tk.Tk):
         if self.ai_db.is_conversation_id_valid(conv_id):
             self.conv_id = conv_id
             self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
-            chat_settings.SETTINGS.last_conv_id = self.conv_id
+            chat_persistence.SETTINGS.last_conv_id = self.conv_id
         else:
             logger.error("conversation_id not know")
             self.conv_id = None
@@ -192,7 +192,7 @@ class App(tk.Tk):
         """
         persist_file = Path(__file__).parent / "../.settings.yaml"
         with open(persist_file, "w") as fd:
-            yaml.dump(dict(chat=asdict(chat_settings.SETTINGS)), fd)
+            yaml.dump(dict(chat=asdict(chat_persistence.SETTINGS)), fd)
 
     def _persistent_read(self):
         """
@@ -207,29 +207,29 @@ class App(tk.Tk):
         with open(persist_file, "r") as fd:
             try:
                 data = yaml.load(fd, Loader=yaml.SafeLoader)["chat"]
-                chat_settings.SETTINGS = replace(
-                    chat_settings.SETTINGS,
-                    **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
+                chat_persistence.SETTINGS = replace(
+                    chat_persistence.SETTINGS,
+                    **{k: v for k, v in data.items() if k in chat_persistence.SETTINGS.keys()},
                 )
             except TypeError as e:
                 logger.error("Invalid .settings.yaml format")
 
     def _update_geometry(self):
         # Prevent that chat will always be visible
-        w_size, offset_x, offset_y = chat_settings.SETTINGS.geometry.split("+")
+        w_size, offset_x, offset_y = chat_persistence.SETTINGS.geometry.split("+")
         if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
-            chat_settings.SETTINGS.geometry = "708x437+0+0"
+            chat_persistence.SETTINGS.geometry = "708x437+0+0"
         elif (
             int(w_size.split("x")[0]) > self.winfo_screenwidth()
             or int(w_size.split("x")[1]) > self.winfo_screenheight()
         ):
-            chat_settings.SETTINGS.geometry = "708x437+0+0"
-        self.wm_geometry(chat_settings.SETTINGS.geometry)
+            chat_persistence.SETTINGS.geometry = "708x437+0+0"
+        self.wm_geometry(chat_persistence.SETTINGS.geometry)
         self.update()
 
     def quit_app(self, *args):
         """Quit application handler."""
-        chat_settings.SETTINGS.geometry = self.wm_geometry()
+        chat_persistence.SETTINGS.geometry = self.wm_geometry()
         self._persistent_write()
         self.destroy()
 

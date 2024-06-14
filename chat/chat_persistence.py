@@ -3,7 +3,7 @@ from typing import List
 
 
 @dataclass
-class Chat_Settings:
+class chat_persistence:
     """
     Store all application persistent keys.
     """
@@ -20,4 +20,4 @@ class Chat_Settings:
         return [k for k in dir(self) if not k.startswith("_")]
 
 
-SETTINGS = Chat_Settings()
+SETTINGS = chat_persistence()

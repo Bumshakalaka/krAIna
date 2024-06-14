@@ -9,7 +9,7 @@ from tktooltip import ToolTip
 
 from assistants.assistant import AssistantType
 from chat.base import APP_EVENTS
-import chat.chat_settings as chat_settings
+import chat.chat_persistence as chat_persistence
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ class LeftSidebar(ttk.Frame):
             rbut.pack(side=tk.TOP, fill=tk.X)
 
     def assistant_change(self, *args):
-        chat_settings.SETTINGS.last_assistant = self.root.selected_assistant.get()
+        chat_persistence.SETTINGS.last_assistant = self.root.selected_assistant.get()
 
     def list_saved_chats(self, conversations: List[Conversations]):
         """

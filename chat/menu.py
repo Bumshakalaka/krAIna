@@ -4,7 +4,7 @@ import tkinter as tk
 
 import sv_ttk
 
-import chat.chat_settings as chat_settings
+import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS
 from libs.llm import overwrite_llm_settings
 
@@ -67,7 +67,7 @@ class LlmType(tk.Menu):
         self.parent = parent
         self._var = tk.StringVar(
             self,
-            "-" if chat_settings.SETTINGS.last_api_type == "" else chat_settings.SETTINGS.last_api_type,
+            "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
             "selected_api_type",
         )
         self._var.trace("w", self.update_var)
@@ -78,7 +78,7 @@ class LlmType(tk.Menu):
     def update_var(self, *args):
         """Callback on radiobutton change."""
         _var = self.getvar(name=args[0])
-        chat_settings.SETTINGS.last_api_type = "" if _var == "-" else _var
+        chat_persistence.SETTINGS.last_api_type = "" if _var == "-" else _var
         overwrite_llm_settings(api_type="" if _var == "-" else _var)
         self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR, "" if _var == "-" else _var)
 
@@ -95,13 +95,13 @@ class SettingsMenu(tk.Menu):
         self.add_checkbutton(label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False)
         self.add_checkbutton(label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False)
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
-        self._light_mode.set(True if chat_settings.SETTINGS.theme == "light" else False)
-        self._always_on_top.set(chat_settings.SETTINGS.always_on_top)
+        self._light_mode.set(True if chat_persistence.SETTINGS.theme == "light" else False)
+        self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)
 
     def always_on_top(self, *args):
         """Change Always on top setting."""
         _var = self.getvar(name=args[0])
-        chat_settings.SETTINGS.always_on_top = _var
+        chat_persistence.SETTINGS.always_on_top = _var
         self.parent.wm_attributes("-topmost", _var)
 
     def light_mode(self, *args):
@@ -111,7 +111,7 @@ class SettingsMenu(tk.Menu):
             sv_ttk.set_theme("light")
         else:
             sv_ttk.set_theme("dark")
-        chat_settings.SETTINGS.theme = sv_ttk.get_theme()
+        chat_persistence.SETTINGS.theme = sv_ttk.get_theme()
         self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())
 
 
