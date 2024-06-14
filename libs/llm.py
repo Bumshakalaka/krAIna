@@ -34,7 +34,7 @@ def map_model(model: str) -> str:
     :param model: openAI model name
     :return: AzureAI model name
     """
-    map_models = {"gpt-4-turbo": "gpt-4-turbo-128k", "gpt-3.5-turbo": "gpt-35-turbo", "gpt-4o": ""}
+    map_models = {"gpt-4-turbo": "gpt-4-turbo-128k", "gpt-3.5-turbo": "gpt-35-turbo"}
     return map_models.get(model, model) if isAzureAI() else model
 
 
