@@ -96,6 +96,7 @@ class App(tk.Tk):
             self.post_event(APP_EVENTS.GET_CHAT, chat_settings.SETTINGS.last_conv_id)
         if chat_settings.SETTINGS.last_assistant:
             self.selected_assistant.set(chat_settings.SETTINGS.last_assistant)
+        self.post_event(APP_EVENTS.UPDATE_STATUS_BAR, self.getvar("selected_api_type"))
         self.chatW.userW.text.focus_force()
 
     def reload_ai(self, *args):

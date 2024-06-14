@@ -27,6 +27,7 @@ class APP_EVENTS(enum.Enum):
     RELOAD_AI = "<<ReloadAIStuff>>"
     UPDATE_AI = "<<UpdateAIStuff>>"
     UPDATE_THEME = "<<UpdateTheme>>"
+    UPDATE_STATUS_BAR = "<<UpdateStatusBarApiType>>"
 
 
 def app_interface() -> Dict:

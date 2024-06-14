@@ -64,17 +64,23 @@ class LlmType(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM temperature."""
         super().__init__(parent, *args, **kwargs)
-        self._var = tk.StringVar(self, None)
+        self.parent = parent
+        self._var = tk.StringVar(
+            self,
+            "-" if chat_settings.SETTINGS.last_api_type == "" else chat_settings.SETTINGS.last_api_type,
+            "selected_api_type",
+        )
         self._var.trace("w", self.update_var)
         self.add_radiobutton(label="Default", variable=self._var, value="-")
         self.add_radiobutton(label="Azure", variable=self._var, value="azure")
         self.add_radiobutton(label="OpenAI", variable=self._var, value="openai")
-        self._var.set("-")
 
     def update_var(self, *args):
         """Callback on radiobutton change."""
         _var = self.getvar(name=args[0])
+        chat_settings.SETTINGS.last_api_type = "" if _var == "-" else _var
         overwrite_llm_settings(api_type="" if _var == "-" else _var)
+        self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR, "" if _var == "-" else _var)
 
 
 class SettingsMenu(tk.Menu):
