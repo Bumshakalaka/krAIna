@@ -29,6 +29,7 @@ from PIL import ImageTk, Image
 
 from libs.utils import str_shortening
 from snippets.base import Snippets
+from snippets.snippet import BaseSnippet
 
 logger = logging.getLogger(__name__)
 EVENT = namedtuple("EVENT", "event data")
@@ -49,7 +50,7 @@ class App(tk.Tk):
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
-        self.ai_snippets = Snippets()
+        self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
         self._bind_table = defaultdict(list)
         self._event_queue = queue.Queue(maxsize=10)
         self.conv_id: Union[int, None] = None
@@ -126,7 +127,13 @@ class App(tk.Tk):
         def _call(query):
             for _ in range(2):
                 try:
-                    ret = json.loads(self.ai_snippets["nameit"].run(query))
+                    ret = json.loads(
+                        self.ai_snippets["nameit"]
+                        .run(query)
+                        .removesuffix("```")
+                        .removeprefix("```")
+                        .removeprefix("json")
+                    )
                     self.ai_db.update_conversation(self.conv_id, **ret)
                 except (Exception, JSONDecodeError) as e:
                     logger.exception(e)
