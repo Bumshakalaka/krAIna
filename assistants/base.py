@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 from pprint import pprint
+from typing import Dict
 
 import yaml
 from dotenv import load_dotenv, find_dotenv
@@ -48,9 +49,33 @@ class Assistants(dict):
                         settings["tools"] = [x.lower() for x in settings["tools"]]
                         if not set(settings["tools"]).issubset(get_available_tools()):
                             raise KeyError(
-                                f"One of the tools={settings['tools']} is unsupported. Supported tools: {get_available_tools()}"
+                                f"[{assistant.name}] One of the tools={settings['tools']} is unsupported. Supported tools: {get_available_tools()}"
                             )
                         settings["type"] = AssistantType.WITH_TOOLS
+                    contexts = []
+                    if settings.get("contexts", None):
+                        for name, context in settings["contexts"].items():
+                            context = [context] if isinstance(context, str) else context
+                            name = name.lower()
+                            if "string" in name:
+                                contexts.extend(
+                                    context
+                                    if "_template" in name
+                                    else [x.replace("{", "{{").replace("}", "}}") for x in context]
+                                )
+                            if "file" in name:
+                                for context_ in context:
+                                    fd = (assistant.parent / context_).resolve()
+                                    if not fd.exists():
+                                        logger.error(f"[{assistant.name}] context.file={fd} does not exist")
+                                    else:
+                                        if "_template" in name:
+                                            contexts.append(fd.read_text().replace("{", "{{").replace("}", "}}"))
+                                        else:
+                                            contexts.append(fd.read_text())
+                    contexts.append("Current date: {date}")
+                    settings["contexts"] = contexts
+
                     if settings.get("specialisation", None):
                         if (_file := (assistant / settings["specialisation"].get("file", "not_exists"))).exists():
                             assistant_cls = getattr(import_module(_file), settings["specialisation"]["class"])

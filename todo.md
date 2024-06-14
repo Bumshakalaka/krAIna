@@ -4,16 +4,12 @@
 - Implement a notification system for Windows, considering either native OS notifications or a custom tkinter solution.
 - Enhance asynchronous processing.
 - windows support
-- Add current date to assistant prompts
-
-## Snippets Enhancements
-- Consider relocating additional snippet context to the `_context` folder.
 
 ## Assistant Enhancements
 - Implement memory and vector search capabilities.
 - Develop more effective prompts and enable customization.
 - Develop way to pass text file as input
-- do _run_ocr_assistant to BaseAssistant to not use overwrite 
+- Do _run_ocr_assistant to BaseAssistant to not use overwrite.
 
 ## Chat Features
 - Enable streaming responses.

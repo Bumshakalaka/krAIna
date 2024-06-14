@@ -42,6 +42,30 @@ class Snippets(dict):
                 if (snippet / "config.yaml").exists():
                     with open(snippet / "config.yaml") as fd:
                         settings = yaml.safe_load(fd.read())
+                    contexts = []
+                    if settings.get("contexts", None):
+                        for name, context in settings["contexts"].items():
+                            context = [context] if isinstance(context, str) else context
+                            name = name.lower()
+                            if "string" in name:
+                                contexts.extend(
+                                    context
+                                    if "_template" in name
+                                    else [x.replace("{", "{{").replace("}", "}}") for x in context]
+                                )
+                            if "file" in name:
+                                for context_ in context:
+                                    fd = (snippet.parent / context_).resolve()
+                                    if not fd.exists():
+                                        logger.error(f"[{snippet.name}] context.file={fd} does not exist")
+                                    else:
+                                        if "_template" in name:
+                                            contexts.append(fd.read_text().replace("{", "{{").replace("}", "}}"))
+                                        else:
+                                            contexts.append(fd.read_text())
+                    contexts.append("Current date: {date}")
+                    settings["contexts"] = contexts
+
                     if settings.get("specialisation", None):
                         if (_file := (snippet / settings["specialisation"].get("file", "not_exists"))).exists():
                             snippet_cls = getattr(import_module(_file), settings["specialisation"]["class"])

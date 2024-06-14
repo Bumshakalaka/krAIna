@@ -3,3 +3,7 @@ temperature: 0.7
 description: |
   Hi, I'm your casual assistant.
   How can I help you today?
+
+contexts:
+  string: We are located in Poland
+  file: ./../about_me.txt

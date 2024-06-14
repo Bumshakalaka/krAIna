@@ -1,4 +1,4 @@
-![logo](img/logo.png)
+![logo](img/kraina_banner.png)
 ## Overview
 Set of AI-powered tools for everyday use with OpenAi or Azure OpenAI LLMs.
 1. **Snippets** — the actions that can be performed on selected text.
@@ -56,6 +56,40 @@ temperature: 0.5
 max_tokens: 512
 ```
 
+You can add additional context to the Snippet (the same scheme as for Assistant) by adding:
+```yaml
+contexts:
+  string: Examples
+  file:
+    - ./example1.txt
+    - ./example2.txt
+```
+to `config.yaml` file. The fields are parsed and added to system prompt:
+```
+... system prompt ...
+Take into consideration the context below while generating answers.
+# Context:
+## 0
+Examples
+## 1
+./example1.txt content with blocked template placeholders ({placeholder} -> {{placeholder}})
+## 2
+./example2.txt content with blocked template placeholders ({placeholder} -> {{placeholder}})
+## 3
+Current date: {date}
+```
+
+**Note**:
+This part is always added, regardless of whether the `contexts` key exists in `config.yaml`.
+This part is not added when the `config.yaml` file does not exist.
+
+```
+Take into consideration the context below while generating answers.
+# Context:
+## 0
+Current date: {date}
+```
+
 However, AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
 One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
@@ -76,7 +110,57 @@ max_tokens: 512
 tools:
   - 
 description: 
+contexts:
+  # string: We are located in Haiti
+  # string: 
+  #   - We are located in Haiti
+  #   - We have sunny whether
+  # file: ./about_me.txt
+  # file:
+  #   - ./about_me.txt
+  #   - ./my_projects.txt 
 ```
+
+You can add additional context to the Assistant by adding:
+```yaml
+contexts:
+  string_template: We are located in {place} # Note that this string will be added as `We are located in {place}` (place placeholder must be provided)
+  string: We are located in {place} # Note that this string will be added `as We are located in {{place}}` (with blocked template placeholder) 
+  # string: 
+  #   - We are located in Haiti
+  #   - We have sunny whether
+  file: ./about_me.txt
+  file_template: ./about_me.txt
+  # file:
+  #   - ./about_me.txt
+  #   - ./my_projects.txt 
+```
+to `config.yaml` file. The fields are parsed and added to system prompt:
+```
+... system prompt ...
+Take into consideration the context below while generating answers.
+# Context:
+## 0
+We are located in {place}
+## 1
+We are located in {{place}}
+## 2
+./about_me.txt content
+## 3
+Current date: {date}
+```
+
+**Note**:
+This part is always added, regardless of whether the `contexts` key exists in `config.yaml`.
+This part is not added when the `config.yaml` file does not exist.
+
+```
+Take into consideration the context below while generating answers.
+# Context:
+## 0
+Current date: {date}
+```
+
 
 The assistants can use tools. To do this:
 1. Assign tools (LangChain BaseTools) by listing them in assistant `config.yaml` key
@@ -85,7 +169,8 @@ The assistants can use tools. To do this:
      - brave_web
      - file_search
    ```
-2Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
+2. Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
+
 
 ### Tools
 

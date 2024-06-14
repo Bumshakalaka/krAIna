@@ -66,6 +66,8 @@ class BaseAssistant:
     """Tools to use"""
     force_api: str = None  # azure, openai
     """Force to use azure or openai"""
+    contexts: List[str] = None
+    """List of additional contexts to be added to system prompt"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -110,6 +112,13 @@ class BaseAssistant:
         else:
             hist = []
             conv_id = None
+
+        if self.contexts:
+            self.prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
+            for idx, context in enumerate(self.contexts):
+                self.prompt += f"\n## {idx}"
+                self.prompt += "\n" + context
+
         if self.type == AssistantType.SIMPLE:
             ret = self._run_simple_assistant(query, hist, ai_db, **kwargs)
         else:
@@ -133,7 +142,9 @@ class BaseAssistant:
                 ("human", "{text}"),
             ]
         )
-        return chat.invoke(prompt.format_prompt(text=query, hist=hist, **kwargs))
+        return chat.invoke(
+            prompt.format_prompt(text=query, hist=hist, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)
+        )
 
     def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Db, **kwargs

@@ -1,7 +1,8 @@
 """Base snippet class."""
 import logging
 from dataclasses import dataclass
-from typing import Union
+from datetime import datetime
+from typing import Union, List
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -32,6 +33,8 @@ class BaseSnippet:
     """Max token response"""
     force_api: str = None  # azure, openai
     """Force to use azure or openai"""
+    contexts: List[str] = None
+    """List of additional contexts to be added to system prompt"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -82,6 +85,11 @@ class BaseSnippet:
         chat = chat_llm(
             force_api_type=self.force_api, model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
         )
+        if self.contexts:
+            self.prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
+            for idx, context in enumerate(self.contexts):
+                self.prompt += f"\n## {idx}"
+                self.prompt += "\n" + context
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -92,6 +100,6 @@ class BaseSnippet:
                 ("human", "{text}"),
             ]
         )
-        ret = self.invoke(chat, prompt, text=query, **kwargs)
+        ret = self.invoke(chat, prompt, text=query, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)
         logger.info(f"{self.name}: ret={ret}")
         return ret.content
