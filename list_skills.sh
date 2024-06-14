@@ -10,4 +10,4 @@ trap 'err_trap ${LINENO} ${$?}' ERR
 CURRENT_DIR=$(dirname "$0")
 CURRENT_DIR=$(realpath "${CURRENT_DIR}")
 cd "${CURRENT_DIR}"
-find . -name snippets -type d -exec find {} -maxdepth 1 ! \( -name "_*" -o -name "." \) -type d -printf "%f," \;
+find -L . -name snippets -type d -exec find -L {} -maxdepth 1 ! \( -name "_*" -o -name "." -o -name "snippets" \) -type d -printf "%f," \;
