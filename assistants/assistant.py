@@ -64,6 +64,8 @@ class BaseAssistant:
     """Type of assistant"""
     tools: List[str] = None
     """Tools to use"""
+    force_api: str = None  # azure, openai
+    """Force to use azure or openai"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -119,6 +121,7 @@ class BaseAssistant:
     def _run_simple_assistant(self, query: str, hist: List, ai_db: Db, **kwargs) -> BaseMessage:
         """Run a simple assistant query."""
         chat = chat_llm(
+            force_api_type=self.force_api,
             model=self.model,
             temperature=float(self.temperature),
             max_tokens=float(self.max_tokens),
@@ -137,6 +140,7 @@ class BaseAssistant:
     ) -> Union[BaseMessage, DummyBaseMessage]:
         """Run an assistant with the tools query."""
         llm = chat_llm(
+            force_api_type=self.force_api,
             model=self.model,
             temperature=float(self.temperature),
             max_tokens=float(self.max_tokens),
@@ -153,9 +157,8 @@ class BaseAssistant:
         agent = create_tool_calling_agent(llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
         chunks = []
-        # TODO: add **kwargs to agent_executor
         for chunk in agent_executor.stream(
-            {"input": query, "chat_history": hist, "date": datetime.now().strftime("%Y-%m-%d")}
+            dict({"input": query, "chat_history": hist, "date": datetime.now().strftime("%Y-%m-%d")}, **kwargs)
         ):
             chunks.append(chunk)
             # Agent Action

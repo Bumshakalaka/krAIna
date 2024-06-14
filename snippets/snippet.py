@@ -21,10 +21,17 @@ class BaseSnippet:
     """
 
     name: str = ""
+    """Snippet name"""
     prompt: str = None
+    """Snippet system prompt"""
     model: str = "gpt-3.5-turbo"
+    """Snippet LLM model"""
     temperature: float = 0.5
+    """Snippet temperature"""
     max_tokens: int = 512
+    """Max token response"""
+    force_api: str = None  # azure, openai
+    """Force to use azure or openai"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -72,7 +79,9 @@ class BaseSnippet:
         :return:
         """
         logger.info(f"{self.name}: {query=}, {kwargs=}")
-        chat = chat_llm(model=self.model, temperature=self.temperature, max_tokens=self.max_tokens)
+        chat = chat_llm(
+            force_api_type=self.force_api, model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
+        )
 
         prompt = ChatPromptTemplate.from_messages(
             [

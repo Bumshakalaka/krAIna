@@ -38,36 +38,52 @@ def map_model(model: str) -> str:
     return map_models.get(model, model) if isAzureAI() else model
 
 
-def isAzureAI() -> bool:
-    """Is Azure LLM in use?"""
-    os_env_azure_ok = bool(
-        os.environ.get("AZURE_OPENAI_API_KEY")
-        and os.environ.get("AZURE_OPENAI_ENDPOINT")
-        and os.environ.get("OPENAI_API_VERSION")
-    )
-    if OVERWRITE_LLM_SETTINGS["api_type"] == "azure" and os_env_azure_ok:
-        # Application force to use Azure
+def isAzureAI(force_api_type: str = None) -> bool:
+    """
+    Is Azure LLM in use?
+
+    :param force_api_type: force openai or azure. If None, check app global settings
+    :return:
+    """
+    if force_api_type == "azure":
         ret = True
-    elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_azure_ok:
-        # Application does not force, so check env variable
-        ret = True
-    else:
+    elif force_api_type == "openai":
         ret = False
+    else:
+        os_env_azure_ok = bool(
+            os.environ.get("AZURE_OPENAI_API_KEY")
+            and os.environ.get("AZURE_OPENAI_ENDPOINT")
+            and os.environ.get("OPENAI_API_VERSION")
+        )
+        if OVERWRITE_LLM_SETTINGS["api_type"] == "azure" and os_env_azure_ok:
+            # Application force to use Azure
+            ret = True
+        elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_azure_ok:
+            # Application does not force, so check env variable
+            # if AZURE env variable exists, select azure
+            ret = True
+        else:
+            ret = False
     return ret
 
 
 def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI]:
     """
-    Select and return on of the LLM to use.
 
-    If environment variables AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT exist, initialize AzureChatOpenAI.
-    Otherwise, initialize ChatOpenAI.
-
+    :param kwargs:
+             force_api_type: azure or openai - force API type
+             ... - pass to the chat object
+    :return:
     """
+    force = kwargs.get("force_api_type", None)
+    try:
+        kwargs.pop("force_api_type")
+    except KeyError:
+        pass
     for k, v in OVERWRITE_LLM_SETTINGS.items():
         if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
             kwargs[k] = v
-    if isAzureAI():
+    if isAzureAI(force):
         kwargs["model"] = map_model(kwargs["model"])
         return AzureChatOpenAI(**kwargs)
     else:

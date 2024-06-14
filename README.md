@@ -46,6 +46,16 @@ snipptes/
 │     ├── py_module.py - overwrite default behavior of snippet, specialization - must be defined in model.yaml
 ```
 
+config.yaml schema:
+```yaml
+# Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
+# Optional. Force api: azure or openai
+force_api: null
+model: gpt-3.5-turbo
+temperature: 0.5
+max_tokens: 512
+```
+
 However, AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
 One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
@@ -55,11 +65,25 @@ Assistant can be run as one-shot, similar to snippets or can use its memory and 
 
 The assistants have been designed similar to Snippets. Check the `assistants` folder.
 
+config.yaml schema:
+```yaml
+# Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
+# Optional. Force api: azure or openai
+force_api: null
+model: gpt-3.5-turbo
+temperature: 0.7
+max_tokens: 512
+tools:
+  - 
+description: 
+```
+
 The assistants can use tools. To do this:
 1. Assign tools (LangChain BaseTools) by listing them in assistant `config.yaml` key
    ```yaml
    tools:
-     - jenkins
+     - brave_web
+     - file_search
    ```
 2Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 

@@ -78,6 +78,7 @@ class ChatHistory(ScrolledText):
         :param message: Message to add to chat from QUERY_ASSIST_CREATED event
         """
         self._insert_message(message, "HUMAN")
+        self.see(tk.END)
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def tool_message(self, message: str):
@@ -96,6 +97,7 @@ class ChatHistory(ScrolledText):
             self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
+        self.see(tk.END)
 
     def new_chat(self, *args):
         """
