@@ -5,9 +5,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
+from tkinterweb.htmlwidgets import HtmlFrame
+import markdown
 from tktooltip import ToolTip
 
-from chat.base import APP_EVENTS
+from chat.base import APP_EVENTS, DARKTHEME, LIGHTTHEME
 import chat.chat_settings as chat_settings
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
@@ -37,6 +39,7 @@ class ChatHistory(ScrolledText):
         self.tag_config("TOOL_prefix")
         self.tag_raise("sel")
         self.root = parent.master
+        self.parent = parent
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_TOOL, self.tool_message)
@@ -48,6 +51,11 @@ class ChatHistory(ScrolledText):
         """Update text tags when theme changed."""
         col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
         self.tag_config("HUMAN", foreground=col)
+        if theme == "dark":
+            self.parent.html.html.update_default_style(LIGHTTHEME + DARKTHEME)
+        else:
+            self.parent.html.html.update_default_style(LIGHTTHEME)
+        self.root.post_event(APP_EVENTS.LOAD_CHAT, self.root.ai_db.get_conversation(self.root.conv_id))
 
     def ai_message(self, message: str):
         """
@@ -99,6 +107,24 @@ class ChatHistory(ScrolledText):
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
         self.see(tk.END)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        cols = {
+            "HUMAN": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)"),
+            "TOOL": "#DCBF85",
+            "AI": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-fg)"),
+        }
+        m_text = f'<span style="color:{cols[tag]}">'
+        if tag != "AI":
+            for tt in text.splitlines(keepends=False):
+                m_text += tt + "<br/>\n"
+        else:
+            m_text += text + "\n\n---\n"
+        m_text += "</span>"
+
+        m_html = markdown.markdown(
+            m_text, extensions=["pymdownx.superfences", "markdown.extensions.md_in_html", "markdown.extensions.tables"]
+        )
+        self.parent.html.add_html(m_html)
 
     def new_chat(self, *args):
         """
@@ -108,6 +134,7 @@ class ChatHistory(ScrolledText):
 
         :return:
         """
+        self.parent.html.load_html("")
         self.delete(1.0, tk.END)
         self.see(tk.END)
         if (
@@ -124,6 +151,7 @@ class ChatHistory(ScrolledText):
         :param conversation: List of messages
         :return:
         """
+        self.parent.html.load_html("")
         self.delete(1.0, tk.END)
         if conversation.assistant:
             self.root.selected_assistant.set(conversation.assistant)
@@ -241,8 +269,21 @@ class ChatFrame(ttk.PanedWindow):
         Initialize the chat frame.
         :param parent: Main App
         """
+
         super().__init__(parent, orient=tk.VERTICAL)
         self.root = parent
+
+        self.html = HtmlFrame(self, messages_enabled=False, height=30, borderwidth=1, relief=tk.SUNKEN)
+        self.html.enable_forms(False)
+        self.html.enable_objects(False)
+        self.html.on_link_click(lambda url: print(url))
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        if theme == "dark":
+            self.html.html.update_default_style(LIGHTTHEME + DARKTHEME)
+        else:
+            self.html.html.update_default_style(LIGHTTHEME)
+        self.add(self.html)
+
         self.chatW = ChatHistory(self)
         self.add(self.chatW)
 
