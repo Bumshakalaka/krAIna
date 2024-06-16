@@ -28,7 +28,6 @@
 - Joplin loader - base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
 
 # Fixes
-- When creating new chat, always get default Assistant
 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents

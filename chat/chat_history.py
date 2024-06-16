@@ -8,6 +8,7 @@ from tkinter.scrolledtext import ScrolledText
 from tktooltip import ToolTip
 
 from chat.base import APP_EVENTS
+import chat.chat_settings as chat_settings
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
 from libs.utils import str_shortening
@@ -109,6 +110,11 @@ class ChatHistory(ScrolledText):
         """
         self.delete(1.0, tk.END)
         self.see(tk.END)
+        if (
+            chat_settings.SETTINGS.default_assistant
+            and chat_settings.SETTINGS.default_assistant in self.root.ai_assistants
+        ):
+            self.root.selected_assistant.set(chat_settings.SETTINGS.default_assistant)
         self.root.conv_id = None
 
     def load_chat(self, conversation: Conversations):

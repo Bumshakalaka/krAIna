@@ -19,6 +19,7 @@ from assistants.base import Assistants
 from chat.chat_history import ChatFrame
 
 from assistants.assistant import AssistantResp, AssistantType
+import chat.chat_settings as chat_settings
 import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS
 from chat.leftsidebar import LeftSidebar
@@ -45,6 +46,7 @@ class App(tk.Tk):
         IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
         """
         super().__init__()
+        self._settings_read()
         self._persistent_read()
         sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
         self.withdraw()
@@ -213,6 +215,29 @@ class App(tk.Tk):
                 )
             except TypeError as e:
                 logger.error("Invalid .settings.yaml format")
+
+    def _settings_read(self):
+        """
+        Get settings from config.yaml file.
+
+        :return:
+        """
+        settings_file = Path(__file__).parent / "../config.yaml"
+        if not settings_file.exists():
+            return
+
+        with open(settings_file, "r") as fd:
+            try:
+                data = yaml.load(fd, Loader=yaml.SafeLoader)["chat"]
+                chat_settings.SETTINGS = replace(
+                    chat_settings.SETTINGS,
+                    **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
+                )
+                # # fill persistence with default values
+                # for k in set(chat_persistence.SETTINGS.keys()) & set(chat_settings.SETTINGS.keys()):
+                #     setattr(chat_persistence.SETTINGS, k, getattr(chat_settings.SETTINGS, k))
+            except TypeError as e:
+                logger.error("Invalid config.yaml format")
 
     def _update_geometry(self):
         # Prevent that chat will always be visible

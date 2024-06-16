@@ -3,21 +3,18 @@ from typing import List
 
 
 @dataclass
-class chat_persistence:
+class chat_settings:
     """
-    Store all application persistent keys.
+    Store all chat application settings keys.
     """
 
-    geometry: str = "708x437+0+0"
+    default_assistant: str = None
     theme: str = "dark"
     always_on_top: bool = False
-    last_conv_id: int = None
-    last_assistant: int = None
-    last_api_type: str = None
 
     def keys(self) -> List:
         """Return all settings keys."""
         return [k for k in dir(self) if not (k.startswith("_") or callable(k) or k == "keys")]
 
 
-SETTINGS = chat_persistence()
+SETTINGS = chat_settings()

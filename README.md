@@ -243,7 +243,8 @@ File Schema:
 ```yaml
 chat:
    # chat settings
-   # aren't implemented yet
+   # Always start New Chat with selected assistant
+   default_assistant: samantha
 assistants:
    # assistants settings
    # assistant name:
@@ -294,7 +295,7 @@ SHOW_APP - Trigger to display the application
 HIDE_APP - Trigger to minimize the application
 No argument - Run the GUI app. If the app is already running, it will be shown
 ```
-Assign `./cat.sh SHOW_APP` to system global shortkey to summon KrAIna Chat quickly, press Escape in application to minimalize it.
+Assign `./chat.sh SHOW_APP` to system global shortkey to summon KrAIna Chat quickly, press Escape in application to minimalize it.
 ### Code
 
 #### Snippets
