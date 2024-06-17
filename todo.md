@@ -26,6 +26,7 @@
 - Introduce textual inline chat.
 - Develop a REST API for external integrations.
 - Joplin loader - base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
+- make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
 
 # Fixes
 
