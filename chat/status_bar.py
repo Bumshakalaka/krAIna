@@ -25,7 +25,7 @@ class StatusBar(tk.Frame):
         ttk.Separator(self).pack(side=tk.TOP, fill=tk.X)
         self.token_usage = tk.StringVar()
         self.label_token_usage = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.token_usage)
-        ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5)
+        ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5, y_offset=-50)
         self.api_name = tk.StringVar()
         self.label_api = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_name, width=10, justify=tk.RIGHT)
         self.model_name = tk.StringVar()

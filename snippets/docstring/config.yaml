@@ -1,0 +1,3 @@
+force_api: openai
+model: gpt-4o
+temperature: 0.5

@@ -3,6 +3,8 @@ temperature: 0.7
 description: |
   Hi, I'm your casual assistant.
   How can I help you today?
+#tools:
+#  - wolfram_alpha
 
 contexts:
   string: We are located in Poland
