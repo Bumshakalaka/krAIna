@@ -15,7 +15,11 @@
 - Enable streaming responses.
 - Add clipboard support.
 - Develop a settings window for user preferences.
-- Make hidden chats visible.
+- modify chats history:
+  - allow to unhide/show all
+  - allow to delete permanent
+  - add creation date to description
+  - mark conversation permanently visible
 - Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
 - Check spelling in the user query window.
 - Persist other settings:
@@ -23,6 +27,7 @@
 - markdown:
   - better tables handling
   - work with better CSS
+  - human message broken, not converted to html properly when punctuation or list used
 
 ## Miscellaneous
 - Introduce textual inline chat.
