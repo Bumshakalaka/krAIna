@@ -128,12 +128,12 @@ HR {
 /* Basic table tag rules. */
 TABLE { 
   display: table;
-  border-spacing: 0px;
+  border-spacing: 6px;
   border-bottom-color: grey25;
   border-right-color: grey25;
   border-top-color: grey60;
   border-left-color: grey60;
-  text-align: left;
+  text-align: center;
 }
 TR              { display: table-row }
 THEAD           { display: table-header-group }

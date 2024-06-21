@@ -2,6 +2,7 @@
 import functools
 import logging
 import tkinter as tk
+import webbrowser
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
@@ -18,7 +19,7 @@ from libs.utils import str_shortening
 logger = logging.getLogger(__name__)
 
 
-class ChatHistory(ScrolledText):
+class ChatHistoryHtml(HtmlFrame):
     """Chat history frame."""
 
     def __init__(self, parent):
@@ -27,34 +28,45 @@ class ChatHistory(ScrolledText):
 
         :param parent: Chat frame.
         """
-        super().__init__(parent, height=15)
+        super().__init__(
+            parent, messages_enabled=False, horizontal_scrollbar=True, height=15, borderwidth=1, relief=tk.SUNKEN
+        )
+        self.enable_forms(False)
+        self.enable_objects(False)
+        self.on_link_click(self.open_webbrowser)
+        self.on_done_loading(self.see_end)
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
-        self.tag_config("HUMAN", foreground=col, spacing3=5)
-        self.tag_config("HUMAN_prefix", spacing3=5)
-        self.tag_config("AI", lmargin1=10, lmargin2=10)
-        self.tag_config("AI_prefix")
-        self.tag_config("AI_end")
-        self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
-        self.tag_config("TOOL_prefix")
-        self.tag_raise("sel")
+        if theme == "dark":
+            self.html.update_default_style(LIGHTTHEME + DARKTHEME)
+        else:
+            self.html.update_default_style(LIGHTTHEME)
+
         self.root = parent.master
-        self.parent = parent
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_TOOL, self.tool_message)
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
         self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
+        self.raw_messages = []
+
+    def open_webbrowser(self, url):
+        webbrowser.open(url, new=2, autoraise=True)
+
+    def see_end(self):
+        self.yview_moveto(1)
+
+    def clear(self):
+        self.load_html("")
+        self.raw_messages = []
+        self.html.reset()
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
-        self.tag_config("HUMAN", foreground=col)
         if theme == "dark":
-            self.parent.html.html.update_default_style(LIGHTTHEME + DARKTHEME)
+            self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
-            self.parent.html.html.update_default_style(LIGHTTHEME)
+            self.html.update_default_style(LIGHTTHEME)
         self.root.post_event(APP_EVENTS.LOAD_CHAT, self.root.ai_db.get_conversation(self.root.conv_id))
 
     def ai_message(self, message: str):
@@ -69,13 +81,17 @@ class ChatHistory(ScrolledText):
         """
         if message:
             self._insert_message(message, "AI")
-            self.see(tk.END)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
-        if len(self.tag_ranges("AI_end")) == 2:
+        # TODO: make it work with html
+        if len([x[0] == "AI" for x in self.raw_messages]) == 2:
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
-        if len(self.tag_ranges("AI_end")) == 4:
-            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END)[0:14000])
+        if len([x[0] == "AI" for x in self.raw_messages]) == 4:
+            # call to describe chat after 2 AI messages
+            self.root.post_event(
+                APP_EVENTS.DESCRIBE_NEW_CHAT,
+                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
+            )
 
     def human_message(self, message: str):
         """
@@ -87,7 +103,6 @@ class ChatHistory(ScrolledText):
         :param message: Message to add to chat from QUERY_ASSIST_CREATED event
         """
         self._insert_message(message, "HUMAN")
-        self.see(tk.END)
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def tool_message(self, message: str):
@@ -101,30 +116,37 @@ class ChatHistory(ScrolledText):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
-        text = str_shortening(text) if tag == "TOOL" else text
-        for tt in text.splitlines(keepends=False):
-            self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
-        if tag == "AI":
-            self.insert(tk.END, "\n", "AI_end")
-        self.see(tk.END)
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
         cols = {
             "HUMAN": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)"),
             "TOOL": "#DCBF85",
             "AI": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-fg)"),
         }
+        text = str_shortening(text) if tag == "TOOL" else text
+        self.raw_messages.append([tag, text])
         m_text = f'<span style="color:{cols[tag]}">'
-        if tag != "AI":
-            for tt in text.splitlines(keepends=False):
-                m_text += tt + "<br/>\n"
+        if tag == "HUMAN":
+            m_text += (
+                text + f'\n\n<hr style="height:2px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">\n'
+            )
+        elif tag == "TOOL":
+            m_text += text
         else:
-            m_text += text + "\n\n---\n"
+            m_text += text
+            if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
+                # situation when LLM give text block in ``` but the ``` are unbalanced
+                # it can happen when completion tokens where not enough
+                m_text += "\n```"
+            # add horizontal line separator
+            m_text += f'\n\n<hr style="height:4px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">'
         m_text += "</span>"
 
-        m_html = markdown.markdown(
-            m_text, extensions=["pymdownx.superfences", "markdown.extensions.md_in_html", "markdown.extensions.tables"]
+        self.add_html(
+            markdown.markdown(
+                m_text,
+                extensions=["pymdownx.superfences", "markdown.extensions.md_in_html", "markdown.extensions.tables"],
+            )
         )
-        self.parent.html.add_html(m_html)
 
     def new_chat(self, *args):
         """
@@ -134,9 +156,7 @@ class ChatHistory(ScrolledText):
 
         :return:
         """
-        self.parent.html.load_html("")
-        self.delete(1.0, tk.END)
-        self.see(tk.END)
+        self.clear()
         if (
             chat_settings.SETTINGS.default_assistant
             and chat_settings.SETTINGS.default_assistant in self.root.ai_assistants
@@ -151,33 +171,16 @@ class ChatHistory(ScrolledText):
         :param conversation: List of messages
         :return:
         """
-        self.parent.html.load_html("")
-        self.delete(1.0, tk.END)
+        self.clear()
         if conversation.assistant:
             self.root.selected_assistant.set(conversation.assistant)
         for message in conversation.messages:
             self._insert_message(message.message, LlmMessageType(message.type).name)
-        if len(self.tag_ranges("AI_end")) >= 4:
-            self.root.post_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.get(1.0, tk.END)[0:14000])
-        self.see(tk.END)
-
-    def undump(self, dump_data):
-        """
-        Restore chat from dump.
-
-        :param dump_data: Text.dump()
-        :return:
-        """
-        tags = []
-        for key, value, index in dump_data:
-            if key == "tagon":
-                tags.append(value)
-            elif key == "tagoff":
-                tags.remove(value)
-            elif key == "mark":
-                self.mark_set(value, index)
-            elif key == "text":
-                self.insert(index, value, tags)
+        if len([x[0] == "AI" for x in self.raw_messages]) == 4:
+            self.root.post_event(
+                APP_EVENTS.DESCRIBE_NEW_CHAT,
+                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
+            )
 
 
 class UserQuery(ttk.Frame):
@@ -273,18 +276,7 @@ class ChatFrame(ttk.PanedWindow):
         super().__init__(parent, orient=tk.VERTICAL)
         self.root = parent
 
-        self.html = HtmlFrame(self, messages_enabled=False, height=30, borderwidth=1, relief=tk.SUNKEN)
-        self.html.enable_forms(False)
-        self.html.enable_objects(False)
-        self.html.on_link_click(lambda url: print(url))
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        if theme == "dark":
-            self.html.html.update_default_style(LIGHTTHEME + DARKTHEME)
-        else:
-            self.html.html.update_default_style(LIGHTTHEME)
-        self.add(self.html)
-
-        self.chatW = ChatHistory(self)
+        self.chatW = ChatHistoryHtml(self)
         self.add(self.chatW)
 
         self.userW = UserQuery(self)
