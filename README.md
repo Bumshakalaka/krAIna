@@ -193,6 +193,10 @@ Chat GUI application build using tkinter.
 
 ![Chat main window](img/chat_main.gif)
 
+Markdown is now supported:
+
+![chat with markdown](img/kraina_markdown.gif)
+
 features:
 * Chat with history
 * Light/Dark theme
@@ -204,6 +208,7 @@ features:
 * progress bar to visualize that LLM is working
 * status bar
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
+* Markdown support
 
 ## Install
 1. Clone the project.

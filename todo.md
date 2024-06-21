@@ -17,10 +17,12 @@
 - Develop a settings window for user preferences.
 - Make hidden chats visible.
 - Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
-- Support for markdown in chat history.
 - Check spelling in the user query window.
 - Persist other settings:
   - size of internal windows
+- markdown:
+  - better tables handling
+  - work with better CSS
 
 ## Miscellaneous
 - Introduce textual inline chat.
@@ -29,7 +31,7 @@
 - make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
 
 # Fixes
-
+- white blank chat history when this widget cleared — NEW CHAT button 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents
 - allow to remove steps from conversation and run it again

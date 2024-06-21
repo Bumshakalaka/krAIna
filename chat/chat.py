@@ -64,7 +64,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         Menu(self)
-        pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL)
+        pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL, height=80)
 
         self.leftsidebarW = LeftSidebar(self)
         pw_main.add(self.leftsidebarW)

@@ -192,7 +192,7 @@ class UserQuery(ttk.Frame):
 
         :param parent: Chat frame.
         """
-        super().__init__(parent)
+        super().__init__(parent, height=10)
         self.root = parent.master
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_SNIPPET, self.skill_message)
         self.root.bind_on_event(APP_EVENTS.UNBLOCK_USER, self.unblock)
