@@ -127,7 +127,8 @@ class ChatHistoryHtml(HtmlFrame):
         m_text = f'<span style="color:{cols[tag]}">'
         if tag == "HUMAN":
             m_text += (
-                text + f'\n\n<hr style="height:2px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">\n'
+                text.strip()
+                + f'\n\n<hr style="height:2px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">\n'
             )
         elif tag == "TOOL":
             m_text += text
@@ -140,13 +141,17 @@ class ChatHistoryHtml(HtmlFrame):
             # add horizontal line separator
             m_text += f'\n\n<hr style="height:4px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">'
         m_text += "</span>"
-
-        self.add_html(
-            markdown.markdown(
-                m_text,
-                extensions=["pymdownx.superfences", "markdown.extensions.md_in_html", "markdown.extensions.tables"],
-            )
+        html = markdown.markdown(
+            m_text,
+            extensions=[
+                "pymdownx.superfences",
+                "markdown.extensions.md_in_html",
+                "markdown.extensions.tables",
+                "nl2br",
+                "sane_lists",
+            ],
         )
+        self.add_html(html)
 
     def new_chat(self, *args):
         """
