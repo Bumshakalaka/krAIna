@@ -98,7 +98,10 @@ class App(tk.Tk):
             self.post_event(APP_EVENTS.GET_CHAT, chat_persistence.SETTINGS.last_conv_id)
         if chat_persistence.SETTINGS.last_assistant:
             self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
-        self.post_event(APP_EVENTS.UPDATE_STATUS_BAR, self.getvar("selected_api_type"))
+        self.setvar(
+            "selected_api_type",
+            "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
+        )
         self.chatW.userW.text.focus_force()
 
     def reload_ai(self, *args):
@@ -169,7 +172,7 @@ class App(tk.Tk):
 
         ADD_NEW_CHAT_ENTRY is post without data.
         """
-        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.ai_db.list_conversations(active=True))
+        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.ai_db.list_conversations(active=True, limit=20))
 
     def get_chat(self, conv_id: int):
         """

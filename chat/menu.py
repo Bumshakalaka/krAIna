@@ -67,7 +67,7 @@ class LlmType(tk.Menu):
         self.parent = parent
         self._var = tk.StringVar(
             self,
-            "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
+            None,
             "selected_api_type",
         )
         self._var.trace("w", self.update_var)
