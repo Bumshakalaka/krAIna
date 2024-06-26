@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Union, List
 
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 
-from libs.llm import chat_llm
+from libs.llm import chat_llm, map_model
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +26,14 @@ class BaseSnippet:
     """Snippet name"""
     prompt: str = None
     """Snippet system prompt"""
-    model: str = "gpt-3.5-turbo"
+    _model: str = "gpt-3.5-turbo"
     """Snippet LLM model"""
     temperature: float = 0.5
     """Snippet temperature"""
     max_tokens: int = 512
     """Max token response"""
     force_api: str = None  # azure, openai
-    """Force to use azure or openai"""
+    """Force to use azure or openai or anthropic"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""
 
@@ -45,6 +46,14 @@ class BaseSnippet:
         super().__init_subclass__(**kwargs)
         if not cls.__name__.startswith("_"):
             SPECIALIZED_SNIPPETS[cls.__name__] = cls
+
+    @property
+    def model(self):
+        return map_model(self._model, self.force_api)
+
+    @model.setter
+    def model(self, value: str):
+        self._model = value
 
     def invoke(
         self, chat: Union[ChatOpenAI, AzureChatOpenAI], prompt: ChatPromptTemplate, text, **kwargs
@@ -59,12 +68,17 @@ class BaseSnippet:
         :return:
         """
         ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))
-        if ret.response_metadata["finish_reason"] == "stop":
+        finish_reason = "finish_reason"
+        stop_str = "stop"
+        if isinstance(chat, ChatAnthropic):
+            finish_reason = "stop_reason"
+            stop_str = "stop_reason"
+        if ret.response_metadata[finish_reason] == stop_str:
             # complete response received
             return ret
         else:
             # max tokens reached. Consider setting larger max_tokens
-            while not ret.response_metadata["finish_reason"] == "stop":
+            while not ret.response_metadata[finish_reason] == stop_str:
                 # ask for the next chunk
                 prompt.append(ret)  # add the previous chunk to the conversation
                 prompt.append(HumanMessage("The response is not complete, continue"))  # ask for more

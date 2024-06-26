@@ -82,6 +82,9 @@ class Assistants(dict):
                         prompt += f"\n## {idx}"
                         prompt += "\n" + context
 
+                    if settings.get("model", None):
+                        settings["_model"] = settings.pop("model")
+
                     if settings.get("specialisation", None):
                         if (_file := (assistant / settings["specialisation"].get("file", "not_exists"))).exists():
                             assistant_cls = getattr(import_module(_file), settings["specialisation"]["class"])

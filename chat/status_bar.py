@@ -7,7 +7,7 @@ from tktooltip import ToolTip
 
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
-from libs.llm import isAzureAI
+from libs.llm import get_llm_type
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class StatusBar(tk.Frame):
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
-        self.api_name.set("Azure" if isAzureAI(data) else "OpenAi")
+        self.api_name.set(get_llm_type(data))
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
         col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
         self.label_api.configure(background=col)

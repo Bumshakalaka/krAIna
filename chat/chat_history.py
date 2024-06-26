@@ -6,7 +6,7 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from typing import Dict
 
-from tiktoken import encoding_for_model
+from tiktoken import encoding_for_model, get_encoding
 from tktooltip import ToolTip
 
 import chat.chat_persistence as chat_persistence
@@ -160,7 +160,10 @@ class UserQuery(ttk.Frame):
 
         def _call(text):
             """Calculate the number of tokens per text"""
-            enc = encoding_for_model(self.root.ai_assistants[self.root.selected_assistant.get()].model)
+            try:
+                enc = encoding_for_model(self.root.ai_assistants[self.root.selected_assistant.get()].model)
+            except KeyError:
+                enc = get_encoding("cl100k_base")
             self.tokens.set("Tokens: " + str(len(enc.encode(text)) + ADDITIONAL_TOKENS_PER_MSG))
             self.tokens_after_id = None
 

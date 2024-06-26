@@ -12,10 +12,10 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from tiktoken import encoding_for_model, Encoding
+from tiktoken import encoding_for_model, Encoding, get_encoding
 
 from libs.db.controller import Db, LlmMessageType
-from libs.llm import chat_llm
+from libs.llm import chat_llm, map_model
 from tools.base import get_and_init_tools
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class BaseAssistant:
     """Description of the assistant"""
     prompt: str = None
     """Assistant system prompt"""
-    model: str = "gpt-3.5-turbo"
+    _model: str = "gpt-3.5-turbo"
     """Assistant LLM model"""
     temperature: float = 0.7
     """Assistant temperature"""
@@ -73,7 +73,7 @@ class BaseAssistant:
     """Type of assistant"""
     tools: List[str] = None
     """Tools to use"""
-    force_api: str = None  # azure, openai
+    force_api: str = None  # azure, openai, anthropic
     """Force to use azure or openai"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""
@@ -90,7 +90,18 @@ class BaseAssistant:
 
     @property
     def encoding(self) -> Encoding:
-        return encoding_for_model(self.model)
+        try:
+            return encoding_for_model(self.model)
+        except KeyError:
+            return get_encoding("cl100k_base")
+
+    @property
+    def model(self):
+        return map_model(self._model, self.force_api)
+
+    @model.setter
+    def model(self, value: str):
+        self._model = value
 
     def tokens_used(
         self, conv_id: Union[int, None] = None, hist: Union[List[BaseMessage], None] = None
@@ -102,7 +113,11 @@ class BaseAssistant:
         :return: Dict
         """
         ret = {
-            "api": {"model": self.model, "max_tokens": self.max_tokens, "temp": self.temperature},
+            "api": {
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "temp": self.temperature,
+            },
             "prompt": 0,
             "history": 0,
         }

@@ -74,6 +74,7 @@ class LlmType(tk.Menu):
         self.add_radiobutton(label="Default", variable=self._var, value="-")
         self.add_radiobutton(label="Azure", variable=self._var, value="azure")
         self.add_radiobutton(label="OpenAI", variable=self._var, value="openai")
+        self.add_radiobutton(label="Anthropic", variable=self._var, value="anthropic")
 
     def update_var(self, *args):
         """Callback on radiobutton change."""
