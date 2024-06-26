@@ -83,10 +83,10 @@ class ChatHistoryHtml(HtmlFrame):
             self._insert_message(message, "AI")
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
         # TODO: make it work with html
-        if len([x[0] == "AI" for x in self.raw_messages]) == 2:
+        if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 1:
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
-        if len([x[0] == "AI" for x in self.raw_messages]) == 4:
+        if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 2:
             # call to describe chat after 2 AI messages
             self.root.post_event(
                 APP_EVENTS.DESCRIBE_NEW_CHAT,
@@ -152,6 +152,7 @@ class ChatHistoryHtml(HtmlFrame):
             ],
         )
         self.add_html(html)
+        self.see_end()
 
     def new_chat(self, *args):
         """
@@ -181,7 +182,7 @@ class ChatHistoryHtml(HtmlFrame):
             self.root.selected_assistant.set(conversation.assistant)
         for message in conversation.messages:
             self._insert_message(message.message, LlmMessageType(message.type).name)
-        if len([x[0] == "AI" for x in self.raw_messages]) == 4:
+        if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
             self.root.post_event(
                 APP_EVENTS.DESCRIBE_NEW_CHAT,
                 "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
