@@ -14,6 +14,7 @@ class chat_persistence:
     last_conv_id: int = None
     last_assistant: int = None
     last_api_type: str = None
+    last_view_id: int = None
 
     def keys(self) -> List:
         """Return all settings keys."""

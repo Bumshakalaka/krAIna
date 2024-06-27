@@ -36,7 +36,8 @@
 - make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
 
 # Fixes
-- white blank chat history when this widget cleared — NEW CHAT button 
+- white blank chat history when this widget cleared — NEW CHAT button
+
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents
 - allow to remove steps from conversation and run it again

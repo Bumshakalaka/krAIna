@@ -198,7 +198,7 @@ Markdown is now supported:
 ![chat with markdown](img/kraina_markdown.gif)
 
 features:
-* Chat with history
+* Chat with history (html and text tabs available)
 * Light/Dark theme
 * Last 10 chats which can be recalled. They are auto-named and describe
 * Assistant selection
