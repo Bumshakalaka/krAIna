@@ -206,7 +206,8 @@ features:
 * Overwrite Assistant settings
 * persistence storage on exit
 * progress bar to visualize that LLM is working
-* status bar
+* status bar with information about estimated token used for system prompt, history, tools, completions
+* Live token estimation for user query
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
 * Markdown support
 
@@ -321,13 +322,14 @@ from assistants.base import Assistants
 
 load_dotenv(find_dotenv())
 assistants = Assistants()
-# one shot, do not use database
+# one shot, do not use a database
 action = assistants["echo"]
 ret = action.run("2+2", use_db=False)
-print(ret)  # AssistantResp(conv_id=None, data=AIMessage(content='2 + 2 equals 4.', response_metadata=...
+print(ret)  # AssistantResp(conv_id=None, content='2 + 2 equals 4.', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 0, 'input': 6, 'total_input': 37, 'output': 11, 'total': 85}, error=None)
 # with history
 first = action.run("My name is Paul")  # First call without conv_id creates new conversation
-print(first)  # AssistantResp(conv_id=3, data=AIMessage(content='Nice to meet you, Paul! How can I assist you today?', response_metadata=...
+print(first)  # AssistantResp(conv_id=192, content='Nice to meet you, Paul! How can I assist you today?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 7, 'input': 7, 'total_input': 45, 'output': 17, 'total': 107}, error=None)
 ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
-print(ret)  # AssistantResp(conv_id=3, data=AIMessage(content='Your name is Paul.', response_metadata=...
+print(ret)  # AssistantResp(conv_id=192, content='Your name is Paul. How can I assist you today, Paul?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 24, 'input': 8, 'total_input': 63, 'output': 17, 'total': 143}, error=None)
+
 ```

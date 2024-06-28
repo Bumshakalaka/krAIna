@@ -7,7 +7,6 @@
 
 ## Assistant Enhancements
 - Implement memory and vector search capabilities.
-- Develop more effective prompts and enable customization.
 - Develop way to pass text file as input
 - Do _run_ocr_assistant to BaseAssistant to not use overwrite.
 
@@ -34,6 +33,9 @@
 - Develop a REST API for external integrations.
 - Joplin loader - base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
 - make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
+- add possibility to call snippets via Chat IPC (to have one application)
+- speedup internal SQlite DB (one session, lazy commit, indexes, cleanup chats older than 30 days, pragma optimise, normalize tables)
+- add sqlite DB versioning and migration 
 
 # Fixes
 - 
