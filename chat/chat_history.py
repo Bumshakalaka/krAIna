@@ -12,6 +12,7 @@ import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
 from chat.base import APP_EVENTS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
+from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,9 @@ class ChatHistory(ttk.Notebook):
 
     def load_chat(self, conversation: Conversations):
         """Call view methods."""
+        self.raw_messages = []
+        for message in conversation.messages:
+            self.raw_messages.append([LlmMessageType(message.type).name, message.message])
         for view in self.views.values():
             view.load_chat(conversation)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
