@@ -33,7 +33,7 @@ class Conversations(Base):
     """Conversations table."""
 
     __tablename__ = "conversations"
-    conversation_id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(primary_key=True, index=True)
     description: Mapped[str] = mapped_column(nullable=True)
     name: Mapped[str] = mapped_column(nullable=True)
     active: Mapped[bool] = mapped_column(default=True)
@@ -45,7 +45,7 @@ class Messages(Base):
     """Messages table"""
 
     __tablename__ = "messages"
-    message_id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = mapped_column(primary_key=True, index=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.conversation_id"), index=True)
     type: Mapped[int]
     message: Mapped[str]
