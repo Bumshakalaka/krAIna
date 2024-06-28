@@ -5,6 +5,7 @@ import tkinter as tk
 
 from tktooltip import ToolTip
 
+from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from libs.llm import isAzureAI
 
@@ -28,12 +29,13 @@ class StatusBar(tk.Frame):
         ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5, y_offset=-50)
         self.api_name = tk.StringVar()
         self.label_api = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_name, width=10, justify=tk.RIGHT)
-        self.model_name = tk.StringVar()
-        self.label_model = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.model_name, width=20)
-        self.label_model.pack(side=tk.LEFT, fill=tk.X)
-        self.label_token_usage.pack(side=tk.LEFT)
+        self.api_params = tk.StringVar()
+        self.label_api_params = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_params)
+        self.label_api_params.pack(side=tk.LEFT)
+        self.label_token_usage.pack(side=tk.LEFT, fill=tk.X)
         self.label_api.pack(side=tk.RIGHT)
-        self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR, self.update_statusbar_api)
+        self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, self.update_statusbar_api)
+        self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_TOKENS, self.update_statusbar)
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
@@ -42,14 +44,15 @@ class StatusBar(tk.Frame):
         col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
         self.label_api.configure(background=col)
 
-    def update_statusbar(self, data):
+    def update_statusbar(self, data: AssistantResp):
         """Update status bar."""
-        self.token_usage.set(data.get("token_usage", ""))
-        self.model_name.set(data.get("model_name", ""))
-        if data.get("model_name") is None:
+        if data.error:
+            self.token_usage.set(str(data.error))
             # we have error from LLM call
             self.label_token_usage.configure(background="#ED6A5A")
         else:
+            self.api_params.set(str(data.tokens.pop("api")) + " | ")
+            self.token_usage.set(str(data.tokens))
             theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
             col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
             self.label_token_usage.configure(background=col)

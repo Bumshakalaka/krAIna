@@ -10,7 +10,7 @@ from dataclasses import asdict, replace
 from json import JSONDecodeError
 from pathlib import Path
 from tkinter import ttk
-from typing import Callable, Dict, Union, Iterable
+from typing import Callable, Dict, Union, Any
 
 import sv_ttk
 import yaml
@@ -184,6 +184,12 @@ class App(tk.Tk):
         if self.ai_db.is_conversation_id_valid(conv_id):
             self.conv_id = conv_id
             self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
+            self.post_event(
+                APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+                AssistantResp(
+                    conv_id, "not used", self.ai_assistants[self.selected_assistant.get()].tokens_used(conv_id)
+                ),
+            )
             chat_persistence.SETTINGS.last_conv_id = self.conv_id
         else:
             logger.error("conversation_id not know")
@@ -272,7 +278,7 @@ class App(tk.Tk):
         self._bind_table[ev].append(self._event(cmd))
         self.bind(ev.value, self._event(cmd))
 
-    def post_event(self, ev: "APP_EVENTS", data: Union[str, Dict, Iterable, None]):
+    def post_event(self, ev: "APP_EVENTS", data: Any):
         """
         Post virtual event with data.
 
@@ -307,7 +313,6 @@ class App(tk.Tk):
         :param data: Query to be answered by assistant
         :return:
         """
-        DummyBaseMessage = namedtuple("Dummy", "content response_metadata")
 
         def _call(assistant, query, conv_id):
             try:
@@ -324,10 +329,10 @@ class App(tk.Tk):
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
-                ret = AssistantResp(self.conv_id, DummyBaseMessage("", {"token_usage": _err}))
+                ret = AssistantResp(self.conv_id, "", {}, _err)
             self.conv_id = ret.conv_id
-            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.data.content)
-            self.status.update_statusbar(ret.data.response_metadata)
+            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.content)
+            self.after_idle(self.status.update_statusbar, ret)
 
         threading.Thread(
             target=_call,

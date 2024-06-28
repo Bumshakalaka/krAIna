@@ -10,6 +10,7 @@ from tktooltip import ToolTip
 
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
+from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from libs.db.controller import LlmMessageType
@@ -52,6 +53,14 @@ class ChatHistory(ttk.Notebook):
         for view in self.views.values():
             view.update_tags(theme)
         self.root.post_event(APP_EVENTS.LOAD_CHAT, self.root.ai_db.get_conversation(self.root.conv_id))
+        self.root.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                self.root.conv_id,
+                "not used",
+                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+            ),
+        )
 
     def new_chat(self, *args):
         """Call view methods."""

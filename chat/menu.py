@@ -80,7 +80,7 @@ class LlmType(tk.Menu):
         _var = self.getvar(name=args[0])
         chat_persistence.SETTINGS.last_api_type = "" if _var == "-" else _var
         overwrite_llm_settings(api_type="" if _var == "-" else _var)
-        self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR, "" if _var == "-" else _var)
+        self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "" if _var == "-" else _var)
 
 
 class SettingsMenu(tk.Menu):

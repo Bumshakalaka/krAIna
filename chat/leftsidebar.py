@@ -7,7 +7,7 @@ import tkinter as tk
 from typing import List
 from tktooltip import ToolTip
 
-from assistants.assistant import AssistantType
+from assistants.assistant import AssistantType, AssistantResp
 from chat.base import APP_EVENTS
 import chat.chat_persistence as chat_persistence
 from libs.db.model import Conversations
@@ -63,6 +63,14 @@ class LeftSidebar(ttk.Frame):
 
     def assistant_change(self, *args):
         chat_persistence.SETTINGS.last_assistant = self.root.selected_assistant.get()
+        self.root.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                self.root.conv_id,
+                "not used",
+                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+            ),
+        )
 
     def list_saved_chats(self, conversations: List[Conversations]):
         """
@@ -94,6 +102,14 @@ class LeftSidebar(ttk.Frame):
     def new_chat(self):
         """New chat."""
         self.root.post_event(APP_EVENTS.NEW_CHAT, None)
+        self.root.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                None,
+                "not used",
+                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(None),
+            ),
+        )
 
     def reload_ai(self):
         """Reload assistants and snippets"""
