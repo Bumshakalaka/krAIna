@@ -6,11 +6,12 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from typing import Dict
 
+from tiktoken import encoding_for_model
 from tktooltip import ToolTip
 
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
-from assistants.assistant import AssistantResp
+from assistants.assistant import AssistantResp, ADDITIONAL_TOKENS_PER_MSG
 from chat.base import APP_EVENTS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from libs.db.controller import LlmMessageType
@@ -134,11 +135,33 @@ class UserQuery(ttk.Frame):
         self.text = ScrolledText(self, height=5, selectbackground="lightblue", undo=True)
         self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
+        self.text.bind("<KeyRelease>", self._show_tokens)
+        self.text.bind("<<Paste>>", self._show_tokens)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
         self.send_btn = ttk.Button(self, text="Send", command=functools.partial(self.invoke, "assistant"))
         ToolTip(self.send_btn, msg="Ask Assistant. <Ctrl+Enter>", follow=False, delay=0.5)
-        self.send_btn.pack(side=tk.BOTTOM, anchor=tk.NE, padx=2, pady=2)
+        self.send_btn.pack(side=tk.RIGHT, anchor=tk.NE, padx=2, pady=2)
+        self.tokens = tk.StringVar(self, "Tokens: 0")
+        self.tokens_after_id = None
+        self.label_tokens = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.tokens)
+        self.label_tokens.pack(side=tk.LEFT, anchor=tk.NW, padx=2, pady=2)
+
+    def _show_tokens(self, *args):
+        """Schedule tokens count on every button release of text paste."""
+
+        def _call(text):
+            """Calculate the number of tokens per text"""
+            enc = encoding_for_model(self.root.ai_assistants[self.root.selected_assistant.get()].model)
+            self.tokens.set("Tokens: " + str(len(enc.encode(text)) + ADDITIONAL_TOKENS_PER_MSG))
+            self.tokens_after_id = None
+
+        if self.tokens_after_id:
+            # if _call was scheduled but has not been executed yet (user is writing)
+            # cancel the execution
+            self.after_cancel(self.tokens_after_id)
+        # schedule calculation of tokens with delay
+        self.tokens_after_id = self.after(500, _call, self.text.get("1.0", tk.END))
 
     def invoke(self, entity: str, event=None):
         """
