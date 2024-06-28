@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Union, Tuple
 
 from sqlalchemy import create_engine, select, update, delete, and_, Engine, event
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from .model import Base, Conversations, Messages
 
@@ -61,6 +61,8 @@ class Db:
         """
         self.engine = create_engine("sqlite:///" + str(Path(__file__).parent / "../../kraina.db"))
         Base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
 
         """handle current conversation_id"""
         self.conv_id: Union[int, None] = None
@@ -73,8 +75,9 @@ class Db:
         :return:
         """
         conv_id = self.conv_id if conv_id is None else conv_id
-        with Session(self.engine) as s:
-            data = s.execute(select(Conversations.active).where(Conversations.conversation_id == conv_id)).scalar()
+        data = self.session.execute(
+            select(Conversations.active).where(Conversations.conversation_id == conv_id)
+        ).scalar()
         return bool(data)
 
     @lru_cache
@@ -86,10 +89,9 @@ class Db:
         :return:
         """
         conv_id = self.conv_id if conv_id is None else conv_id
-        with Session(self.engine) as s:
-            data = s.execute(
-                select(Conversations.conversation_id).where(Conversations.conversation_id == conv_id)
-            ).scalar()
+        data = self.session.execute(
+            select(Conversations.conversation_id).where(Conversations.conversation_id == conv_id)
+        ).scalar()
         return bool(data)
 
     def new_conversation(self, name: str = None, description: str = None, assistant: str = None):
@@ -101,11 +103,9 @@ class Db:
         :param assistant: Used Assistant
         :return:
         """
-        with Session(self.engine) as s:
-            obj = Conversations(name=name, description=description, assistant=assistant)
-            s.add(obj)
-            s.commit()
-            s.refresh(obj)
+        obj = Conversations(name=name, description=description, assistant=assistant)
+        self.session.add(obj)
+        self.session.commit()
         self.conv_id = obj.conversation_id
 
     def update_conversation(self, conv_id: Union[int, None] = None, **kwargs):
@@ -119,9 +119,8 @@ class Db:
         conv_id = self.conv_id if conv_id is None else conv_id
         if not self.is_conversation_id_valid(conv_id):
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
-        with Session(self.engine) as s:
-            s.execute(update(Conversations).where(Conversations.conversation_id == conv_id).values(**kwargs))
-            s.commit()
+        self.session.execute(update(Conversations).where(Conversations.conversation_id == conv_id).values(**kwargs))
+        self.session.commit()
 
     def delete_conversation(self, conv_id: Union[int, None] = None):
         """
@@ -149,25 +148,24 @@ class Db:
         :param limit: How many conversations return
         :return: List of Conversations dataclass from db.model
         """
-        with Session(self.engine) as s:
-            # Get all conversation with prio > 0 first
-            stmt = select(Conversations).order_by(Conversations.priority.desc(), Conversations.conversation_id.desc())
-            if active is None:
-                stmt = stmt.where(Conversations.priority > 0)
-            else:
-                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority > 0))
-            ret = []
-            for row in s.execute(stmt):
-                ret.append(row[0])
+        # Get all conversation with prio > 0 first
+        stmt = select(Conversations).order_by(Conversations.priority.desc(), Conversations.conversation_id.desc())
+        if active is None:
+            stmt = stmt.where(Conversations.priority > 0)
+        else:
+            stmt = stmt.where(and_(Conversations.active == active, Conversations.priority > 0))
+        ret = []
+        for row in self.session.execute(stmt):
+            ret.append(row[0])
 
-            stmt = (
-                select(Conversations).where(Conversations.priority == 0).order_by(Conversations.conversation_id.desc())
-            )
-            if active is not None:
-                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority == 0)).limit(limit)
-            for row in s.execute(stmt):
-                ret.append(row[0])
-            return ret
+        stmt = (
+            select(Conversations).where(Conversations.priority == 0).order_by(Conversations.conversation_id.desc())
+        )
+        if active is not None:
+            stmt = stmt.where(and_(Conversations.active == active, Conversations.priority == 0)).limit(limit)
+        for row in self.session.execute(stmt):
+            ret.append(row[0])
+        return ret
 
     def get_conversation(self, conv_id: Union[int, None] = None) -> Conversations:
         """
@@ -179,10 +177,9 @@ class Db:
         conv_id = self.conv_id if conv_id is None else conv_id
         if not self.is_conversation_id_valid(conv_id):
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
-        with Session(self.engine) as s:
-            conv = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).one()[0]
-            len(conv.messages)
-            return conv
+        conv = self.session.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).one()[0]
+        len(conv.messages)
+        return conv
 
     def add_message(self, message_type: LlmMessageType, message: str, conv_id: Union[int, None] = None):
         """
@@ -196,16 +193,15 @@ class Db:
         conv_id = self.conv_id if conv_id is None else conv_id
         if not self.is_conversation_id_valid(conv_id):
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
-        with Session(self.engine) as s:
-            conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            conv_obj.messages.append(
-                Messages(
-                    type=message_type,
-                    message=message.strip(),
-                    create_at=datetime.datetime.now(),
-                )
+        conv_obj = self.session.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
+        conv_obj.messages.append(
+            Messages(
+                type=message_type,
+                message=message.strip(),
+                create_at=datetime.datetime.now(),
             )
-            s.commit()
+        )
+        self.session.commit()
 
     def add_messages(self, messages: List[Tuple[LlmMessageType, str]], conv_id: Union[int, None] = None):
         """
@@ -218,14 +214,13 @@ class Db:
         conv_id = self.conv_id if conv_id is None else conv_id
         if not self.is_conversation_id_valid(conv_id):
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
-        with Session(self.engine) as s:
-            conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            for message in messages:
-                conv_obj.messages.append(
-                    Messages(
-                        type=message[0],
-                        message=message[1].strip(),
-                        create_at=datetime.datetime.now(),
-                    )
+        conv_obj = self.session.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
+        for message in messages:
+            conv_obj.messages.append(
+                Messages(
+                    type=message[0],
+                    message=message[1].strip(),
+                    create_at=datetime.datetime.now(),
                 )
-            s.commit()
+            )
+        self.session.commit()
