@@ -37,6 +37,7 @@ class Snippets(dict):
                 if not (snippet.is_dir() and (snippet / "prompt.md").exists()):
                     logger.debug(f"This is not snippet folder:{snippet}")
                     continue
+                prompt = (snippet / "prompt.md").read_text()
                 snippet_cls = BaseSnippet
                 settings = {}
                 if (snippet / "config.yaml").exists():
@@ -65,6 +66,10 @@ class Snippets(dict):
                                             contexts.append(fd.read_text())
                     contexts.append("Current date: {date}")
                     settings["contexts"] = contexts
+                    prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
+                    for idx, context in enumerate(contexts):
+                        prompt += f"\n## {idx}"
+                        prompt += "\n" + context
 
                     if settings.get("specialisation", None):
                         if (_file := (snippet / settings["specialisation"].get("file", "not_exists"))).exists():
@@ -72,8 +77,7 @@ class Snippets(dict):
                         del settings["specialisation"]
                 else:
                     logger.debug(f"{snippet.name} does not use config.yaml, default will be used.")
-                with open(snippet / "prompt.md") as fd:
-                    self[snippet.name] = snippet_cls(name=snippet.name, prompt=fd.read(), **settings)
+                self[snippet.name] = snippet_cls(name=snippet.name, prompt=prompt, **settings)
 
 
 if __name__ == "__main__":

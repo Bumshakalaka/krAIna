@@ -85,11 +85,6 @@ class BaseSnippet:
         chat = chat_llm(
             force_api_type=self.force_api, model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
         )
-        if self.contexts:
-            self.prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
-            for idx, context in enumerate(self.contexts):
-                self.prompt += f"\n## {idx}"
-                self.prompt += "\n" + context
 
         prompt = ChatPromptTemplate.from_messages(
             [

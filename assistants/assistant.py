@@ -113,12 +113,6 @@ class BaseAssistant:
             hist = []
             conv_id = None
 
-        if self.contexts:
-            self.prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
-            for idx, context in enumerate(self.contexts):
-                self.prompt += f"\n## {idx}"
-                self.prompt += "\n" + context
-
         if self.type == AssistantType.SIMPLE:
             ret = self._run_simple_assistant(query, hist, ai_db, **kwargs)
         else:

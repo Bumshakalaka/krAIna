@@ -39,6 +39,7 @@ class Assistants(dict):
                 if not (assistant.is_dir() and (assistant / "prompt.md").exists()):
                     logger.debug(f"This is not assistant folder:{assistant}")
                     continue
+                prompt = (assistant / "prompt.md").read_text()
                 assistant_cls = BaseAssistant
                 settings = {}
                 if (assistant / "config.yaml").exists():
@@ -76,14 +77,18 @@ class Assistants(dict):
                     contexts.append("Current date: {date}")
                     settings["contexts"] = contexts
 
+                    prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
+                    for idx, context in enumerate(contexts):
+                        prompt += f"\n## {idx}"
+                        prompt += "\n" + context
+
                     if settings.get("specialisation", None):
                         if (_file := (assistant / settings["specialisation"].get("file", "not_exists"))).exists():
                             assistant_cls = getattr(import_module(_file), settings["specialisation"]["class"])
                         del settings["specialisation"]
                 else:
                     logger.debug(f"{assistant.name} does not use config.yaml, default will be used.")
-                with open(assistant / "prompt.md") as fd:
-                    self[assistant.name] = assistant_cls(name=assistant.name, prompt=fd.read(), **settings)
+                self[assistant.name] = assistant_cls(name=assistant.name, prompt=prompt, **settings)
 
 
 if __name__ == "__main__":
