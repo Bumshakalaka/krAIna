@@ -179,8 +179,8 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.yview_moveto(1)
 
     def _clear(self):
-        self.load_html("")
         self.html.reset()
+        self.load_html("<p></p>")
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
