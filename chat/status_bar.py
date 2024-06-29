@@ -35,7 +35,9 @@ class StatusBar(tk.Frame):
         self.label_token_usage.pack(side=tk.LEFT, fill=tk.X)
         self.label_api.pack(side=tk.RIGHT)
         self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, self.update_statusbar_api)
-        self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_TOKENS, self.update_statusbar)
+        self.root.bind_on_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS, lambda data: self.after_idle(self.update_statusbar, data)
+        )
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""

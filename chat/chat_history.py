@@ -87,6 +87,14 @@ class ChatHistory(ttk.Notebook):
                 APP_EVENTS.DESCRIBE_NEW_CHAT,
                 "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
             )
+        self.root.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                self.root.conv_id,
+                "not used",
+                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+            ),
+        )
 
     def ai_message(self, message: str):
         """Call view methods."""

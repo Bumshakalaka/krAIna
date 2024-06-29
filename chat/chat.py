@@ -184,12 +184,6 @@ class App(tk.Tk):
         if self.ai_db.is_conversation_id_valid(conv_id):
             self.conv_id = conv_id
             self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
-            self.post_event(
-                APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
-                AssistantResp(
-                    conv_id, "not used", self.ai_assistants[self.selected_assistant.get()].tokens_used(conv_id)
-                ),
-            )
             chat_persistence.SETTINGS.last_conv_id = self.conv_id
         else:
             logger.error("conversation_id not know")
