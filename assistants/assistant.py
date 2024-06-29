@@ -1,6 +1,7 @@
 """Base assistant class."""
 import enum
 import itertools
+import json
 import logging
 from collections import namedtuple
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ from typing import Union, List, Dict, Optional, Callable
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.utils.function_calling import convert_to_openai_tool
 from tiktoken import encoding_for_model, Encoding
 
 from libs.db.controller import Db, LlmMessageType
@@ -106,6 +108,9 @@ class BaseAssistant:
         }
         msgs = [msg.content for msg in (self._get_history(conv_id=conv_id) if not hist else hist)]
         ret["prompt"] += len(self.encoding.encode(self.prompt)) + ADDITIONAL_TOKENS_PER_MSG
+        if self.tools:
+            for tool in get_and_init_tools(self.tools):
+                ret["prompt"] += len(self.encoding.encode(json.dumps(convert_to_openai_tool(tool))))
         ret["history"] += (
             len(list(itertools.chain(*self.encoding.encode_batch(msgs)))) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         )
