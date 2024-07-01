@@ -28,6 +28,7 @@ from chat.status_bar import StatusBar
 from libs.db.controller import Db
 from PIL import ImageTk, Image
 
+from libs.llm import get_llm_type, SUPPORTED_API_TYPE
 from libs.utils import str_shortening
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
@@ -131,6 +132,13 @@ class App(tk.Tk):
             return
 
         def _call(query):
+            if get_llm_type(self.ai_snippets["nameit"].force_api) == SUPPORTED_API_TYPE.ANTHROPIC:
+                logger.warning("Chat description via Anthropic is not supported")
+                return
+            # get an assistant API type to avoid using built one in snippet
+            # and avoid data disclosure
+            temp = self.ai_snippets["nameit"].force_api
+            self.ai_snippets["nameit"].force_api = self.ai_assistants[self.selected_assistant.get()].force_api
             for _ in range(2):
                 try:
                     ret = json.loads(
@@ -146,6 +154,7 @@ class App(tk.Tk):
                     continue
                 else:
                     break
+            self.ai_snippets["nameit"].force_api = temp
             self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
 
         threading.Thread(

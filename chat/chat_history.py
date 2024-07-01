@@ -85,7 +85,7 @@ class ChatHistory(ttk.Notebook):
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
             self.root.post_event(
                 APP_EVENTS.DESCRIBE_NEW_CHAT,
-                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
+                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
             )
         self.root.post_event(
             APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
@@ -110,7 +110,7 @@ class ChatHistory(ttk.Notebook):
             # call to describe chat after 2 AI messages
             self.root.post_event(
                 APP_EVENTS.DESCRIBE_NEW_CHAT,
-                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:3]),
+                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
             )
 
     def human_message(self, message: str):

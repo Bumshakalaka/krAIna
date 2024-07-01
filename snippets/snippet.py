@@ -69,16 +69,16 @@ class BaseSnippet:
         """
         ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))
         finish_reason = "finish_reason"
-        stop_str = "stop"
+        stop_str = ["stop"]
         if isinstance(chat, ChatAnthropic):
             finish_reason = "stop_reason"
-            stop_str = "stop_reason"
-        if ret.response_metadata[finish_reason] == stop_str:
+            stop_str = ["end_turn", "stop_sequence"]
+        if ret.response_metadata[finish_reason] in stop_str:
             # complete response received
             return ret
         else:
             # max tokens reached. Consider setting larger max_tokens
-            while not ret.response_metadata[finish_reason] == stop_str:
+            while ret.response_metadata[finish_reason] not in stop_str:
                 # ask for the next chunk
                 prompt.append(ret)  # add the previous chunk to the conversation
                 prompt.append(HumanMessage("The response is not complete, continue"))  # ask for more
