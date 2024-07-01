@@ -5,6 +5,7 @@ import tkinter as tk
 import sv_ttk
 
 import chat.chat_persistence as chat_persistence
+from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
 
@@ -78,9 +79,18 @@ class LlmType(tk.Menu):
     def update_var(self, *args):
         """Callback on radiobutton change."""
         _var = self.getvar(name=args[0])
-        chat_persistence.SETTINGS.last_api_type = "" if _var == "-" else _var
-        overwrite_llm_settings(api_type="" if _var == "-" else _var)
-        self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "" if _var == "-" else _var)
+        api_type = "" if _var == "-" else _var
+        chat_persistence.SETTINGS.last_api_type = api_type
+        overwrite_llm_settings(api_type=api_type)
+        self.parent.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, api_type)
+        self.parent.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                self.parent.conv_id,
+                "not used",
+                self.parent.ai_assistants[self.parent.selected_assistant.get()].tokens_used(self.parent.conv_id),
+            ),
+        )
 
 
 class SettingsMenu(tk.Menu):

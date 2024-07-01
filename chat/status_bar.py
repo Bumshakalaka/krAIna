@@ -5,6 +5,7 @@ import tkinter as tk
 
 from tktooltip import ToolTip
 
+import chat.chat_persistence as chat_persistence
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from libs.llm import get_llm_type
@@ -28,7 +29,21 @@ class StatusBar(tk.Frame):
         self.label_token_usage = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.token_usage)
         ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5, y_offset=-50)
         self.api_name = tk.StringVar()
+        self.api_name_descr = tk.StringVar(
+            self,
+            f"Selected LLM to use based on:\n"
+            f"1. Chat settings: '{chat_persistence.SETTINGS.last_api_type}'\n"
+            f"2. Assistant force_api setting: '{self.root.ai_assistants[self.root.selected_assistant.get()].force_api}'",
+        )
         self.label_api = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_name, width=10, justify=tk.RIGHT)
+        ToolTip(
+            self.label_api,
+            msg=self.api_name_descr.get,
+            follow=False,
+            delay=0.5,
+            y_offset=-70,
+            x_offset=-200,
+        )
         self.api_params = tk.StringVar()
         self.label_api_params = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_params)
         self.label_api_params.pack(side=tk.LEFT)
@@ -41,7 +56,14 @@ class StatusBar(tk.Frame):
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
-        self.api_name.set(get_llm_type(data).value)
+        assistant_force_api = self.root.ai_assistants[self.root.selected_assistant.get()].force_api
+        force_api = data if assistant_force_api is None else assistant_force_api
+        self.api_name_descr.set(
+            f"Selected LLM to use based on:\n"
+            f"1. Chat settings: '{data}'\n"
+            f"2. Assistant force_api setting: '{assistant_force_api}'"
+        )
+        self.api_name.set(get_llm_type(force_api).value)
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
         col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
         self.label_api.configure(background=col)

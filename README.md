@@ -206,8 +206,8 @@ features:
 * Overwrite Assistant settings
 * persistence storage on exit
 * progress bar to visualize that LLM is working
-* status bar with information about estimated token used for system prompt, history, tools, completions
-* Live token estimation for user query
+* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+* Live token estimation for user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
 * Markdown support
 

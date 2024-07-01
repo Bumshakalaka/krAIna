@@ -71,6 +71,7 @@ class LeftSidebar(ttk.Frame):
                 self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
             ),
         )
+        self.root.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, chat_persistence.SETTINGS.last_api_type)
 
     def list_saved_chats(self, conversations: List[Conversations]):
         """
