@@ -32,7 +32,7 @@ class BaseSnippet:
     """Snippet temperature"""
     max_tokens: int = 512
     """Max token response"""
-    force_api: str = None  # azure, openai
+    force_api: str = None  # azure, openai, anthropic
     """Force to use azure or openai or anthropic"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""

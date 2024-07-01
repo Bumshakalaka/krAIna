@@ -74,7 +74,7 @@ class BaseAssistant:
     tools: List[str] = None
     """Tools to use"""
     force_api: str = None  # azure, openai, anthropic
-    """Force to use azure or openai"""
+    """Force to use azure or openai or anthropic"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""
 

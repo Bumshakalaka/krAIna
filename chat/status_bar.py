@@ -41,7 +41,7 @@ class StatusBar(tk.Frame):
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
-        self.api_name.set(get_llm_type(data))
+        self.api_name.set(get_llm_type(data).value)
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
         col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
         self.label_api.configure(background=col)

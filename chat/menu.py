@@ -6,7 +6,7 @@ import sv_ttk
 
 import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS
-from libs.llm import overwrite_llm_settings
+from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,8 @@ class LlmType(tk.Menu):
         )
         self._var.trace("w", self.update_var)
         self.add_radiobutton(label="Default", variable=self._var, value="-")
-        self.add_radiobutton(label="Azure", variable=self._var, value="azure")
-        self.add_radiobutton(label="OpenAI", variable=self._var, value="openai")
-        self.add_radiobutton(label="Anthropic", variable=self._var, value="anthropic")
+        for model in SUPPORTED_API_TYPE:
+            self.add_radiobutton(label=model.name, variable=self._var, value=model.value)
 
     def update_var(self, *args):
         """Callback on radiobutton change."""

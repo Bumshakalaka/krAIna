@@ -1,4 +1,5 @@
 """LLM handling."""
+import enum
 import logging
 import os
 from pathlib import Path
@@ -17,16 +18,19 @@ OVERWRITE_LLM_SETTINGS = {
     "max_tokens": "",
 }
 
+
+class SUPPORTED_API_TYPE(enum.Enum):
+    AZURE = "azure"
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+
+
 # TODO: Add validation of model mapping dict
-MAP_MODELS = {
-    "azure": {},
-    "openai": {},
-    "anthropic": {},
-}
+MAP_MODELS = {model: {} for model in SUPPORTED_API_TYPE}
 with open(Path(__file__).parent / "../config.yaml") as fd:
     settings = yaml.safe_load(fd.read())
 if settings.get("llm") and settings["llm"].get("map_model"):
-    MAP_MODELS.update(settings["llm"]["map_model"])
+    MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
 logger.debug(MAP_MODELS)
 
 
@@ -42,7 +46,7 @@ def overwrite_llm_settings(**new_settings):
             OVERWRITE_LLM_SETTINGS[k] = v
 
 
-def map_model(model: str, api_force: str = None) -> str:
+def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str] = None) -> str:
     """
     Map OpenAI model names to AzureAI
 
@@ -50,12 +54,14 @@ def map_model(model: str, api_force: str = None) -> str:
     :param api_force:
     :return: AzureAI model name
     """
+    if api_force and isinstance(api_force, str):
+        api_force = SUPPORTED_API_TYPE(api_force)
     return MAP_MODELS[get_llm_type(api_force)].get(model, model)
 
 
-def get_llm_type(force_api_type: str = None) -> str:
+def get_llm_type(force_api_type: Union[SUPPORTED_API_TYPE, str] = None) -> SUPPORTED_API_TYPE:
     """
-    Is Azure LLM in use?
+    Get API Type based on force_api_type flag, Chat application settings and env variables.
 
     :param force_api_type: force openai or azure or anthropic. If None, check app global settings
     :return:
@@ -75,19 +81,19 @@ def get_llm_type(force_api_type: str = None) -> str:
         elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_azure_ok:
             # Application does not force, so check env variable
             # if AZURE env variable exists, select azure
-            ret = "azure"
+            ret = SUPPORTED_API_TYPE.AZURE
         elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_openai_ok:
-            ret = "openai"
+            ret = SUPPORTED_API_TYPE.OPENAI
         else:
-            ret = "anthropic"
-    return ret
+            ret = SUPPORTED_API_TYPE.ANTHROPIC
+    return SUPPORTED_API_TYPE(ret) if isinstance(ret, str) else ret
 
 
 def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
     """
 
     :param kwargs:
-             force_api_type: azure or openai - force API type
+             force_api_type: azure or openai or anthropic - force API type
              ... - pass to the chat object
     :return:
     """
@@ -100,10 +106,9 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
             kwargs[k] = v
     kwargs["model"] = map_model(kwargs["model"], force)
-    models = {"azure": AzureChatOpenAI(**kwargs), "openai": ChatOpenAI(**kwargs), "anthropic": ChatAnthropic(**kwargs)}
+    models = {
+        SUPPORTED_API_TYPE.AZURE: AzureChatOpenAI(**kwargs),
+        SUPPORTED_API_TYPE.OPENAI: ChatOpenAI(**kwargs),
+        SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic(**kwargs),
+    }
     return models[get_llm_type(force)]
-
-
-def chat_llm_response(ret):
-    # TODO: depends on chat, return proper structure
-    pass
