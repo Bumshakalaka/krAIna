@@ -11,6 +11,7 @@ class chat_settings:
     default_assistant: str = None
     theme: str = "dark"
     always_on_top: bool = False
+    visible_last_chats: int = 10
 
     def keys(self) -> List:
         """Return all settings keys."""

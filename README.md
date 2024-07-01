@@ -269,6 +269,8 @@ chat:
    # chat settings
    # Always start New Chat with selected assistant
    default_assistant: samantha
+   # maximum last chats to display in left sidebar
+   visible_last_chats: 10
 assistants:
    # assistants settings
    # assistant name:

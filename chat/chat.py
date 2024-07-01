@@ -181,7 +181,10 @@ class App(tk.Tk):
 
         ADD_NEW_CHAT_ENTRY is post without data.
         """
-        self.post_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.ai_db.list_conversations(active=True, limit=20))
+        self.post_event(
+            APP_EVENTS.UPDATE_SAVED_CHATS,
+            self.ai_db.list_conversations(active=True, limit=chat_settings.SETTINGS.visible_last_chats),
+        )
 
     def get_chat(self, conv_id: int):
         """
