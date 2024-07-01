@@ -1,6 +1,6 @@
 ![logo](img/kraina_banner.png)
 ## Overview
-Set of AI-powered tools for everyday use with OpenAi or Azure OpenAI LLMs.
+Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI or Anthropic LLMs.
 1. **Snippets** — the actions that can be performed on selected text.
 2. **Assistants** — your own specialized assistants to talk with.
 3. **Tools** — your own specialized tools to use with Assistants.
@@ -49,7 +49,7 @@ snipptes/
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
-# Optional. Force api: azure or openai
+# Optional. Force api: azure or openai or anthropic
 force_api: null
 model: gpt-3.5-turbo
 temperature: 0.5
@@ -102,7 +102,7 @@ The assistants have been designed similar to Snippets. Check the `assistants` fo
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
-# Optional. Force api: azure or openai
+# Optional. Force api: azure or openai or anthropic
 force_api: null
 model: gpt-3.5-turbo
 temperature: 0.7
@@ -217,10 +217,12 @@ features:
 3. Optional: If you'd like to use Chat GUI, please install also requirements for it `pip install -r chat/requirements.txt` 
 4. Create a `.env` file and add:
    1. `OPENAI_API_KEY=sk-...` - OpenAI API key
-   2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` - AzureAI API key if you'd like to use it
+   2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
+   3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
 ---
 *Note*:
-If the `AZURE_*` environment variable exists, AzureAI is used; otherwise, OpenAI.
+By default, the highest priority has Azure OpenAI LLM, next OpeAI and the last Anthropic.
+Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAi is selected.
 ---
 
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
@@ -247,6 +249,22 @@ The configuration is handled by `config.yaml` file.
 
 File Schema:
 ```yaml
+llm:
+  # LLM settings
+  map_model:
+    # map model names from snippet/assistant yaml files into models per API type
+    # Using alias like `A` or `B`, you can quickly change API from OpenAI to Anthropic
+    azure:
+      A: gpt-4o
+      B: gpt-35-turbo
+      gpt-4-turbo: gpt-4-turbo-128k
+      gpt-3.5-turbo: gpt-35-turbo
+    openai:
+      A: gpt-4o
+      B: gpt-3.5-turbo
+    anthropic:
+      A: claude-3-5-sonnet-20240620
+      B: claude-3-haiku-20240307
 chat:
    # chat settings
    # Always start New Chat with selected assistant
