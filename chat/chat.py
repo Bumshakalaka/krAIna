@@ -72,9 +72,16 @@ class App(tk.Tk):
 
         self.chatW = ChatFrame(self)
         pw_main.add(self.chatW)
-
         pw_main.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+        def _set_sashpos(event):
+            # I have no idea how to set sash pos other way.
+            # It must be done when the widget is fully updated.
+            # Thus, do this one time on Configure event
+            pw_main.sashpos(0, 224)
+            pw_main.unbind("<Configure>")
+
+        pw_main.bind("<Configure>", _set_sashpos)
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
         self.update_chat_lists()

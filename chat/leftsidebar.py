@@ -1,6 +1,7 @@
 """Left Sidebar window."""
 import functools
 import logging
+import platform
 from pathlib import Path
 from tkinter import ttk
 import tkinter as tk
@@ -10,6 +11,7 @@ from tktooltip import ToolTip
 from assistants.assistant import AssistantType, AssistantResp
 from chat.base import APP_EVENTS
 import chat.chat_persistence as chat_persistence
+from chat.scroll_frame import ScrollFrame
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
@@ -32,19 +34,21 @@ class LeftSidebar(ttk.Frame):
         but = ttk.Button(self, text="NEW CHAT", command=self.new_chat)
         ToolTip(but, msg="Create new chat", follow=False, delay=0.5)
         but.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
-        self.chats = ttk.LabelFrame(self, text="Last chats")
-        self.chats.pack(side=tk.TOP, fill=tk.X)
+        w = ScrollFrame(self, text="Last chats")
+        self.chats = w.viewPort
+        w.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.assistants = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
         self.list_assistsnts()
         self.assistants.pack(side=tk.BOTTOM, fill=tk.X)
-        but = ttk.Button(self, text="RELOAD", command=self.reload_ai)
+        but = ttk.Button(self.assistants, text="RELOAD", command=self.reload_ai)
         ToolTip(but, msg="Reload Assistants and Snippets", follow=False, delay=0.5)
         but.pack(side=tk.BOTTOM, fill=tk.X, padx=2, pady=2)
 
     def list_assistsnts(self, *args):
         for n in list(self.assistants.children.keys()):
-            self.assistants.children[n].destroy()
+            if not isinstance(self.assistants.children[n], ttk.Button):
+                self.assistants.children[n].destroy()
         for name, assistant in self.root.ai_assistants.items():
             name_ = name if assistant.type == AssistantType.SIMPLE else f"{name}(tools)"
             rbut = ttk.Radiobutton(
@@ -94,7 +98,7 @@ class LeftSidebar(ttk.Frame):
             if conversation.description:
                 ToolTip(but, msg=conversation.description, delay=0.5, follow=False)
             but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation.conversation_id))
-            but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=4)
+            but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=6)
 
     def deactivate_chat(self, conv_id: int, event: tk.Event):
         """Deactivate chat."""
