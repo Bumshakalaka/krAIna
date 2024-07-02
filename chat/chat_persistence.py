@@ -16,6 +16,8 @@ class chat_persistence:
     last_api_type: str = None
     last_view_id: int = None
     show_also_hidden_chats: bool = False
+    sashpos_main: int = 224
+    sashpos_chat: int = 446
 
     def keys(self) -> List:
         """Return all settings keys."""

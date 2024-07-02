@@ -250,3 +250,12 @@ class ChatFrame(ttk.PanedWindow):
 
         self.userW = UserQuery(self)
         self.add(self.userW)
+
+        def _set_sashpos(event):
+            # I have no idea how to set sash pos other way.
+            # It must be done when the widget is fully updated.
+            # Thus, do this one time on Configure event
+            self.sashpos(0, chat_persistence.SETTINGS.sashpos_chat)
+            self.unbind("<Configure>")
+
+        self.bind("<Configure>", _set_sashpos)
