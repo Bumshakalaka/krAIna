@@ -84,8 +84,7 @@ class App(tk.Tk):
         pw_main.bind("<Configure>", _set_sashpos)
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
-        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
-        self.update_chat_lists(active=show_also_hidden_chats)
+        self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
@@ -164,8 +163,7 @@ class App(tk.Tk):
                 else:
                     break
             self.ai_snippets["nameit"].force_api = temp
-            show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
-            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
         threading.Thread(
             target=_call,
@@ -183,8 +181,7 @@ class App(tk.Tk):
         :return:
         """
         self.ai_db.delete_conversation(conv_id)
-        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
-        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
     def modify_chat(self, data: Dict):
         """
@@ -198,8 +195,7 @@ class App(tk.Tk):
         conv_id = data["conv_id"]
         action = data["action"]  # type: Dict
         self.ai_db.update_conversation(conv_id, **action)
-        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
-        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
     def update_chat_lists(self, active: Union[bool, None]):
         """

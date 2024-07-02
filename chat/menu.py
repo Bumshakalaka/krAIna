@@ -29,13 +29,15 @@ class LlmModel(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM model."""
         super().__init__(parent, *args, **kwargs)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
-        self.add_radiobutton(label="Default", variable=self._var, value="-")
-        self.add_radiobutton(label="GPT-3.5-turbo", variable=self._var, value="gpt-3.5-turbo")
-        self.add_radiobutton(label="GPT-4-turbo", variable=self._var, value="gpt-4-turbo")
-        self.add_radiobutton(label="GPT-4", variable=self._var, value="gpt-4")
-        self.add_radiobutton(label="GPT-4o", variable=self._var, value="gpt-4o")
+        self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
+        self.add_radiobutton(label="GPT-3.5-turbo", variable=self._var, value="gpt-3.5-turbo", selectcolor=col)
+        self.add_radiobutton(label="GPT-4-turbo", variable=self._var, value="gpt-4-turbo", selectcolor=col)
+        self.add_radiobutton(label="GPT-4", variable=self._var, value="gpt-4", selectcolor=col)
+        self.add_radiobutton(label="GPT-4o", variable=self._var, value="gpt-4o", selectcolor=col)
         self._var.set("-")
 
     def update_var(self, *args):
@@ -48,11 +50,13 @@ class LlmTemperature(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM temperature."""
         super().__init__(parent, *args, **kwargs)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
-        self.add_radiobutton(label="Default", variable=self._var, value="-")
+        self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
         for t in [0, 0.1, 0.3, 0.5, 0.7, 1.0]:
-            self.add_radiobutton(label=str(t), variable=self._var, value=t)
+            self.add_radiobutton(label=str(t), variable=self._var, value=t, selectcolor=col)
         self._var.set("-")
 
     def update_var(self, *args):
@@ -65,6 +69,8 @@ class LlmType(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM temperature."""
         super().__init__(parent, *args, **kwargs)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
         self.parent = parent
         self._var = tk.StringVar(
             self,
@@ -72,9 +78,9 @@ class LlmType(tk.Menu):
             "selected_api_type",
         )
         self._var.trace("w", self.update_var)
-        self.add_radiobutton(label="Default", variable=self._var, value="-")
+        self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
         for model in SUPPORTED_API_TYPE:
-            self.add_radiobutton(label=model.name, variable=self._var, value=model.value)
+            self.add_radiobutton(label=model.name, variable=self._var, value=model.value, selectcolor=col)
 
     def update_var(self, *args):
         """Callback on radiobutton change."""
@@ -97,13 +103,19 @@ class SettingsMenu(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for quick settings."""
         super().__init__(parent, *args, **kwargs)
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
         self.parent = parent
         self._always_on_top = tk.BooleanVar(self)
         self._always_on_top.trace("w", self.always_on_top)
         self._light_mode = tk.BooleanVar(self)
         self._light_mode.trace("w", self.light_mode)
-        self.add_checkbutton(label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False)
-        self.add_checkbutton(label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False)
+        self.add_checkbutton(
+            label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False, selectcolor=col
+        )
+        self.add_checkbutton(
+            label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False, selectcolor=col
+        )
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
         self._light_mode.set(True if chat_persistence.SETTINGS.theme == "light" else False)
         self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)

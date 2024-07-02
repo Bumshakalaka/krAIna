@@ -1,10 +1,10 @@
 """Left Sidebar window."""
 import functools
 import logging
-import platform
 from pathlib import Path
 from tkinter import ttk
 import tkinter as tk
+from tkinter.simpledialog import Dialog
 from typing import List, Dict
 from tktooltip import ToolTip
 
@@ -15,6 +15,75 @@ from chat.scroll_frame import ScrollFrame
 from libs.db.model import Conversations
 
 logger = logging.getLogger(__name__)
+
+
+class ChatSettingsDialog(Dialog):
+    """Chat config right-click menu."""
+
+    def __init__(self, parent, title, init_values: Conversations):
+        self.e_name = init_values.name
+        self.e_description = init_values.description
+        self.e_priority = init_values.priority
+        self.e_active = init_values.active
+        self.conv_id = init_values.conversation_id
+        super().__init__(parent, title)
+        # code here will be run after destroying Dialog
+
+    def buttonbox(self):
+        """Overloaded method to ubind Return to be able to use it in text widget inside."""
+        super().buttonbox()
+        self.unbind("<Return>")
+
+    def body(self, master):
+        """Create body of right-click menu"""
+        f = ttk.Frame(master)
+        ttk.Label(f, text="name", anchor=tk.NW, width=10).pack(side=tk.LEFT)
+        w = ttk.Entry(f)
+        w.insert(tk.END, self.e_name)
+        self.e_name = w
+        self.e_name.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        f.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        f = ttk.Frame(master)
+        ttk.Label(f, text="description", anchor=tk.NW, width=10).pack(side=tk.LEFT)
+        w = tk.Text(f, height=10, width=40)
+        w.insert(tk.END, self.e_description)
+        self.e_description = w
+        self.e_description.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        f.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        f = ttk.Frame(master)
+        ttk.Label(f, text="Priority", anchor=tk.NW, width=10).pack(side=tk.LEFT)
+        w = ttk.Entry(f, validate="key", validatecommand=(self.register(self._val_prio), "%P"))
+        w.insert(tk.END, str(self.e_priority))
+        self.e_priority = w
+        self.e_priority.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        f.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        w = tk.BooleanVar(master, value=True)
+        w.set(self.e_active)
+        self.e_active = w
+        f = ttk.Checkbutton(master, text="Active", onvalue=True, offvalue=False, variable=self.e_active)
+        f.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+    def _val_prio(self, new_value):
+        if new_value == "":
+            return True
+        try:
+            int(new_value)
+        except ValueError:
+            return False
+        else:
+            return True
+
+    def apply(self):
+        action = dict(
+            name=self.e_name.get() if self.e_name.get() else None,
+            description=self.e_description.get("1.0", tk.END) if self.e_description.get("1.0", tk.END) else None,
+            priority=self.e_priority.get() if self.e_priority.get() else 0,
+            active=self.e_active.get(),
+        )
+        self.parent.post_event(APP_EVENTS.MODIFY_CHAT, dict(conv_id=self.conv_id, action=action))
 
 
 class LeftSidebar(ttk.Frame):
@@ -36,6 +105,7 @@ class LeftSidebar(ttk.Frame):
         but.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
         w = ScrollFrame(self, text="Last chats")
         self.chats = w.viewPort
+        self.chat_tooltips = []
         w.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.assistants = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
@@ -86,21 +156,34 @@ class LeftSidebar(ttk.Frame):
         :param conversations: list of the active conversations
         :return:
         """
+        self.chats.master.yview_moveto(0.0)  # scroll to the top
+        for n in self.chat_tooltips:
+            n.destroy()
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-disfg)")
+        separator = False
+        self.chat_tooltips = []
         for conversation in conversations:
+            if not separator and conversation.priority == 0:
+                separator = True
+                ttk.Separator(self.chats, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X, pady=10, padx=6)
             name = conversation.name if conversation.name else f"ID:{conversation.conversation_id}"
             but = ttk.Button(
                 self.chats,
                 text=name,
                 command=functools.partial(self.get_chat, conversation.conversation_id),
             )
+            # add conversation object to button to have it in right-click menu
+            setattr(but, "conversation", conversation)
             if not conversation.active:
+                # TODO: Change background color or style of hidden chats somehow
                 but.configure(text=f"(H) {but.cget('text')}")
+            tooltip_msg = (
+                f"id:{conversation.conversation_id}\npriority:{conversation.priority}\nactive:{conversation.active}"
+            )
             if conversation.description:
-                ToolTip(but, msg=conversation.description, delay=0.5, follow=False)
+                tooltip_msg = conversation.description.strip() + "\n\n" + tooltip_msg
+            self.chat_tooltips.append(ToolTip(but, msg=tooltip_msg, delay=0.5, follow=False))
             but.bind("<ButtonRelease-3>", functools.partial(self._chat_menu, conversation.conversation_id))
             but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=6)
 
@@ -108,12 +191,20 @@ class LeftSidebar(ttk.Frame):
         # event.widget
         w = tk.Menu(self, tearoff=False)
         w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
-        w.add_command(label=f"Pin/UnPin {conv_id}")
-        w.add_command(label=f"Edit... {conv_id}")
-        w.add_command(label=f"Hide {conv_id}", command=functools.partial(self.modify_chat, conv_id, {"active": False}))
-        w.add_command(label=f"UnHide {conv_id}", command=functools.partial(self.modify_chat, conv_id, {"active": True}))
+        pinned = event.widget.conversation.priority
+        active = event.widget.conversation.active
+        w.add_command(label=f"Chat: {conv_id}", state="disabled")
+        w.add_command(
+            label=f"{'Pin' if pinned == 0 else 'Unpin'}",
+            command=functools.partial(self.pin_unpin_chat, event.widget),
+        )
+        w.add_command(
+            label=f"{'Hide' if active else 'UnHide'}",
+            command=functools.partial(self.modify_chat, conv_id, {"active": not active}),
+        )
+        w.add_command(label=f"Edit...", command=functools.partial(self.edit_chat, event.widget))
         w.add_separator()
-        w.add_command(label=f"Delete {conv_id}", command=functools.partial(self.delete_chat, conv_id))
+        w.add_command(label=f"Delete", command=functools.partial(self.delete_chat, conv_id))
         w.add_separator()
         w.add_command(
             label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'UnHide'} Chats",
@@ -124,11 +215,24 @@ class LeftSidebar(ttk.Frame):
         finally:
             w.grab_release()
 
+    def pin_unpin_chat(self, w: tk.Widget):
+        """Pin (priority=1) or unpin (priority=0) chat"""
+        conv: Conversations = w.conversation
+        priority = 1
+        if conv.priority > 0:
+            priority = 0
+        self.root.post_event(
+            APP_EVENTS.MODIFY_CHAT, dict(conv_id=int(conv.conversation_id), action={"priority": priority})
+        )
+
+    def edit_chat(self, w: tk.Widget):
+        """SHow Chat settings toplevel to edit name, description, etc."""
+        ChatSettingsDialog(self.root, f"{w.conversation.conversation_id} Settings", w.conversation)  # noqa
+
     def visibility_chats(self):
         """Show all hats or ony active."""
         chat_persistence.SETTINGS.show_also_hidden_chats = not chat_persistence.SETTINGS.show_also_hidden_chats
-        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
-        self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+        self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
     def delete_chat(self, conv_id: int):
         """Delete chat."""

@@ -4,7 +4,7 @@ import enum
 from pathlib import Path
 from typing import List, Union, Tuple
 
-from sqlalchemy import create_engine, select, update, delete
+from sqlalchemy import create_engine, select, update, delete, and_
 from sqlalchemy.orm import Session
 
 from .model import Base, Conversations, Messages
@@ -119,23 +119,32 @@ class Db:
 
     def list_conversations(self, active: Union[bool, None] = True, limit=10) -> List[Conversations]:
         """
-        Get all conversations from the newest to oldest.
+        Get all conversations.
+
+        First get all conversations with priority > 0 and sort from the newest to oldest
+        and than from the higher to lower prio.
+        Next, get all other conversations depends on active
 
         :param active: Fileter by active state. If None passed, return all conversations.
         :param limit: How many conversations return
         :return: List of Conversations dataclass from db.model
         """
         with Session(self.engine) as s:
+            # Get all conversation with prio > 0 first
+            stmt = select(Conversations).order_by(Conversations.priority.desc(), Conversations.conversation_id.desc())
             if active is None:
-                stmt = select(Conversations).order_by(Conversations.conversation_id.desc())
+                stmt = stmt.where(Conversations.priority > 0)
             else:
-                stmt = (
-                    select(Conversations)
-                    .where(Conversations.active == active)
-                    .order_by(Conversations.conversation_id.desc())
-                    .limit(limit)
-                )
+                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority > 0))
             ret = []
+            for row in s.execute(stmt):
+                ret.append(row[0])
+
+            stmt = (
+                select(Conversations).where(Conversations.priority == 0).order_by(Conversations.conversation_id.desc())
+            )
+            if active is not None:
+                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority == 0)).limit(limit)
             for row in s.execute(stmt):
                 ret.append(row[0])
             return ret

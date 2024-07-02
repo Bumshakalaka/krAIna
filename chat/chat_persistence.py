@@ -23,3 +23,4 @@ class chat_persistence:
 
 
 SETTINGS = chat_persistence()
+show_also_hidden_chats = lambda: None if SETTINGS.show_also_hidden_chats is True else True
