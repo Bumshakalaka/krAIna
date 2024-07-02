@@ -39,7 +39,7 @@ class ChatSettingsDialog(Dialog):
         f = ttk.Frame(master)
         ttk.Label(f, text="name", anchor=tk.NW, width=10).pack(side=tk.LEFT)
         w = ttk.Entry(f)
-        w.insert(tk.END, self.e_name)
+        w.insert(tk.END, self.e_name if self.e_name else "")
         self.e_name = w
         self.e_name.pack(side=tk.RIGHT, fill=tk.X, expand=True)
         f.pack(side=tk.TOP, fill=tk.X, expand=True)
@@ -47,7 +47,7 @@ class ChatSettingsDialog(Dialog):
         f = ttk.Frame(master)
         ttk.Label(f, text="description", anchor=tk.NW, width=10).pack(side=tk.LEFT)
         w = tk.Text(f, height=10, width=40)
-        w.insert(tk.END, self.e_description)
+        w.insert(tk.END, self.e_description if self.e_description else "")
         self.e_description = w
         self.e_description.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         f.pack(side=tk.TOP, fill=tk.X, expand=True)

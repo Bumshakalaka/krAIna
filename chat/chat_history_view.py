@@ -169,6 +169,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         else:
             self.html.update_default_style(LIGHTTHEME)
 
+        self._clear()
         self.root = parent.master.master
 
     @staticmethod
