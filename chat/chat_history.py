@@ -105,7 +105,8 @@ class ChatHistory(ttk.Notebook):
 
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 1:
             # update chat history after first AI response
-            self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
+            show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+            self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 2:
             # call to describe chat after 2 AI messages
             self.root.post_event(

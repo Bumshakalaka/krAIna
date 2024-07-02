@@ -4,11 +4,7 @@ import enum
 from pathlib import Path
 from typing import List, Union, Tuple
 
-from sqlalchemy import (
-    create_engine,
-    select,
-    update,
-)
+from sqlalchemy import create_engine, select, update, delete
 from sqlalchemy.orm import Session
 
 from .model import Base, Conversations, Messages
@@ -107,6 +103,20 @@ class Db:
             s.execute(update(Conversations).where(Conversations.conversation_id == conv_id).values(**kwargs))
             s.commit()
 
+    def delete_conversation(self, conv_id: Union[int, None] = None):
+        """
+        Delete the conversation.
+
+        :param conv_id: Conversation_id. If None, use the last known conv_id
+        :return:
+        """
+        conv_id = self.conv_id if conv_id is None else conv_id
+        if not self.is_conversation_id_valid(conv_id):
+            raise ConversationNotFound(f"Conversation_id={conv_id} not found")
+        with Session(self.engine) as s:
+            s.execute(delete(Conversations).where(Conversations.conversation_id == conv_id))
+            s.commit()
+
     def list_conversations(self, active: Union[bool, None] = True, limit=10) -> List[Conversations]:
         """
         Get all conversations from the newest to oldest.
@@ -117,7 +127,7 @@ class Db:
         """
         with Session(self.engine) as s:
             if active is None:
-                stmt = select(Conversations).order_by(Conversations.conversation_id)
+                stmt = select(Conversations).order_by(Conversations.conversation_id.desc())
             else:
                 stmt = (
                     select(Conversations)

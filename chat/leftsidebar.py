@@ -5,7 +5,7 @@ import platform
 from pathlib import Path
 from tkinter import ttk
 import tkinter as tk
-from typing import List
+from typing import List, Dict
 from tktooltip import ToolTip
 
 from assistants.assistant import AssistantType, AssistantResp
@@ -88,6 +88,8 @@ class LeftSidebar(ttk.Frame):
         """
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
+        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-disfg)")
         for conversation in conversations:
             name = conversation.name if conversation.name else f"ID:{conversation.conversation_id}"
             but = ttk.Button(
@@ -95,14 +97,46 @@ class LeftSidebar(ttk.Frame):
                 text=name,
                 command=functools.partial(self.get_chat, conversation.conversation_id),
             )
+            if not conversation.active:
+                but.configure(text=f"(H) {but.cget('text')}")
             if conversation.description:
                 ToolTip(but, msg=conversation.description, delay=0.5, follow=False)
-            but.bind("<ButtonRelease-3>", functools.partial(self.deactivate_chat, conversation.conversation_id))
+            but.bind("<ButtonRelease-3>", functools.partial(self._chat_menu, conversation.conversation_id))
             but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=6)
 
-    def deactivate_chat(self, conv_id: int, event: tk.Event):
-        """Deactivate chat."""
+    def _chat_menu(self, conv_id: int, event: tk.Event):
+        # event.widget
+        w = tk.Menu(self, tearoff=False)
+        w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
+        w.add_command(label=f"Pin/UnPin {conv_id}")
+        w.add_command(label=f"Edit... {conv_id}")
+        w.add_command(label=f"Hide {conv_id}", command=functools.partial(self.modify_chat, conv_id, {"active": False}))
+        w.add_command(label=f"UnHide {conv_id}", command=functools.partial(self.modify_chat, conv_id, {"active": True}))
+        w.add_separator()
+        w.add_command(label=f"Delete {conv_id}", command=functools.partial(self.delete_chat, conv_id))
+        w.add_separator()
+        w.add_command(
+            label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'UnHide'} Chats",
+            command=self.visibility_chats,
+        )
+        try:
+            w.tk_popup(event.x_root, event.y_root)
+        finally:
+            w.grab_release()
+
+    def visibility_chats(self):
+        """Show all hats or ony active."""
+        chat_persistence.SETTINGS.show_also_hidden_chats = not chat_persistence.SETTINGS.show_also_hidden_chats
+        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+        self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+
+    def delete_chat(self, conv_id: int):
+        """Delete chat."""
         self.root.post_event(APP_EVENTS.DEL_CHAT, int(conv_id))
+
+    def modify_chat(self, conv_id: int, action: Dict):
+        """Modify chat."""
+        self.root.post_event(APP_EVENTS.MODIFY_CHAT, dict(conv_id=int(conv_id), action=action))
 
     def new_chat(self):
         """New chat."""

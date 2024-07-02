@@ -84,13 +84,15 @@ class App(tk.Tk):
         pw_main.bind("<Configure>", _set_sashpos)
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
-        self.update_chat_lists()
+        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+        self.update_chat_lists(active=show_also_hidden_chats)
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
         self.bind_on_event(APP_EVENTS.GET_CHAT, self.get_chat)
         self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
-        self.bind_on_event(APP_EVENTS.DEL_CHAT, self.deactivate_chat)
+        self.bind_on_event(APP_EVENTS.DEL_CHAT, self.delete_chat)
+        self.bind_on_event(APP_EVENTS.MODIFY_CHAT, self.modify_chat)
         self.bind_on_event(APP_EVENTS.DESCRIBE_NEW_CHAT, self.describe_chat)
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
@@ -162,7 +164,8 @@ class App(tk.Tk):
                 else:
                     break
             self.ai_snippets["nameit"].force_api = temp
-            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
+            show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
 
         threading.Thread(
             target=_call,
@@ -170,27 +173,46 @@ class App(tk.Tk):
             daemon=True,
         ).start()
 
-    def deactivate_chat(self, conv_id: int):
+    def delete_chat(self, conv_id: int):
         """
         Callback on DEL_CHAT event.
 
-        Deactivate conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
+        Permanent delete conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
 
         :param conv_id:
         :return:
         """
-        self.ai_db.update_conversation(conv_id, active=False)
-        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, None)
+        self.ai_db.delete_conversation(conv_id)
+        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
 
-    def update_chat_lists(self, *args):
+    def modify_chat(self, data: Dict):
         """
-        Callback in ADD_NEW_CHAT_ENTRY event to get the active conversation list.
+        Callback on MODIFY_CHAT event.
+
+        Modify conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
+
+        :param data:
+        :return:
+        """
+        conv_id = data["conv_id"]
+        action = data["action"]  # type: Dict
+        self.ai_db.update_conversation(conv_id, **action)
+        show_also_hidden_chats = None if chat_persistence.SETTINGS.show_also_hidden_chats is True else True
+        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, show_also_hidden_chats)
+
+    def update_chat_lists(self, active: Union[bool, None]):
+        """
+        Callback in ADD_NEW_CHAT_ENTRY event to get the conversation list.
 
         ADD_NEW_CHAT_ENTRY is post without data.
+
+        :param active: Get active(True), inactive(False) or both(None) conversations
+        :return:
         """
         self.post_event(
             APP_EVENTS.UPDATE_SAVED_CHATS,
-            self.ai_db.list_conversations(active=True, limit=chat_settings.SETTINGS.visible_last_chats),
+            self.ai_db.list_conversations(active=active, limit=chat_settings.SETTINGS.visible_last_chats),
         )
 
     def get_chat(self, conv_id: int):

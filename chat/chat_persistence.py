@@ -15,6 +15,7 @@ class chat_persistence:
     last_assistant: int = None
     last_api_type: str = None
     last_view_id: int = None
+    show_also_hidden_chats: bool = False
 
     def keys(self) -> List:
         """Return all settings keys."""
