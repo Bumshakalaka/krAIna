@@ -176,8 +176,7 @@ class LeftSidebar(ttk.Frame):
             # add conversation object to button to have it in right-click menu
             setattr(but, "conversation", conversation)
             if not conversation.active:
-                # TODO: Change background color or style of hidden chats somehow
-                but.configure(text=f"(H) {but.cget('text')}")
+                but.configure(style="Hidden.TButton")
             tooltip_msg = (
                 f"id:{conversation.conversation_id}\npriority:{conversation.priority}\nactive:{conversation.active}"
             )
