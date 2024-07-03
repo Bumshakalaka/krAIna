@@ -4,7 +4,7 @@ import enum
 from pathlib import Path
 from typing import List, Union, Tuple
 
-from sqlalchemy import create_engine, select, update, delete, and_
+from sqlalchemy import create_engine, select, update, delete, and_, Engine, event
 from sqlalchemy.orm import Session
 
 from .model import Base, Conversations, Messages
@@ -29,6 +29,24 @@ class LlmMessageType(enum.IntEnum):
     TOOL = 3
     FUNCTION = 4
     CHAT = 5
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """
+    Enabling Foreign Key Support
+
+    https://www.sqlite.org/foreignkeys.html
+    https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#foreign-key-support
+
+    :param dbapi_connection:
+    :param connection_record:
+    :return:
+    """
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.execute("PRAGMA optimize")
+    cursor.close()
 
 
 class Db:

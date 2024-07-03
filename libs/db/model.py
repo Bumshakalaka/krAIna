@@ -38,7 +38,10 @@ class Conversations(Base):
     name: Mapped[str] = mapped_column(nullable=True)
     active: Mapped[bool] = mapped_column(default=True)
     assistant: Mapped[str] = mapped_column(nullable=True)
-    messages: Mapped[List["Messages"]] = relationship(back_populates="conversation")
+    priority: Mapped[int] = mapped_column(default=0)
+    messages: Mapped[List["Messages"]] = relationship(
+        back_populates="conversation", cascade="all, delete", passive_deletes=True
+    )
 
 
 class Messages(Base):
@@ -46,7 +49,9 @@ class Messages(Base):
 
     __tablename__ = "messages"
     message_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.conversation_id"), index=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("conversations.conversation_id", ondelete="CASCADE"), index=True
+    )
     type: Mapped[int]
     message: Mapped[str]
     create_at: Mapped[datetime.datetime] = mapped_column(comment="Timestamp as float")
