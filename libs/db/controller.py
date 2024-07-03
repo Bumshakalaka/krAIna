@@ -199,7 +199,7 @@ class Db:
             conv_obj.messages.append(
                 Messages(
                     type=message_type,
-                    message=message,
+                    message=message.strip(),
                     create_at=datetime.datetime.now(),
                 )
             )
@@ -222,7 +222,7 @@ class Db:
                 conv_obj.messages.append(
                     Messages(
                         type=message[0],
-                        message=message[1],
+                        message=message[1].strip(),
                         create_at=datetime.datetime.now(),
                     )
                 )
