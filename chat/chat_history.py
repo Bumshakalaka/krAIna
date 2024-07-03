@@ -4,7 +4,7 @@ import logging
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-from typing import Dict
+from typing import Dict, Union
 
 from tiktoken import encoding_for_model, get_encoding
 from tktooltip import ToolTip
@@ -43,7 +43,22 @@ class ChatHistory(ttk.Notebook):
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
         self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
+        self.root.bind_on_event(APP_EVENTS.UPDATE_CHAT_TITLE, self.update_title)
         self.raw_messages = []
+
+    def update_title(self, conv: Union[Conversations, None]):
+        """Update chat label title."""
+        if conv:
+            name = conv.name if conv.name else f"ID:{conv.conversation_id}"
+            descr = ""
+            if conv.description:
+                descr += conv.description.replace("\n", "") + ", "
+            descr += f"id:{conv.conversation_id}, priority:{conv.priority}, active:{conv.active}  "
+        else:
+            name = "New chat"
+            descr = ""
+        self.root.setvar("active_chat_name", name)
+        self.root.setvar("active_chat_descr", descr)
 
     def _view_change(self, *args):
         """Save selected tab into persistence."""
@@ -74,6 +89,7 @@ class ChatHistory(ttk.Notebook):
             self.root.selected_assistant.set(chat_settings.SETTINGS.default_assistant)
         self.raw_messages = []
         self.root.conv_id = None
+        self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, None)
 
     def load_chat(self, conversation: Conversations):
         """Call view methods."""
@@ -95,6 +111,7 @@ class ChatHistory(ttk.Notebook):
                 self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
             ),
         )
+        self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
 
     def ai_message(self, message: str):
         """Call view methods."""
@@ -248,8 +265,19 @@ class ChatFrame(ttk.PanedWindow):
         super().__init__(parent, orient=tk.VERTICAL)
         self.root = parent
 
-        self.chat_nbk = ChatHistory(self)
-        self.add(self.chat_nbk)
+        chat_hist_frame = ttk.Frame()
+        chat_title = ttk.Frame(chat_hist_frame)
+        active_chat_name = tk.StringVar(self.root, "", "active_chat_name")
+        active_chat_descr = tk.StringVar(self.root, "", "active_chat_descr")
+        ttk.Label(chat_title, textvariable=active_chat_name, anchor=tk.NW, wraplength=-1).pack(
+            side=tk.LEFT, fill=tk.BOTH, expand=True, pady=12, padx=4
+        )
+        ttk.Label(chat_title, textvariable=active_chat_descr, anchor=tk.NE, wraplength=-1).pack(
+            side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=12, padx=4
+        )
+        chat_title.pack(side=tk.TOP, fill=tk.X, expand=True)
+        ChatHistory(chat_hist_frame).pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.add(chat_hist_frame)
 
         self.userW = UserQuery(self)
         self.add(self.userW)

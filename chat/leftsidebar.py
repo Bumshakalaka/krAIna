@@ -105,7 +105,6 @@ class LeftSidebar(ttk.Frame):
         but.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
         w = ScrollFrame(self, text="Last chats")
         self.chats = w.viewPort
-        self.chat_tooltips = []
         w.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.assistants = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
@@ -157,13 +156,12 @@ class LeftSidebar(ttk.Frame):
         :return:
         """
         self.chats.master.yview_moveto(0.0)  # scroll to the top
-        for n in self.chat_tooltips:
-            n.destroy()
         for n in list(self.chats.children.keys()):
             self.chats.children[n].destroy()
         separator = False
-        self.chat_tooltips = []
         for conversation in conversations:
+            if conversation.conversation_id == self.root.conv_id:
+                self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
             if not separator and conversation.priority == 0:
                 separator = True
                 ttk.Separator(self.chats, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X, pady=10, padx=6)
@@ -177,12 +175,6 @@ class LeftSidebar(ttk.Frame):
             setattr(but, "conversation", conversation)
             if not conversation.active:
                 but.configure(style="Hidden.TButton")
-            tooltip_msg = (
-                f"id:{conversation.conversation_id}\npriority:{conversation.priority}\nactive:{conversation.active}"
-            )
-            if conversation.description:
-                tooltip_msg = conversation.description.strip() + "\n\n" + tooltip_msg
-            self.chat_tooltips.append(ToolTip(but, msg=tooltip_msg, delay=0.5, follow=False))
             but.bind("<ButtonRelease-3>", functools.partial(self._chat_menu, conversation.conversation_id))
             but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=6)
 
@@ -206,7 +198,7 @@ class LeftSidebar(ttk.Frame):
         w.add_command(label=f"Delete", command=functools.partial(self.delete_chat, conv_id))
         w.add_separator()
         w.add_command(
-            label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'UnHide'} Chats",
+            label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'UnHide'} all chats",
             command=self.visibility_chats,
         )
         try:
