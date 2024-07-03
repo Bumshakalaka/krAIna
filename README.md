@@ -50,7 +50,7 @@ config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
 # Optional. Force api: azure or openai or anthropic
-force_api: null
+force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.5
 max_tokens: 512
@@ -103,7 +103,7 @@ config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
 # Optional. Force api: azure or openai or anthropic
-force_api: null
+force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.7
 max_tokens: 512
@@ -178,6 +178,9 @@ Set of tools available to others in krAIna.
 
 To make such a tool, you need to follow these steps:
 1. Find or develop a tool derived from BaseTool.
+   1. Check https://python.langchain.com/v0.2/docs/integrations/tools/ for build-in in langchain tools
+   2. Check https://python.langchain.com/v0.2/docs/integrations/toolkits/ for build-in in langchain tools
+   3. Check https://python.langchain.com/v0.2/docs/how_to/custom_tools/ how to create your own tool 
 2. Create an initialization function that:
    1. Must accept one parameter, `tool_settings` (even if you don't have any settings).
    2. Must return `BaseTool` or `List[BaseTool]`.
@@ -189,18 +192,13 @@ not when it is initialized.
 ### Chat GUI application
 Chat GUI application build using tkinter.
 
-![chat light theme](img/chat_light_theme.png) ![chat dark theme](img/chat_dark_theme.png)
-
-![Chat main window](img/chat_main.gif)
-
-Markdown is now supported:
-
-![chat with markdown](img/kraina_markdown.gif)
+![chat](img/kraina_chat.gif)
 
 features:
 * Chat with history (html and text tabs available)
 * Light/Dark theme
-* Last 10 chats which can be recalled. They are auto-named and describe
+* Chats history which can be recalled. They are auto-named and describe
+* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent)
 * Assistant selection
 * Support for snippets — right-click in user query widget to apply transformation on a text
 * Overwrite Assistant settings
@@ -209,13 +207,12 @@ features:
 * status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Live token estimation for user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
-* Markdown support
+* Markdown/HTML support
 
 ## Install
 1. Clone the project.
-2. Create a virtual environment and install the requirements from requirements.txt `pip install -r requirements.txt`.
-3. Optional: If you'd like to use Chat GUI, please install also requirements for it `pip install -r chat/requirements.txt` 
-4. Create a `.env` file and add:
+2. Create a virtual environment and install the requirements from requirements.txt `pip install -r requirements.txt`. 
+3. Create a `.env` file and add:
    1. `OPENAI_API_KEY=sk-...` - OpenAI API key
    2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
    3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
@@ -314,7 +311,7 @@ Alternatively:
 ### Chat
 
 1. Start the application by running `./chat.sh`.
-2. Utilize its features.
+2. Use its features.
 3. You can also use `./chat.sh COMMAND` to control the application with the following supported commands:
 ```text
 SHOW_APP - Trigger to display the application
