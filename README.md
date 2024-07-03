@@ -221,6 +221,43 @@ features:
 By default, the highest priority has Azure OpenAI LLM, next OpeAI and the last Anthropic.
 Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAi is selected.
 ---
+*Note*:
+Versioning and auto-updating of the `kraina.db` schema are not supported at this time.
+if you had already created `kraina.db`, update schema:
+```sql
+create table messages_dg_tmp
+(
+    message_id      INTEGER  not null
+        constraint pk_messages
+            primary key,
+    conversation_id INTEGER  not null
+        constraint fk_messages_conversation_id_conversations
+            references conversations
+            on delete cascade,
+    type            INTEGER  not null,
+    message         VARCHAR  not null,
+    create_at       DATETIME not null
+);
+
+insert into messages_dg_tmp(message_id, conversation_id, type, message, create_at)
+select message_id, conversation_id, type, message, create_at
+from messages;
+
+drop table messages;
+
+alter table messages_dg_tmp
+    rename to messages;
+
+create index ix_messages_conversation_id
+    on messages (conversation_id);
+
+create index messages_message_id_index
+    on messages (message_id);
+
+alter table conversations
+    add priority integer default 0 not null;
+```
+---
 
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
