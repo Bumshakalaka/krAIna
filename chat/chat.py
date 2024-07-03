@@ -185,6 +185,15 @@ class App(tk.Tk):
         """
         self.ai_db.delete_conversation(conv_id)
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+        self.post_event(APP_EVENTS.NEW_CHAT, None)
+        self.post_event(
+            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+            AssistantResp(
+                None,
+                "not used",
+                self.ai_assistants[self.selected_assistant.get()].tokens_used(None),
+            ),
+        )
 
     def modify_chat(self, data: Dict):
         """

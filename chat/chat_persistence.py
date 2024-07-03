@@ -8,16 +8,16 @@ class chat_persistence:
     Store all application persistent keys.
     """
 
-    geometry: str = "708x437+0+0"
+    geometry: str = "708x546+0+0"
     theme: str = "dark"
     always_on_top: bool = False
     last_conv_id: int = None
     last_assistant: int = None
-    last_api_type: str = None
+    last_api_type: str = ""
     last_view_id: int = None
     show_also_hidden_chats: bool = False
-    sashpos_main: int = 224
-    sashpos_chat: int = 446
+    sashpos_main: int = 149
+    sashpos_chat: int = 288
 
     def keys(self) -> List:
         """Return all settings keys."""

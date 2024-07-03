@@ -190,7 +190,7 @@ class LeftSidebar(ttk.Frame):
             command=functools.partial(self.pin_unpin_chat, event.widget),
         )
         w.add_command(
-            label=f"{'Hide' if active else 'UnHide'}",
+            label=f"{'Inactive' if active else 'Active'}",
             command=functools.partial(self.modify_chat, conv_id, {"active": not active}),
         )
         w.add_command(label=f"Edit...", command=functools.partial(self.edit_chat, event.widget))
@@ -198,7 +198,7 @@ class LeftSidebar(ttk.Frame):
         w.add_command(label=f"Delete", command=functools.partial(self.delete_chat, conv_id))
         w.add_separator()
         w.add_command(
-            label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'UnHide'} all chats",
+            label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'Show'} inactive chats",
             command=self.visibility_chats,
         )
         try:
