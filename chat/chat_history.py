@@ -154,6 +154,7 @@ class UserQuery(ttk.Frame):
         self.tokens_after_id = None
         self.label_tokens = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.tokens)
         self.label_tokens.pack(side=tk.LEFT, anchor=tk.NW, padx=2, pady=2)
+        self.block_events = 0
 
     def _show_tokens(self, *args):
         """Schedule tokens count on every button release of text paste."""
@@ -219,18 +220,20 @@ class UserQuery(ttk.Frame):
         self.text.insert(self.text.index(tk.INSERT), data)
 
     def unblock(self, data=None):
-        self.pb.stop()
-        self.pb.forget()
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
-        self.text.configure(state="normal", background=col)
+        self.block_events -= 1
+        if self.block_events == 0:
+            self.pb.stop()
+            self.pb.forget()
+            self.send_btn.configure(state=tk.NORMAL)
+            self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
 
     def block(self, data=None):
-        self.pb.pack(side=tk.TOP, fill=tk.X)
-        self.pb.start(interval=20)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-disfg)")
-        self.text.configure(state="disabled", background=col)
+        self.block_events += 1
+        if str(self.send_btn.config("state")[4]) == tk.NORMAL:
+            self.pb.pack(side=tk.TOP, fill=tk.X)
+            self.pb.start(interval=20)
+            self.send_btn.configure(state=tk.DISABLED)
+            self.text.unbind("<Control-Return>")
 
 
 class ChatFrame(ttk.PanedWindow):
