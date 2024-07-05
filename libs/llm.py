@@ -108,8 +108,8 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
             kwargs[k] = v
     kwargs["model"] = map_model(kwargs["model"], force)
     models = {
-        SUPPORTED_API_TYPE.AZURE: AzureChatOpenAI(**kwargs),
-        SUPPORTED_API_TYPE.OPENAI: ChatOpenAI(**kwargs),
-        SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic(**kwargs),
+        SUPPORTED_API_TYPE.AZURE: AzureChatOpenAI,
+        SUPPORTED_API_TYPE.OPENAI: ChatOpenAI,
+        SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
     }
-    return models[get_llm_type(force)]
+    return models[get_llm_type(force)](**kwargs)
