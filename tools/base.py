@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import List
@@ -6,6 +7,8 @@ import yaml
 from langchain_core.tools import BaseTool
 
 from libs.utils import import_module, find_lands
+
+logger = logging.getLogger(__name__)
 
 _AVAILABLE_TOOLS = {}
 
@@ -24,8 +27,14 @@ def get_and_init_tools(tools: List[str]) -> List[BaseTool]:
     :param tools: List of tools specified in the assistant config.yaml
     :return: list of tool objects
     """
-    with open((Path(__file__).parent / "../config.yaml").resolve(), "r") as f:
-        data = yaml.load(f, Loader=yaml.SafeLoader)
+    if (Path(__file__).parent / "../config.yaml").resolve().exists():
+        with open((Path(__file__).parent / "../config.yaml").resolve(), "r") as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+    else:
+        logger.warning(
+            f"{(Path(__file__).parent / '../config.yaml').resolve()} does not exist. No tools settings available"
+        )
+        data = {}
     tools_settings = data.get("tools", {})
     init_tools = []
     for tool_name, init_cmd in _AVAILABLE_TOOLS.items():
