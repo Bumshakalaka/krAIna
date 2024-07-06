@@ -211,14 +211,16 @@ features:
 
 ## Install
 1. Clone the project.
-2. Create a virtual environment `python3 -m venv .venv` 
-3. install the requirements from requirements.txt `pip install -r requirements.txt`. 
-4. Create a `.env` (`cp .env.template .env`) file and add:
-   1. `OPENAI_API_KEY=sk-...` - OpenAI API key
-   2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
-   3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
-   4. Tools providers API key
-5. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed
+2. Run the `setup.sh` script, which executes the commands below, or run the commands below by yourself.
+
+    1. Create a virtual environment: `python3 -m venv .venv`
+    2. Install the requirements from `requirements.txt`: `pip install -r requirements.txt`.
+    3. Create a `.env` file (`cp .env.template .env`) and add:
+        1. `OPENAI_API_KEY=sk-...` - OpenAI API key
+        2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
+        3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
+        4. Tools providers API key
+    4. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed.
 
 ---
 *Note*:
