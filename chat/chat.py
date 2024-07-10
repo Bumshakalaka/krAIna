@@ -101,7 +101,9 @@ class App(tk.Tk):
         # Configure application queue logger which is required for Debug Window
         self.log_queue = collections.deque(maxlen=1000)
         self.queue_handler = QueueHandler(self.log_queue)
-        self.queue_handler.addFilter(NotifyErrorFilter(lambda: self.post_event(APP_EVENTS.WE_HAVE_ERROR, None)))
+        self.queue_handler.addFilter(
+            NotifyErrorFilter(lambda: self.after_idle(self.post_event, APP_EVENTS.WE_HAVE_ERROR, None))
+        )
         self.queue_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"))
         self.queue_handler.setLevel(logging.INFO)
         logging.getLogger().addHandler(self.queue_handler)
