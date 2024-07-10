@@ -9,4 +9,4 @@ description: |
 
 contexts:
   string: We are located in Poland
-  file: ./../about_me.txt
+  file: ./../../about_me.txt

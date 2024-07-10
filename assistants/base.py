@@ -66,7 +66,7 @@ class Assistants(dict):
                                 )
                             if "file" in name:
                                 for context_ in context:
-                                    fd = (assistant.parent / context_).resolve()
+                                    fd = ((assistant / "config.yaml").parent / context_).resolve()
                                     if not fd.exists():
                                         logger.error(f"[{assistant.name}] context.file={fd} does not exist")
                                     else:
