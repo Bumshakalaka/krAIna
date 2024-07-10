@@ -5,7 +5,7 @@ from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import asksaveasfile
 from tkinter.scrolledtext import ScrolledText
-
+import chat.chat_persistence as chat_persistence
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +116,8 @@ class DbgLogWindow(tk.Toplevel):
     def hide(self, *args):
         """Hide the window."""
         if self.visible:
+            if int(self.geometry().split("x")[0]) > 10:
+                chat_persistence.SETTINGS.dbg_wnd_geometry = self.geometry()
             self.withdraw()
             self.visible = False
 
@@ -124,9 +126,22 @@ class DbgLogWindow(tk.Toplevel):
         if not self.visible:
             self.visible = True
             self.get_logs()
+            self._update_geometry()
             self.withdraw()
             self.deiconify()
             self.lift()
+
+    def _update_geometry(self):
+        # Prevent that chat will always be visible
+        w_size, offset_x, offset_y = chat_persistence.SETTINGS.dbg_wnd_geometry.split("+")
+        if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
+            chat_persistence.SETTINGS.dbg_wnd_geometry = "708x546+0+0"
+        elif (
+            int(w_size.split("x")[0]) > self.winfo_screenwidth()
+            or int(w_size.split("x")[1]) > self.winfo_screenheight()
+        ):
+            chat_persistence.SETTINGS.dbg_wnd_geometry = "708x546+0+0"
+        self.wm_geometry(chat_persistence.SETTINGS.dbg_wnd_geometry)
 
     def view_selected(self, event=None):
         """

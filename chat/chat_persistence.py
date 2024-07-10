@@ -18,6 +18,7 @@ class chat_persistence:
     show_also_hidden_chats: bool = False
     sashpos_main: int = 149
     sashpos_chat: int = 288
+    dbg_wnd_geometry: str = "708x546+0+0"
 
     def keys(self) -> List:
         """Return all settings keys."""

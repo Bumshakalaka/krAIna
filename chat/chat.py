@@ -361,12 +361,12 @@ class App(tk.Tk):
         # Prevent that chat will always be visible
         w_size, offset_x, offset_y = chat_persistence.SETTINGS.geometry.split("+")
         if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
-            chat_persistence.SETTINGS.geometry = "708x437+0+0"
+            chat_persistence.SETTINGS.geometry = "708x546+0+0"
         elif (
             int(w_size.split("x")[0]) > self.winfo_screenwidth()
             or int(w_size.split("x")[1]) > self.winfo_screenheight()
         ):
-            chat_persistence.SETTINGS.geometry = "708x437+0+0"
+            chat_persistence.SETTINGS.geometry = "708x546+0+0"
         self.wm_geometry(chat_persistence.SETTINGS.geometry)
         self.update()
 
