@@ -31,6 +31,7 @@ class APP_EVENTS(enum.Enum):
     UPDATE_STATUS_BAR_API_TYPE = "<<UpdateStatusBarApiType>>"
     UPDATE_STATUS_BAR_TOKENS = "<<UpdateStatusBarTokens>>"
     UPDATE_CHAT_TITLE = "<<UpdateChatTitle>>"
+    WE_HAVE_ERROR = "<<ErrorFound>>"
 
 
 def app_interface() -> Dict:

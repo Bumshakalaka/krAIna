@@ -10,6 +10,17 @@ from libs.ipc.base import APP_KEY
 logger = logging.getLogger(__name__)
 
 
+def handle_thread_exception(args):
+    """Log unexpected exception in the slave threads."""
+    logger.exception(
+        f"Uncaught exception occurred in thread: {args.thread}",
+        exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+    )
+
+
+threading.excepthook = handle_thread_exception
+
+
 class AppHost(threading.Thread):
     """IPC host threaded for the application."""
 

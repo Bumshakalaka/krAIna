@@ -4,6 +4,7 @@
 - Implement a notification system for Windows, considering either native OS notifications or a custom tkinter solution.
 - Enhance asynchronous processing.
 - windows support
+- common codebase for snippets and assistants
 
 ## Assistant Enhancements
 - Implement memory and vector search capabilities.
@@ -13,34 +14,32 @@
 ## Chat Features
 - Enable streaming responses.
 - Add clipboard support.
-- Develop a settings window for user preferences.
-- modify chats history:
-  - allow to unhide/show all
-  - allow to delete permanent
-  - add creation date to description
-  - mark conversation permanently visible
+- Develop a settings window for user preferences—use https://github.com/JamesStallings/pyro/blob/master/pyro as yaml editor in toplevel window
 - Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
 - Check spelling in the user query window.
-- Persist other settings:
-  - size of internal windows
 - markdown:
   - better tables handling
   - work with better CSS
-  - human message broken, not converted to html properly when punctuation or list used
 
 ## Miscellaneous
 - Introduce textual inline chat.
 - Develop a REST API for external integrations.
-- Joplin loader - base on https://python.langchain.com/v0.1/docs/modules/agents/quick_start/
 - make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
 - add possibility to call snippets via Chat IPC (to have one application)
 - speedup internal SQlite DB (one session, lazy commit, indexes, cleanup chats older than 30 days, pragma optimise, normalize tables)
 - add sqlite DB versioning and migration 
+- Add DB with prompts e.g. "Give me something"
 
 # Fixes
-- 
+- Fix the scrolling of a chat list when there are not too many chats.
+- on delete cascade not working
 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents
-- allow to remove steps from conversation and run it again
+- allow removing steps from conversation and run it again
 - long-term, short-term memory, memories of me
+
+# Sidebar
+- add modify time to conversation
+- allow sorting by creation/modify time — by default by creation time
+- add creation/modification date to description

@@ -137,6 +137,7 @@ class SettingsMenu(tk.Menu):
         col = self.tk.call("set", f"ttk::theme::sv_light::colors(-disfg)")
         style = ttk.Style(self)
         style.configure("Hidden.TButton", foreground=col)
+        style.configure("ERROR.TButton", foreground="red")
         chat_persistence.SETTINGS.theme = sv_ttk.get_theme()
         self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())
 

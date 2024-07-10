@@ -1,8 +1,10 @@
 """Chat with LLM."""
+import collections
 import functools
 import json
 import logging
 import queue
+import sys
 import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
@@ -33,8 +35,54 @@ from libs.utils import str_shortening
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
 
+# Configure global logger
+loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
+loggerFormatter = logging.Formatter(loggerFormat)
+loggerLevel = logging.DEBUG
+# create stderr logger to have only ERRORs there
+console_handler = logging.StreamHandler(sys.stderr)
+logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[console_handler])
+console_handler.setLevel(logging.ERROR)
+
 logger = logging.getLogger(__name__)
+
 EVENT = namedtuple("EVENT", "event data")
+
+
+def handle_thread_exception(args):
+    """Log unexpected exception in the slave threads."""
+    logger.exception(
+        f"Uncaught exception occurred in thread: {args.thread}",
+        exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+    )
+
+
+threading.excepthook = handle_thread_exception
+
+
+class NotifyErrorFilter(logging.Filter):
+    """Execute function on every error log message."""
+
+    def __init__(self, error_cbk: Callable):
+        super().__init__()
+        self.error_cbk = error_cbk
+
+    def filter(self, record: logging.LogRecord):
+        if record.levelno >= 40:
+            self.error_cbk()
+        return True
+
+
+class QueueHandler(logging.Handler):
+    """Class to send logging records to a queue."""
+
+    def __init__(self, log_queue):
+        super().__init__()
+        self.log_queue = log_queue
+
+    def emit(self, record):
+        """Store log record in queue."""
+        self.log_queue.append(record)
 
 
 class App(tk.Tk):
@@ -47,18 +95,28 @@ class App(tk.Tk):
         IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
         """
         super().__init__()
+        self._bind_table = defaultdict(list)
+        self._event_queue = queue.Queue(maxsize=10)
+
+        # Configure application queue logger which is required for Debug Window
+        self.log_queue = collections.deque(maxlen=1000)
+        self.queue_handler = QueueHandler(self.log_queue)
+        self.queue_handler.addFilter(NotifyErrorFilter(lambda: self.post_event(APP_EVENTS.WE_HAVE_ERROR, None)))
+        self.queue_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"))
+        self.queue_handler.setLevel(logging.INFO)
+        logging.getLogger().addHandler(self.queue_handler)
+
         self._settings_read()
         self._persistent_read()
         sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
         col = self.tk.call("set", f"ttk::theme::sv_light::colors(-disfg)")
         style = ttk.Style(self)
         style.configure("Hidden.TButton", foreground=col)
+        style.configure("ERROR.TButton", foreground="red")
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
-        self._bind_table = defaultdict(list)
-        self._event_queue = queue.Queue(maxsize=10)
         self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
         self.tk.call(
@@ -99,7 +157,7 @@ class App(tk.Tk):
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
         self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
-        self.bind_all("<Escape>", self.hide_app)
+        self.bind("<Escape>", self.hide_app)
         self.bind_class(
             "Text",
             "<Control-a>",
@@ -115,6 +173,10 @@ class App(tk.Tk):
             "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
         )
         self.chatW.userW.text.focus_force()
+
+    def report_callback_exception(self, exc, val, tb):
+        """Handle tkinter callback errors"""
+        logger.exception(exc)
 
     def reload_ai(self, *args):
         self.ai_assistants = Assistants()
@@ -332,7 +394,7 @@ class App(tk.Tk):
         :return:
         """
         if len(self._bind_table[ev]) == 0:
-            logger.error(f"{ev} not bind")
+            logger.warning(f"{ev} not bind")
             return
         self._event_queue.put(EVENT(ev, data))
         self.event_generate(ev.value, when="tail")

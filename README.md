@@ -208,6 +208,7 @@ features:
 * Live token estimation for user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as assigning a global shortcut to execute `chat.sh SHOW_APP`.
 * Markdown/HTML support
+* Debug Window (left-bottom corner) with the application logs
 
 ## Install
 1. Clone the project.

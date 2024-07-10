@@ -1,9 +1,6 @@
 """KrAIna chat."""
 import argparse
-import logging
 import subprocess
-import sys
-from pathlib import Path
 
 from chat.base import app_interface
 from libs.ipc.client import AppClient
@@ -30,13 +27,6 @@ def run_app():
 
 
 if __name__ == "__main__":
-    loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
-    loggerFormatter = logging.Formatter(loggerFormat)
-    loggerLevel = logging.INFO
-    file_handler = logging.FileHandler(Path(__file__).parent / "chat.log")
-    console_handler = logging.StreamHandler(sys.stderr)
-    logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
-    console_handler.setLevel(logging.ERROR)
     descr = "KraIna chat application.\nCommands:\n"
     for cmd, cmd_descr in app_interface().items():
         descr += f"\t{cmd} - {cmd_descr}\n"
