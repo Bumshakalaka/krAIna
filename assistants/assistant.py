@@ -233,7 +233,7 @@ class BaseAssistant:
         tokens["tools"] = 0
         tools = get_and_init_tools(self.tools)
         agent = create_tool_calling_agent(llm, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
         chunks = []
         for chunk in agent_executor.stream(kwargs):
             chunks.append(chunk)
