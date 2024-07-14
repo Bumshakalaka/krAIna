@@ -207,6 +207,14 @@ class UserQuery(ttk.Frame):
         if entity == "assistant":
             query = self.text.get("1.0", tk.END)[:-1]
             self.text.delete("1.0", tk.END)
+            self.root.post_event(
+                APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+                AssistantResp(
+                    None,
+                    "not used",
+                    self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(None),
+                ),
+            )
             self.root.post_event(APP_EVENTS.QUERY_ASSIST_CREATED, query)
         else:
             range_ = (tk.SEL_FIRST, tk.SEL_LAST) if self.text.tag_ranges(tk.SEL) else ("1.0", tk.END)
