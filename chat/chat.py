@@ -23,7 +23,7 @@ from chat.chat_history import ChatFrame
 from assistants.assistant import AssistantResp, AssistantType
 import chat.chat_settings as chat_settings
 import chat.chat_persistence as chat_persistence
-from chat.base import APP_EVENTS
+from chat.base import APP_EVENTS, ipc_event
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
@@ -159,6 +159,7 @@ class App(tk.Tk):
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
         self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
+        self.bind_on_event(APP_EVENTS.GET_LIST_OF_SNIPPETS, lambda x: ",".join(self.ai_snippets.keys()))
         self.bind("<Escape>", self.hide_app)
         self.bind_class(
             "Text",
@@ -407,8 +408,19 @@ class App(tk.Tk):
             """Decorate bind callable."""
             _data: EVENT = self._event_queue.get()
 
-            ret = ev_cmd(_data.data)
-            logger.info(f"React on={_data.event.name} with data='{str_shortening(_data.data)}': {ret=}")
+            q_resp = None
+            data = _data.data
+            if isinstance(_data.data, ipc_event):
+                # this is an event from the IPC client
+                q_resp = _data.data.q
+                data = _data.data.data
+
+            ret = ev_cmd(data)
+            logger.info(f"React on={_data.event.name} with data='{str_shortening(data)}': {ret=}")
+
+            if q_resp:
+                # send back response to the IPC client
+                q_resp.put(ret, block=False)
             return ret
 
         return wrapper

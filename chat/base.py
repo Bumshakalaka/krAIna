@@ -1,6 +1,18 @@
 """Base functions."""
 import enum
-from typing import Dict
+import queue
+from dataclasses import dataclass
+from typing import Dict, Any
+
+
+@dataclass
+class ipc_event:
+    """
+    Dataclass used only by IPC to send event from client to host and to receive response in 'q' queue.
+    """
+
+    q: queue.Queue
+    data: Any
 
 
 class APP_EVENTS(enum.Enum):
@@ -32,6 +44,7 @@ class APP_EVENTS(enum.Enum):
     UPDATE_STATUS_BAR_TOKENS = "<<UpdateStatusBarTokens>>"
     UPDATE_CHAT_TITLE = "<<UpdateChatTitle>>"
     WE_HAVE_ERROR = "<<ErrorFound>>"
+    GET_LIST_OF_SNIPPETS = "<<GetListOfSnippets>>"
 
 
 def app_interface() -> Dict:
@@ -43,6 +56,7 @@ def app_interface() -> Dict:
     return {
         APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
         APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
+        APP_EVENTS.GET_LIST_OF_SNIPPETS.name: "Get list of snippets",
     }
 
 

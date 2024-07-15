@@ -1,5 +1,6 @@
 """App IPC client module."""
 import logging
+from typing import Union
 
 from ipyc import IPyCClient
 
@@ -21,28 +22,32 @@ class AppClient:
         self.client = IPyCClient(port=port)
         self._conn = self.client.connect()
 
-    def _send(self, payload):
+    def _send(self, payload) -> Union[str, None]:
         """
         Send the payload with added APP_KEY and wait 2s for ACK.
 
         :param payload:
-        :return:
+        :return: returned value as string or None
         """
         self._conn.send(APP_KEY + "|" + payload)
-        if self._conn.poll(2.0):
-            self._conn.receive()
+        ret = None
+        if self._conn.poll(30.0):
+            resp = self._conn.receive().split("|")
+            if resp[-1] not in ["ACK", ""]:
+                ret = str(resp[-1])
+        return ret
 
-    def send(self, message: str):
+    def send(self, message: str) -> Union[str, None]:
         """
         Send a message to the host.
 
         :param message: Tk virtual event name which is listed as application Public API
-        :return:
+        :return: returned value as string or None
         """
         if message not in app_interface().keys():
             logger.error(f"'{message}' not supported")
             return
-        self._send(message)
+        return self._send(message)
 
     def stop(self):
         """
