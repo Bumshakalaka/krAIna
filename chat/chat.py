@@ -151,6 +151,7 @@ class App(tk.Tk):
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
+        self.bind_on_event(APP_EVENTS.RUN_SNIPPET, self.call_snippet_ipc)
         self.bind_on_event(APP_EVENTS.GET_CHAT, self.get_chat)
         self.bind_on_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, self.update_chat_lists)
         self.bind_on_event(APP_EVENTS.DEL_CHAT, self.delete_chat)
@@ -483,3 +484,30 @@ class App(tk.Tk):
             args=(data["entity"], data["query"]),
             daemon=True,
         ).start()
+
+    def call_snippet_ipc(self, data: Dict) -> str:
+        """
+        Call AI snippet in separate thread to transform data and wait for finish.
+
+        :param data: Dict(par0=snippet name, par1=data to transform)
+        :return: transformed data
+        """
+        result = tk.Variable(self, None)
+
+        def _call(snippet, query, result_var):
+            try:
+                ret = self.ai_snippets[snippet].run(query)
+            except Exception as e:
+                logger.exception(e)
+                ret = f"FAIL: {type(e).__name__}: {e}"
+            result_var.set(ret)
+
+        threading.Thread(
+            target=_call,
+            args=(data["par0"], data["par1"], result),
+            daemon=True,
+        ).start()
+        self.wait_variable(result)
+        ret = result.get()
+        del result
+        return ret

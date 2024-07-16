@@ -1,6 +1,7 @@
 """KrAIna chat."""
 import argparse
 import subprocess
+import sys
 
 from chat.base import app_interface
 from libs.ipc.client import AppClient
@@ -38,12 +39,18 @@ if __name__ == "__main__":
         usage="chat.sh command",
     )
     _, args = parser.parse_known_args()
-    if not args or len(args) > 1:
+    if not args:
         run_app()
     else:
         try:
             with AppClient() as client:
-                client.send(args[0])
+                if ret := client.send(*args):
+                    if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
+                        print(ret, flush=True, file=sys.stderr)
+                        sys.exit(1)
+                    else:
+                        print(ret, flush=True, file=sys.stdout)
+                        sys.exit(0)
         except ConnectionRefusedError:
             # TODO: windows
             # proc_exe = subprocess.Popen(<Your executable path>, shell=True)

@@ -45,6 +45,7 @@ class APP_EVENTS(enum.Enum):
     UPDATE_CHAT_TITLE = "<<UpdateChatTitle>>"
     WE_HAVE_ERROR = "<<ErrorFound>>"
     GET_LIST_OF_SNIPPETS = "<<GetListOfSnippets>>"
+    RUN_SNIPPET = "<<RunSnippet>>"
 
 
 def app_interface() -> Dict:
@@ -57,6 +58,7 @@ def app_interface() -> Dict:
         APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
         APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
         APP_EVENTS.GET_LIST_OF_SNIPPETS.name: "Get list of snippets",
+        APP_EVENTS.RUN_SNIPPET.name: "Run snippet 'name' with 'text'",
     }
 
 

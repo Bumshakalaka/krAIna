@@ -1,4 +1,6 @@
 """App IPC host module."""
+import base64
+import json
 import queue
 import threading
 import logging
@@ -75,13 +77,13 @@ class AppHost(threading.Thread):
         """
         if not payload:
             return False
-        if len(payload) > 256:
-            logger.error("Receive message > 256!")
-            return False
         if (message := payload.split("|"))[0] != APP_KEY:
             logger.error("Receive invalid message")
             return False
         if message[1] not in app_interface().keys():
             return False
-        self._app.post_event(APP_EVENTS[message[1]], ipc_event(q, None))
+        params = None
+        if len(message) > 2:
+            params = json.loads(base64.b64decode(message[2].encode("utf-8")))
+        self._app.post_event(APP_EVENTS[message[1]], ipc_event(q, params))
         return True

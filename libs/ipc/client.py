@@ -1,4 +1,6 @@
 """App IPC client module."""
+import base64
+import json
 import logging
 from typing import Union
 
@@ -22,14 +24,18 @@ class AppClient:
         self.client = IPyCClient(port=port)
         self._conn = self.client.connect()
 
-    def _send(self, payload) -> Union[str, None]:
+    def _send(self, command, params: str = None) -> Union[str, None]:
         """
-        Send the payload with added APP_KEY and wait 2s for ACK.
+        Send the payload with added APP_KEY and wait 30s for ACK.
 
-        :param payload:
+        :param command: command to execute in host
+        :params params: additional parameters to execute
         :return: returned value as string or None
         """
-        self._conn.send(APP_KEY + "|" + payload)
+        to_send = APP_KEY + "|" + command
+        if params:
+            to_send += "|" + params
+        self._conn.send(to_send)
         ret = None
         if self._conn.poll(30.0):
             resp = self._conn.receive().split("|")
@@ -37,17 +43,24 @@ class AppClient:
                 ret = str(resp[-1])
         return ret
 
-    def send(self, message: str) -> Union[str, None]:
+    def send(self, command: str, *args) -> Union[str, None]:
         """
         Send a message to the host.
 
-        :param message: Tk virtual event name which is listed as application Public API
+        :param command: Tk virtual event name which is listed as application Public API
+        :params args: List of parameters required by command if any
         :return: returned value as string or None
         """
-        if message not in app_interface().keys():
-            logger.error(f"'{message}' not supported")
+        if command not in app_interface().keys():
+            logger.error(f"'{command}' not supported")
             return
-        return self._send(message)
+        params = None
+        if args:
+            _params = {}
+            for idx, param in enumerate(args):
+                _params[f"par{idx}"] = param
+            params = base64.b64encode(json.dumps(_params).encode("utf-8")).decode("utf-8")
+        return self._send(command, params)
 
     def stop(self):
         """
