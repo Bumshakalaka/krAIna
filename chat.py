@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 from chat.base import app_interface
+from libs.MyNotify import NotifyWorking
 from libs.ipc.client import AppClient
 from libs.ipc.host import AppHost
 
@@ -44,13 +45,16 @@ if __name__ == "__main__":
     else:
         try:
             with AppClient() as client:
-                if ret := client.send(*args):
+                desktop_notify = NotifyWorking(f"ai:{args[0]}")
+                desktop_notify.start()
+                ret = client.send(*args)
+                desktop_notify.join()
+                if ret:
                     if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
                         print(ret, flush=True, file=sys.stderr)
-                        sys.exit(1)
+                        exit(1)
                     else:
                         print(ret, flush=True, file=sys.stdout)
-                        sys.exit(0)
         except ConnectionRefusedError:
             # TODO: windows
             # proc_exe = subprocess.Popen(<Your executable path>, shell=True)

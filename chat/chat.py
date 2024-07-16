@@ -492,22 +492,27 @@ class App(tk.Tk):
         :param data: Dict(par0=snippet name, par1=data to transform)
         :return: transformed data
         """
-        result = tk.Variable(self, None)
 
         def _call(snippet, query, result_var):
+            # desktop_notify = NotifyWorking(f"ai:{snippet}")
+            # desktop_notify.start()
             try:
                 ret = self.ai_snippets[snippet].run(query)
             except Exception as e:
                 logger.exception(e)
                 ret = f"FAIL: {type(e).__name__}: {e}"
-            result_var.set(ret)
+            finally:
+                # desktop_notify.join()
+                pass
+            result_var.set(ret)  # set tk result variable which ends inner event loop
 
+        result = tk.Variable(self, None)  # tk variable to handle a thread result
         threading.Thread(
             target=_call,
             args=(data["par0"], data["par1"], result),
             daemon=True,
         ).start()
-        self.wait_variable(result)
+        self.wait_variable(result)  # enter into tk inner event-loop and wait for result variable
         ret = result.get()
         del result
         return ret
