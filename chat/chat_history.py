@@ -16,6 +16,7 @@ from chat.base import APP_EVENTS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
+from libs.utils import str_shortening
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +100,7 @@ class ChatHistory(ttk.Notebook):
         for view in self.views.values():
             view.load_chat(conversation)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
-            self.root.post_event(
-                APP_EVENTS.DESCRIBE_NEW_CHAT,
-                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
-            )
+            self._describe_chat()
         self.root.post_event(
             APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
             AssistantResp(
@@ -124,11 +122,7 @@ class ChatHistory(ttk.Notebook):
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 2:
-            # call to describe chat after 2 AI messages
-            self.root.post_event(
-                APP_EVENTS.DESCRIBE_NEW_CHAT,
-                "\n".join([x[1] for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
-            )
+            self._describe_chat()
 
     def human_message(self, message: str):
         """Call view methods."""
@@ -142,6 +136,13 @@ class ChatHistory(ttk.Notebook):
         self.raw_messages.append(["TOOL", message])
         for view in self.views.values():
             view.tool_message(message)
+
+    def _describe_chat(self):
+        """Call nameit snippet to describe chat after."""
+        self.root.post_event(
+            APP_EVENTS.DESCRIBE_NEW_CHAT,
+            "\n".join([str_shortening(x[1], 512) for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
+        )
 
 
 class UserQuery(ttk.Frame):
