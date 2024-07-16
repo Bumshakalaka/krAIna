@@ -20,19 +20,20 @@
 - markdown:
   - better tables handling
   - work with better CSS
+- Add key accelerators (New Chat, assistant switch)
 
 ## Miscellaneous
 - Introduce textual inline chat.
 - Develop a REST API for external integrations.
 - make toolkit from snippets—in chat, user can ask to fix paragraph or write /fix ... and the tool should be called
-- add possibility to call snippets via Chat IPC (to have one application)
 - speedup internal SQlite DB (one session, lazy commit, indexes, cleanup chats older than 30 days, pragma optimise, normalize tables)
 - add sqlite DB versioning and migration 
 - Add DB with prompts e.g. "Give me something"
 
 # Fixes
 - Fix the scrolling of a chat list when there are not too many chats.
-- on delete cascade not working
+- Use an Ipc Serializaion mechanism
+- When application is not running when IPC called, Run application and execute IPC command (Currently, the application is run)
 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents
