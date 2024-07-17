@@ -33,7 +33,6 @@
 # Fixes
 - Fix the scrolling of a chat list when there are not too many chats.
 - Use an Ipc Serializaion mechanism
-- When application is not running when IPC called, Run application and execute IPC command (Currently, the application is run)
 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents

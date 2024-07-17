@@ -53,28 +53,34 @@ if __name__ == "__main__":
     )
     _, args = parser.parse_known_args()
     if not args:
+        # no arguments, spawn a new process with chat application
+        subprocess.Popen(["python3", __file__, "_RUN_"], start_new_session=True)
+    elif args[0] == "_RUN_":
+        # run application in this process
         run_app()
     else:
-        try:
-            desktop_notify = NotifyWorking(f"ai:{args[0]}")
-            desktop_notify.start()
-            run_cmd(args)
-        except ConnectionRefusedError:
-            # Application not started, run in the seprate process
-            # TODO: windows
-            # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
-            # proc_exe.send_signal(subprocess.signal.SIGTERM)
-            subprocess.Popen(["python3", __file__], start_new_session=True)
+        # call IPC command to be executed by Chat application
+        with NotifyWorking(f"ai:{args[0]}"):
+            try:
+                run_cmd(args)
+            except ConnectionRefusedError:
+                # Application not started, run in the separate process
+                # TODO: windows
+                # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
+                # proc_exe.send_signal(subprocess.signal.SIGTERM)
+                subprocess.Popen(["python3", __file__, "_RUN_"], start_new_session=True)
 
-            # Try to connect to just started application to use IPC
-            start = time.time()
-            while time.time() <= start + 5.0:
-                try:
-                    run_cmd(args)
-                except ConnectionRefusedError:
-                    time.sleep(0.2)
-                    continue
-                else:
-                    break
-        finally:
-            desktop_notify.join()
+                # Try to connect to just started application to use IPC
+                start = time.time()
+                while time.time() <= start + 5.0:
+                    try:
+                        if args[0] not in ["HIDE_APP", "SHOW_APP"]:
+                            # Hide application if application was not run on IPC call and the command is not about
+                            # HIDE and SHOW app
+                            run_cmd(["HIDE_APP"])
+                        run_cmd(args)
+                    except ConnectionRefusedError:
+                        time.sleep(0.2)
+                        continue
+                    else:
+                        break
