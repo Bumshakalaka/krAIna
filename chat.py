@@ -2,6 +2,7 @@
 import argparse
 import subprocess
 import sys
+import time
 
 from chat.base import app_interface
 from libs.MyNotify import NotifyWorking
@@ -28,6 +29,17 @@ def run_app():
             client.send("SHOW_APP")
 
 
+def run_cmd(args):
+    with AppClient() as client:
+        ret = client.send(*args)
+        if ret:
+            if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
+                print(ret, flush=True, file=sys.stderr)
+                exit(1)
+            else:
+                print(ret, flush=True, file=sys.stdout)
+
+
 if __name__ == "__main__":
     descr = "KraIna chat application.\nCommands:\n"
     for cmd, cmd_descr in app_interface().items():
@@ -44,19 +56,25 @@ if __name__ == "__main__":
         run_app()
     else:
         try:
-            with AppClient() as client:
-                desktop_notify = NotifyWorking(f"ai:{args[0]}")
-                desktop_notify.start()
-                ret = client.send(*args)
-                desktop_notify.join()
-                if ret:
-                    if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
-                        print(ret, flush=True, file=sys.stderr)
-                        exit(1)
-                    else:
-                        print(ret, flush=True, file=sys.stdout)
+            desktop_notify = NotifyWorking(f"ai:{args[0]}")
+            desktop_notify.start()
+            run_cmd(args)
         except ConnectionRefusedError:
+            # Application not started, run in the seprate process
             # TODO: windows
             # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
             # proc_exe.send_signal(subprocess.signal.SIGTERM)
-            subprocess.Popen(["python", __file__], start_new_session=True)
+            subprocess.Popen(["python3", __file__], start_new_session=True)
+
+            # Try to connect to just started application to use IPC
+            start = time.time()
+            while time.time() <= start + 5.0:
+                try:
+                    run_cmd(args)
+                except ConnectionRefusedError:
+                    time.sleep(0.2)
+                    continue
+                else:
+                    break
+        finally:
+            desktop_notify.join()

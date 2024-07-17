@@ -24,7 +24,6 @@ class NotifyWorking(threading.Thread):
     def run(self):
         inf = Notify.Notification.new(self._summary, "Init")
         inf.show()
-        time.sleep(0.7)
         i = 0
         while not self._event.is_set():
             idx = i % len(self._bar)
@@ -36,8 +35,14 @@ class NotifyWorking(threading.Thread):
             i += 1
         inf.update(self._summary, "Done")
         inf.show()
-        time.sleep(0.3)
+        time.sleep(0.1)
         inf.close()
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.join()
 
 
 if __name__ == "__main__":

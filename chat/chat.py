@@ -96,7 +96,7 @@ class App(tk.Tk):
         """
         super().__init__()
         self._bind_table = defaultdict(list)
-        self._event_queue = queue.Queue(maxsize=10)
+        self._event_queue = queue.Queue(maxsize=20)
 
         # Configure application queue logger which is required for Debug Window
         self.log_queue = collections.deque(maxlen=1000)
@@ -417,7 +417,7 @@ class App(tk.Tk):
                 data = _data.data.data
 
             ret = ev_cmd(data)
-            logger.info(f"React on={_data.event.name} with data='{str_shortening(data)}': {ret=}")
+            logger.info(f"React on={_data.event.name}({ev_cmd.__name__}) with data='{str_shortening(data)}': {ret=}")
 
             if q_resp:
                 # send back response to the IPC client

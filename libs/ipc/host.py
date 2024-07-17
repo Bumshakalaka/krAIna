@@ -85,5 +85,6 @@ class AppHost(threading.Thread):
         params = None
         if len(message) > 2:
             params = json.loads(base64.b64decode(message[2].encode("utf-8")))
-        self._app.post_event(APP_EVENTS[message[1]], ipc_event(q, params))
+        # schedule to execute IPC action when tk event-loop is idle
+        self._app.after_idle(self._app.post_event, APP_EVENTS[message[1]], ipc_event(q, params))
         return True
