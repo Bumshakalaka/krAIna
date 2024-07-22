@@ -4,8 +4,8 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import asksaveasfile
-from tkinter.scrolledtext import ScrolledText
 import chat.chat_persistence as chat_persistence
+from chat.scroll_text import ScrolledText
 
 logger = logging.getLogger(__name__)
 

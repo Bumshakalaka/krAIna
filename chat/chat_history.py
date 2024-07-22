@@ -3,7 +3,6 @@ import functools
 import logging
 import tkinter as tk
 from tkinter import ttk
-from tkinter.scrolledtext import ScrolledText
 from typing import Dict, Union
 
 from tiktoken import encoding_for_model, get_encoding
@@ -14,6 +13,7 @@ import chat.chat_settings as chat_settings
 from assistants.assistant import AssistantResp, ADDITIONAL_TOKENS_PER_MSG
 from chat.base import APP_EVENTS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
+from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
 from libs.utils import str_shortening

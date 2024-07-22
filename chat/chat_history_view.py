@@ -3,12 +3,12 @@ import abc
 import logging
 import tkinter as tk
 import webbrowser
-from tkinter.scrolledtext import ScrolledText
 
 import markdown
 from tkinterweb.htmlwidgets import HtmlFrame
 
 from chat.base import DARKTHEME, LIGHTTHEME
+from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
 from libs.utils import str_shortening
