@@ -54,7 +54,7 @@ if __name__ == "__main__":
     _, args = parser.parse_known_args()
     if not args:
         # no arguments, spawn a new process with chat application
-        subprocess.Popen(["python3", __file__, "_RUN_"], start_new_session=True)
+        subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
     elif args[0] == "_RUN_":
         # run application in this process
         run_app()
@@ -68,7 +68,7 @@ if __name__ == "__main__":
                 # TODO: windows
                 # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
                 # proc_exe.send_signal(subprocess.signal.SIGTERM)
-                subprocess.Popen(["python3", __file__, "_RUN_"], start_new_session=True)
+                subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
 
                 # Try to connect to just started application to use IPC
                 start = time.time()
