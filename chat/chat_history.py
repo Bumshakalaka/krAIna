@@ -19,10 +19,25 @@ from libs.db.model import Conversations
 from libs.utils import str_shortening
 from tkinterweb import Notebook
 
+
+class FixedNotebook(Notebook):
+    """
+    Remove fix after PR: https://github.com/Andereoo/TkinterWeb/pull/102
+    """
+
+    def select(self, tabId=None):
+        if tabId in self.pages:
+            tabId = self.pages.index(tabId)
+            return self.notebook.select(tabId)
+        else:
+            self.notebook.select(tabId)
+            return self.transcribe(self.notebook.select())
+
+
 logger = logging.getLogger(__name__)
 
 
-class ChatHistory(Notebook):
+class ChatHistory(FixedNotebook):
     """Chat history Widget with two ChatViews: Text and Markdown"""
 
     def __init__(self, parent):
