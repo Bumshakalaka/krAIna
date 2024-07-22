@@ -21,6 +21,8 @@
   - better tables handling
   - work with better CSS
 - Add key accelerators (New Chat, assistant switch)
+- Full-text search:
+  - Find in SQLite, switch to the chat and highlight the text
 
 ## Miscellaneous
 - Introduce textual inline chat.
@@ -43,3 +45,14 @@
 - add modify time to conversation
 - allow sorting by creation/modify time — by default by creation time
 - add creation/modification date to description
+
+# Pyinstaller fixes
+- subprocess.Popen - use sys.executable
+- pyinstaller in venv with `--collect-all tkinterweb`
+- sv-ttk exception - check tkHtmlWeb package and look for `get_tkhtml_folder()`
+- first run:
+  - extract assistants/tools/snippets outside and use them
+  - .env
+  - config.yaml
+  - sqliteDB
+  - 

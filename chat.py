@@ -14,7 +14,7 @@ def run_app():
     # Run Chat application.
     # longChain import takes around 900ms. Thus, it's place here to have Client IPC fast
     from dotenv import load_dotenv, find_dotenv
-    from chat.chat import App
+    from chat.main import App
 
     load_dotenv(find_dotenv())
     app = App()

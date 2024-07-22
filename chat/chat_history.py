@@ -17,11 +17,12 @@ from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
 from libs.utils import str_shortening
+from tkinterweb import Notebook
 
 logger = logging.getLogger(__name__)
 
 
-class ChatHistory(ttk.Notebook):
+class ChatHistory(Notebook):
     """Chat history Widget with two ChatViews: Text and Markdown"""
 
     def __init__(self, parent):
@@ -284,7 +285,7 @@ class ChatFrame(ttk.PanedWindow):
         ttk.Label(chat_title, textvariable=active_chat_descr, anchor=tk.NE, wraplength=-1).pack(
             side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=12, padx=4
         )
-        chat_title.pack(side=tk.TOP, fill=tk.X, expand=True)
+        chat_title.pack(side=tk.TOP, fill=tk.X)
         ChatHistory(chat_hist_frame).pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.add(chat_hist_frame)
 
