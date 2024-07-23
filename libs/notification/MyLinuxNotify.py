@@ -4,15 +4,17 @@ from collections import namedtuple
 
 import gi
 
+from libs.notification.MyNotifyInterface import NotifierInterface
+
 gi.require_version("Notify", "0.7")
 from gi.repository import Notify
 
 
-class NotifyWorking(threading.Thread):
-    def __init__(self, summary: str, bar_len=4):
+class LinuxNotify(threading.Thread, NotifierInterface):
+    def __init__(self, summary: str):
         super().__init__()
         self._dot = namedtuple("dot", ("empty", "full"))("⚫", "⚪")
-        self._bar = [self._dot.empty] * bar_len
+        self._bar = [self._dot.empty] * 4
         self._summary = summary
         Notify.init(summary)
         self._event = threading.Event()
@@ -38,15 +40,9 @@ class NotifyWorking(threading.Thread):
         time.sleep(0.1)
         inf.close()
 
-    def __enter__(self):
-        self.start()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.join()
-
 
 if __name__ == "__main__":
-    working = NotifyWorking("AAA")
+    working = LinuxNotify("AAA")
     working.start()
     time.sleep(4)
     working.join()

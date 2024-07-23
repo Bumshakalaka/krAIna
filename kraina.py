@@ -5,7 +5,7 @@ import sys
 
 from dotenv import load_dotenv, find_dotenv
 
-from libs.MyNotify import NotifyWorking
+from libs.notification.MyNotify import notifier_factory
 from snippets.base import Snippets
 
 load_dotenv(find_dotenv())
@@ -17,9 +17,7 @@ if __name__ == "__main__":
     loggerLevel = logging.INFO
     file_handler = logging.FileHandler("kraina.log")
     console_handler = logging.StreamHandler(sys.stderr)
-    logging.basicConfig(
-        format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler]
-    )
+    logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
     console_handler.setLevel(logging.ERROR)
 
     parser = argparse.ArgumentParser(description="Perform various operations with AI")
@@ -33,14 +31,12 @@ if __name__ == "__main__":
         default="",
         help="Action to perform",
     )
-    parser.add_argument(
-        "--text", type=str, required=False, default="", help="User query"
-    )
+    parser.add_argument("--text", type=str, required=False, default="", help="User query")
     args = parser.parse_args()
     if args.text == "" and args.snippet == "":
         print(",".join(snippets.keys()))
     else:
-        desktop_notify = NotifyWorking(f"ai:{args.snippet}")
+        desktop_notify = notifier_factory()(f"ai:{args.snippet}")
         desktop_notify.start()
         try:
             ret = snippets[args.snippet].run(args.text)

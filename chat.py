@@ -5,7 +5,7 @@ import sys
 import time
 
 from chat.base import app_interface
-from libs.MyNotify import NotifyWorking
+from libs.notification.MyNotify import notifier_factory
 from libs.ipc.client import AppClient
 from libs.ipc.host import AppHost
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         run_app()
     else:
         # call IPC command to be executed by Chat application
-        with NotifyWorking(f"ai:{args[0]}"):
+        with notifier_factory()(f"ai:{args[0]}"):
             try:
                 run_cmd(args)
             except ConnectionRefusedError:
