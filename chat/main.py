@@ -128,7 +128,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         Menu(self)
-        self.pw_main = ttk.PanedWindow(orient=tk.HORIZONTAL, height=80)
+        self.pw_main = tk.PanedWindow(orient=tk.HORIZONTAL, height=80, opaqueresize=False, sashpad=2, sashwidth=6)
 
         self.leftsidebarW = LeftSidebar(self)
         self.pw_main.add(self.leftsidebarW)
@@ -141,7 +141,7 @@ class App(tk.Tk):
             # I have no idea how to set sash pos other way.
             # It must be done when the widget is fully updated.
             # Thus, do this one time on Configure event
-            self.pw_main.sashpos(0, chat_persistence.SETTINGS.sashpos_main)
+            self.pw_main.sash_place(0, chat_persistence.SETTINGS.sashpos_main, 1)
             self.pw_main.unbind("<Configure>")
 
         self.pw_main.bind("<Configure>", _set_sashpos)
@@ -311,8 +311,8 @@ class App(tk.Tk):
         :return:
         """
         persist_file = Path(__file__).parent / "../.settings.yaml"
-        chat_persistence.SETTINGS.sashpos_main = self.pw_main.sashpos(0)
-        chat_persistence.SETTINGS.sashpos_chat = self.chatW.sashpos(0)
+        chat_persistence.SETTINGS.sashpos_main = list(self.pw_main.sash_coord(0))[0]
+        chat_persistence.SETTINGS.sashpos_chat = list(self.chatW.sash_coord(0))[1]
         with open(persist_file, "w") as fd:
             yaml.dump(dict(chat=asdict(chat_persistence.SETTINGS)), fd)
 

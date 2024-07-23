@@ -278,7 +278,7 @@ class UserQuery(ttk.Frame):
             self.text.unbind("<Control-Return>")
 
 
-class ChatFrame(ttk.PanedWindow):
+class ChatFrame(tk.PanedWindow):
     """Right side chat frame."""
 
     def __init__(self, parent):
@@ -287,7 +287,7 @@ class ChatFrame(ttk.PanedWindow):
         :param parent: Main App
         """
 
-        super().__init__(parent, orient=tk.VERTICAL)
+        super().__init__(parent, orient=tk.VERTICAL, opaqueresize=False, sashpad=2, sashwidth=10)
         self.root = parent
 
         chat_hist_frame = ttk.Frame()
@@ -311,7 +311,7 @@ class ChatFrame(ttk.PanedWindow):
             # I have no idea how to set sash pos other way.
             # It must be done when the widget is fully updated.
             # Thus, do this one time on Configure event
-            self.sashpos(0, chat_persistence.SETTINGS.sashpos_chat)
+            self.sash_place(0, 1, chat_persistence.SETTINGS.sashpos_chat)
             self.unbind("<Configure>")
 
         self.bind("<Configure>", _set_sashpos)
