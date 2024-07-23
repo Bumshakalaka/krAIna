@@ -1,8 +1,24 @@
 """Base functions."""
 import enum
 import queue
+import sys
 from dataclasses import dataclass
 from typing import Dict, Any
+
+
+def get_windows_version() -> int:
+    if sys.platform == "win32":
+        # Running on Windows
+        version = sys.getwindowsversion()
+
+        if version.major == 10 and version.build >= 22000:
+            return 11  # Windows 11
+        elif version.major == 10:
+            return 10  # Windows 10
+        else:
+            return version.major  # Other Windows version (like 7, 8, 8.1, etc...)
+    else:
+        return 0  # Not running on Windows
 
 
 @dataclass

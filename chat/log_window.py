@@ -4,7 +4,11 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import asksaveasfile
+
+import sv_ttk
+
 import chat.chat_persistence as chat_persistence
+from chat.base import get_windows_version
 from chat.scroll_text import ScrolledText
 
 logger = logging.getLogger(__name__)
@@ -71,6 +75,28 @@ class DbgLogWindow(tk.Toplevel):
 
         self.view_selected()
 
+    def set_title_bar_color(self):
+        """Set background color of title on Windows only."""
+        if get_windows_version() == 10:
+            import pywinstyles
+
+            theme = sv_ttk.get_theme()
+            if theme == "dark":
+                pywinstyles.apply_style(self, "dark")
+            else:
+                pywinstyles.apply_style(self, "normal")
+
+            # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
+            self.wm_attributes("-alpha", 0.99)
+            self.wm_attributes("-alpha", 1)
+        elif get_windows_version() == 11:
+            import pywinstyles
+
+            theme = sv_ttk.get_theme()
+            col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
+            # Set the title bar color to the background color on Windows 11 for better appearance
+            pywinstyles.change_header_color(self, col)
+
     def find_select_string(self, pattern: str) -> bool:
         """
         Find and select pattern in the log.
@@ -125,6 +151,7 @@ class DbgLogWindow(tk.Toplevel):
         """Show the window."""
         if not self.visible:
             self.visible = True
+            self.set_title_bar_color()
             self.get_logs()
             self._update_geometry()
             self.withdraw()
@@ -161,7 +188,6 @@ class DbgLogWindow(tk.Toplevel):
             # DO not set higher levels because we would like to have those data later
             # in case of filter change
             self.root.queue_handler.setLevel(req_lvl if req_lvl == "DEBUG" else "INFO")
-            print(self.root.queue_handler.level)
 
     def display(self, record: logging.LogRecord):
         """Display formated log record in text widget."""

@@ -23,7 +23,7 @@ from chat.chat_history import ChatFrame
 from assistants.assistant import AssistantResp, AssistantType
 import chat.chat_settings as chat_settings
 import chat.chat_persistence as chat_persistence
-from chat.base import APP_EVENTS, ipc_event
+from chat.base import APP_EVENTS, ipc_event, get_windows_version
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
@@ -111,6 +111,7 @@ class App(tk.Tk):
         self._settings_read()
         self._persistent_read()
         sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
+        self.set_title_bar_color(chat_persistence.SETTINGS.theme)
         style = ttk.Style(self)
         style.configure("Hidden.TButton", foreground=self.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
@@ -176,6 +177,26 @@ class App(tk.Tk):
             "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
         )
         self.chatW.userW.text.focus_force()
+
+    def set_title_bar_color(self, theme):
+        """Set background color of title on Windows only."""
+        if get_windows_version() == 10:
+            import pywinstyles
+
+            if theme == "dark":
+                pywinstyles.apply_style(self, "dark")
+            else:
+                pywinstyles.apply_style(self, "normal")
+
+            # A hacky way to update the title bar's color on Windows 10 (it doesn't update instantly like on Windows 11)
+            self.wm_attributes("-alpha", 0.99)
+            self.wm_attributes("-alpha", 1)
+        elif get_windows_version() == 11:
+            import pywinstyles
+
+            col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
+            # Set the title bar color to the background color on Windows 11 for better appearance
+            pywinstyles.change_header_color(self, col)
 
     def get_theme_color(self, col_name) -> str:
         """Get theme color based on actual theme."""

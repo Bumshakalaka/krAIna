@@ -128,8 +128,10 @@ class SettingsMenu(tk.Menu):
         _var = self.getvar(name=args[0])
         if _var:
             sv_ttk.set_theme("light")
+            self.parent.set_title_bar_color("light")
         else:
             sv_ttk.set_theme("dark")
+            self.parent.set_title_bar_color("dark")
         style = ttk.Style(self)
         style.configure("Hidden.TButton", foreground=self.parent.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
