@@ -14,7 +14,7 @@ class LinuxNotify(threading.Thread, NotifierInterface):
     def __init__(self, summary: str):
         super().__init__()
         self._dot = namedtuple("dot", ("empty", "full"))("⚫", "⚪")
-        self._bar = [self._dot.empty] * 4
+        self._bar = [self._dot.empty] * 8
         self._summary = summary
         Notify.init(summary)
         self._event = threading.Event()

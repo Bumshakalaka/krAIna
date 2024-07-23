@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if args.text == "" and args.snippet == "":
         print(",".join(snippets.keys()))
     else:
-        desktop_notify = notifier_factory()(f"ai:{args.snippet}")
+        desktop_notify = notifier_factory()(f"KrAina: {args.snippet}")
         desktop_notify.start()
         try:
             ret = snippets[args.snippet].run(args.text)
