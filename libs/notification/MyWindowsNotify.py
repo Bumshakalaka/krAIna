@@ -14,7 +14,7 @@ from libs.notification.MyNotifyInterface import NotifierInterface
 
 class WindowsNotify(NotifierInterface):
     def __init__(self, summary: str):
-        self.toaster = InteractableWindowsToaster("kraina", notifierAUMID=r"Microsoft.Windows.Computer")
+        self.toaster = InteractableWindowsToaster("kraina")
 
         toastImage = ToastDisplayImage.fromPath(
             (Path(__file__).parent / "../../img/logo.png").resolve(), position=ToastImagePosition.AppLogo

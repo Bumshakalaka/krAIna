@@ -60,7 +60,7 @@ if __name__ == "__main__":
         run_app()
     else:
         # call IPC command to be executed by Chat application
-        with notifier_factory()(f"ai:{args[0]}"):
+        with notifier_factory()(f"KrAIna: {args[0]}"):
             try:
                 run_cmd(args)
             except ConnectionRefusedError:
