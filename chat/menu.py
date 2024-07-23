@@ -30,8 +30,7 @@ class LlmModel(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM model."""
         super().__init__(parent, *args, **kwargs)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        col = parent.get_theme_color("accent")
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
         self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
@@ -51,8 +50,7 @@ class LlmTemperature(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM temperature."""
         super().__init__(parent, *args, **kwargs)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        col = parent.get_theme_color("accent")
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
         self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
@@ -70,8 +68,7 @@ class LlmType(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for LLM temperature."""
         super().__init__(parent, *args, **kwargs)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        col = parent.get_theme_color("accent")
         self.parent = parent
         self._var = tk.StringVar(
             self,
@@ -104,8 +101,7 @@ class SettingsMenu(tk.Menu):
     def __init__(self, parent, *args, **kwargs):
         """Create sub-menu for quick settings."""
         super().__init__(parent, *args, **kwargs)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        col = parent.get_theme_color("accent")
         self.parent = parent
         self._always_on_top = tk.BooleanVar(self)
         self._always_on_top.trace("w", self.always_on_top)
@@ -134,9 +130,8 @@ class SettingsMenu(tk.Menu):
             sv_ttk.set_theme("light")
         else:
             sv_ttk.set_theme("dark")
-        col = self.tk.call("set", f"ttk::theme::sv_light::colors(-disfg)")
         style = ttk.Style(self)
-        style.configure("Hidden.TButton", foreground=col)
+        style.configure("Hidden.TButton", foreground=self.parent.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
         chat_persistence.SETTINGS.theme = sv_ttk.get_theme()
         self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())

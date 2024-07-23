@@ -111,9 +111,8 @@ class App(tk.Tk):
         self._settings_read()
         self._persistent_read()
         sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
-        col = self.tk.call("set", f"ttk::theme::sv_light::colors(-disfg)")
         style = ttk.Style(self)
-        style.configure("Hidden.TButton", foreground=col)
+        style.configure("Hidden.TButton", foreground=self.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
         self.withdraw()
         self.ai_db = Db()
@@ -177,6 +176,12 @@ class App(tk.Tk):
             "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
         )
         self.chatW.userW.text.focus_force()
+
+    def get_theme_color(self, col_name) -> str:
+        """Get theme color based on actual theme."""
+        theme = sv_ttk.get_theme(self)
+        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-{col_name})")
+        return col
 
     def report_callback_exception(self, exc, val, tb):
         """Handle tkinter callback errors"""

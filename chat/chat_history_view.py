@@ -60,8 +60,8 @@ class TextChatView(ScrolledText, ChatView):
         :param parent: Chat frame.
         """
         super().__init__(parent, height=15)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
+        self.root = parent.master.master
+        col = self.root.get_theme_color("accent")
         self.tag_config("HUMAN", foreground=col, spacing3=5)
         self.tag_config("HUMAN_prefix", spacing3=5)
         self.tag_config("AI", lmargin1=10, lmargin2=10)
@@ -70,12 +70,10 @@ class TextChatView(ScrolledText, ChatView):
         self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
         self.tag_config("TOOL_prefix")
         self.tag_raise("sel")
-        self.root = parent.master.master
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)")
-        self.tag_config("HUMAN", foreground=col)
+        self.tag_config("HUMAN", foreground=self.root.get_theme_color("accent"))
 
     def ai_message(self, message: str):
         """
@@ -163,14 +161,21 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.enable_objects(False)
         self.on_link_click(self._open_webbrowser)
         self.on_done_loading(self._see_end)
+
+        self.root = parent.master.master
         theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
         if theme == "dark":
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
             self.html.update_default_style(LIGHTTHEME)
 
+        self.cols = {
+            "HUMAN": self.root.get_theme_color("accent"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg"),
+        }
+
         self._clear()
-        self.root = parent.master.master
 
     @staticmethod
     def _open_webbrowser(url):
@@ -189,6 +194,11 @@ class HtmlChatView(HtmlFrame, ChatView):
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
             self.html.update_default_style(LIGHTTHEME)
+        self.cols = {
+            "HUMAN": self.root.get_theme_color("accent"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg"),
+        }
 
     def ai_message(self, message: str):
         """
@@ -225,18 +235,12 @@ class HtmlChatView(HtmlFrame, ChatView):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        cols = {
-            "HUMAN": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-accent)"),
-            "TOOL": "#DCBF85",
-            "AI": self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-fg)"),
-        }
         text = str_shortening(text) if tag == "TOOL" else text
-        m_text = f'<span style="color:{cols[tag]}">'
+        m_text = f'<span style="color:{self.cols[tag]}">'
         if tag == "HUMAN":
             m_text += (
                 text.strip()
-                + f'\n\n<hr style="height:2px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">\n'
+                + f'\n\n<hr style="height:2px;border-width:0;color:{self.cols[tag]};background-color:{self.cols[tag]}">\n'
             )
         elif tag == "TOOL":
             m_text += text
@@ -247,7 +251,9 @@ class HtmlChatView(HtmlFrame, ChatView):
                 # it can happen when completion tokens where not enough
                 m_text += "\n```"
             # add horizontal line separator
-            m_text += f'\n\n<hr style="height:4px;border-width:0;color:{cols[tag]};background-color:{cols[tag]}">'
+            m_text += (
+                f'\n\n<hr style="height:4px;border-width:0;color:{self.cols[tag]};background-color:{self.cols[tag]}">'
+            )
         m_text += "</span>"
         html = markdown.markdown(
             m_text,

@@ -114,9 +114,7 @@ class StatusBar(tk.Frame):
             f"2. Assistant force_api setting: '{assistant_force_api}'"
         )
         self.api_name.set(get_llm_type(force_api).value)
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
-        self.label_api.configure(background=col)
+        self.label_api.configure(background=self.root.get_theme_color("bg"))
 
     def update_statusbar(self, data: AssistantResp):
         """Update status bar."""
@@ -127,6 +125,4 @@ class StatusBar(tk.Frame):
         else:
             self.api_params.set(str(data.tokens.pop("api")) + " | ")
             self.token_usage.set(str(data.tokens))
-            theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-            col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
-            self.label_token_usage.configure(background=col)
+            self.label_token_usage.configure(background=self.root.get_theme_color("bg"))
