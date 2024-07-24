@@ -1,14 +1,20 @@
 ![logo](img/kraina_banner.png)
 ## Overview
-Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI or Anthropic LLMs.
+
+![os](https://badgen.net/badge/Windows/supported/orange)
+![os](https://badgen.net/badge/Linux/windows/green)
+
+![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
+
+Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic LLMs.
 1. **Snippets** — the actions that can be performed on selected text.
 2. **Assistants** — your own specialized assistants to talk with.
 3. **Tools** — your own specialized tools to use with Assistants.
 
-KrAIna can be easily extended by personal, third-party sets of the above beings by creating folder (or create symlink) in KrAIna.
+KrAIna can be easily extended by personal, third-party sets of the above beings by creating a folder (or creating a symlink) in KrAIna.
 
-1. The folder must contain file named `.kraina-land` - this is tag file for KrAIna to scan the folder
-2. To extend KrAIna with new snippets, assistants or tools create the respective folders names
+1. The folder must contain a file named `.kraina-land` - this is a tag file for KrAIna to scan the folder
+2. To extend KrAIna with new snippets, assistants, or tools create the respective folder names
 3. Follow KrAIna structure of these new sets
 4. Example folder structure
    ```
@@ -32,7 +38,6 @@ KrAIna can be easily extended by personal, third-party sets of the above beings 
 
 **Chat** - Chat GUI application built using tkinter for Assistants and Snippets.
 
-**Currently on available on Linux**
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -64,7 +69,7 @@ contexts:
     - ./example1.txt
     - ./example2.txt
 ```
-to `config.yaml` file. The fields are parsed and added to system prompt:
+to `config.yaml` file. The fields are parsed and added to the system prompt:
 ```
 ... system prompt ...
 Take into consideration the context below while generating answers.
@@ -80,7 +85,7 @@ Current date: {date}
 ```
 
 **Note**:
-This part is always added, regardless of whether the `contexts` key exists in `config.yaml`.
+This part is always added, regardless of the `contexts` key exists in `config.yaml`.
 This part is not added when the `config.yaml` file does not exist.
 
 ```
@@ -94,7 +99,7 @@ However, AI-powered snippets are nothing without a good user interface to make i
 One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
 ### Assistants
-Your personal AI assistant. It can be a causal assistant or prompt engineer or storyteller.
+Your personal AI assistant. It can be a casual assistant or prompt engineer or storyteller.
 Assistant can be run as one-shot, similar to snippets or can use its memory and remember the conversation.
 
 The assistants have been designed similar to Snippets. Check the `assistants` folder.
@@ -135,7 +140,7 @@ contexts:
   #   - ./about_me.txt
   #   - ./my_projects.txt 
 ```
-to `config.yaml` file. The fields are parsed and added to system prompt:
+to `config.yaml` file. The fields are parsed and added to the system prompt:
 ```
 ... system prompt ...
 Take into consideration the context below while generating answers.
@@ -163,23 +168,23 @@ Current date: {date}
 
 
 The assistants can use tools. To do this:
-1. Assign tools (LangChain BaseTools) by listing them in assistant `config.yaml` key
+1. Assign tools (LangChain BaseTools) by listing them in the assistant `config.yaml` key
    ```yaml
    tools:
      - brave_web
      - file_search
    ```
-2. Use models capable to do Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
+2. Use models capable of doing Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 
 
 ### Tools
 
-Set of tools available to others in krAIna. 
+Set of tools available to others in KrAIna. 
 
 To make such a tool, you need to follow these steps:
 1. Find or develop a tool derived from BaseTool.
-   1. Check https://python.langchain.com/v0.2/docs/integrations/tools/ for build-in in langchain tools
-   2. Check https://python.langchain.com/v0.2/docs/integrations/toolkits/ for build-in in langchain tools
+   1. Check https://python.langchain.com/v0.2/docs/integrations/tools/ for built-in in langchain tools
+   2. Check https://python.langchain.com/v0.2/docs/integrations/toolkits/ for built-in in langchain tools
    3. Check https://python.langchain.com/v0.2/docs/how_to/custom_tools/ how to create your own tool 
 2. Create an initialization function that:
    1. Must accept one parameter, `tool_settings` (even if you don't have any settings).
@@ -190,7 +195,7 @@ The initialization of the tool (calling the init function) occurs when an Assist
 not when it is initialized.
 
 ### Chat GUI application
-Chat GUI application build using tkinter.
+Chat GUI application built using tkinter.
 
 ![chat](img/kraina_chat.gif)
 
@@ -200,21 +205,26 @@ features:
 * Chats history which can be recalled. They are auto-named and describe
 * Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent)
 * Assistant selection
-* Support for snippets — right-click in user query widget to apply transformation on a text
+* Support for snippets — right-click in the user query widget to apply transformation on a text
 * Overwrite Assistant settings
 * persistence storage on exit
 * progress bar to visualize that LLM is working
 * status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
-  * `chat.sh SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
-  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"`
+  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
+  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
 * Markdown/HTML support
-* Debug Window (left-bottom corner) with the application logs
+* Debug Window (right-bottom corner) with the application logs
+
+## Requirements
+1. Python >= 3.10 + IDLE (Tk GUI)
+2. Python venv package
+3. Git
 
 ## Install
 1. Clone the project.
-2. Run the `setup.sh` script, which executes the commands below, or run the commands below by yourself.
+2. Run the `setup.sh` or `setup.bat` script, which executes the commands below, or run the commands below by yourself.
 
     1. Create a virtual environment: `python3 -m venv .venv`
     2. Install the requirements from `requirements.txt`: `pip install -r requirements.txt`.
@@ -227,8 +237,8 @@ features:
 
 ---
 *Note*:
-By default, the highest priority has Azure OpenAI LLM, next OpeAI and the last Anthropic.
-Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAi is selected.
+By default, the highest priority has Azure OpenAI LLM, next OpenAI and the last Anthropic.
+Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAI is selected.
 ---
 *Note*:
 Versioning and auto-updating of the `kraina.db` schema are not supported at this time.
@@ -282,7 +292,7 @@ Check also other CopyQ Custom Actions in `copyQ`.
 
 ---
 *Note*:
-1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with main window focus)
+1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with the main window focus)
 2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
 ---
 
@@ -312,7 +322,7 @@ chat:
    # chat settings
    # Always start New Chat with selected assistant
    default_assistant: samantha
-   # maximum last chats to display in left sidebar
+   # maximum last chats to display in the left sidebar
    visible_last_chats: 10
 assistants:
    # assistants settings
@@ -335,8 +345,8 @@ tools:
 ## Usage
 
 ### CLI
-1. Get all supported snippets: `./kraina.sh`
-2. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"`
+1. Get all supported snippets: `./kraina.sh` or `./kraina.bat`
+2. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"` or `./kraina.bat translate "Cześć, co słychać u Ciebie?"`
 3. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"`
 
 ### CopyQ Usage
@@ -356,15 +366,16 @@ Alternatively:
 
 ### Chat
 
-1. Start the application by running `./chat.sh`.
+1. Start the application by running `./chat.sh` or `./chat.bat`.
 2. Use its features.
-3. You can also use `./chat.sh COMMAND` to control the application with the following supported commands:
+3. You can also use `./chat.sh COMMAND` or `./chat.bat COMMAND` to control the application with the following supported commands:
 ```text
 SHOW_APP - Trigger to display the application
 HIDE_APP - Trigger to minimize the application
 No argument - Run the GUI app. If the app is already running, it will be shown
 ```
-Assign `./chat.sh SHOW_APP` to system global shortkey to summon KrAIna Chat quickly, press Escape in application to minimalize it.
+Assign `./chat.sh SHOW_APP` or `./chat.bat SHOW_APP` to a system global shortcut to summon KrAIna Chat quickly, 
+press Escape in the application to minimize it.
 ### Code
 
 #### Snippets
@@ -390,7 +401,7 @@ action = assistants["echo"]
 ret = action.run("2+2", use_db=False)
 print(ret)  # AssistantResp(conv_id=None, content='2 + 2 equals 4.', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 0, 'input': 6, 'total_input': 37, 'output': 11, 'total': 85}, error=None)
 # with history
-first = action.run("My name is Paul")  # First call without conv_id creates new conversation
+first = action.run("My name is Paul")  # First call without conv_id creates a new conversation
 print(first)  # AssistantResp(conv_id=192, content='Nice to meet you, Paul! How can I assist you today?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 7, 'input': 7, 'total_input': 45, 'output': 17, 'total': 107}, error=None)
 ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
 print(ret)  # AssistantResp(conv_id=192, content='Your name is Paul. How can I assist you today, Paul?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 24, 'input': 8, 'total_input': 63, 'output': 17, 'total': 143}, error=None)
