@@ -1,9 +1,7 @@
 # TODO List
 
 ## Core Tasks
-- Implement a notification system for Windows, considering either native OS notifications or a custom tkinter solution.
 - Enhance asynchronous processing.
-- windows support
 - common codebase for snippets and assistants
 
 ## Assistant Enhancements
