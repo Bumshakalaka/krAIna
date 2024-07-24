@@ -51,7 +51,7 @@ class StatusBar(tk.Frame):
         self.label_api_params.pack(side=tk.LEFT)
         self.label_token_usage.pack(side=tk.LEFT, fill=tk.X)
 
-        self.dbg_window_btn = ttk.Button(self, text="▣", command=self.create_dbg_window, takefocus=False)
+        self.dbg_window_btn = ttk.Button(self, text="\u2A00", command=self.create_dbg_window, takefocus=False)
         ToolTip(
             self.dbg_window_btn,
             msg="Internal logs window",

@@ -216,9 +216,13 @@ class App(tk.Tk):
     def show_app(self, *args):
         self.withdraw()
         self.deiconify()
-        self.lift()
+        # workaround to lift window on Linux and Windows
+        # On Windows self.lift() doesn't work always
+        self.wm_attributes("-topmost", True)
         if chat_persistence.SETTINGS.always_on_top:
             self.wm_attributes("-topmost", True)
+        else:
+            self.wm_attributes("-topmost", False)
         self.chatW.userW.text.focus_force()
 
     def hide_app(self, *args):
