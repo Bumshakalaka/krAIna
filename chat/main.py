@@ -386,21 +386,27 @@ class App(tk.Tk):
                 logger.error("Invalid config.yaml format")
 
     def _update_geometry(self):
-        # Prevent that chat will always be visible
-        w_size, offset_x, offset_y = chat_persistence.SETTINGS.geometry.split("+")
-        if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
-            chat_persistence.SETTINGS.geometry = "708x546+0+0"
-        elif (
-            int(w_size.split("x")[0]) > self.winfo_screenwidth()
-            or int(w_size.split("x")[1]) > self.winfo_screenheight()
-        ):
-            chat_persistence.SETTINGS.geometry = "708x546+0+0"
-        self.wm_geometry(chat_persistence.SETTINGS.geometry)
+        if chat_persistence.SETTINGS.geometry == "zoomed":
+            self.wm_state("zoomed")
+        else:
+            # Prevent that chat will always be visible
+            w_size, offset_x, offset_y = chat_persistence.SETTINGS.geometry.split("+")
+            if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
+                chat_persistence.SETTINGS.geometry = "708x546+0+0"
+            elif (
+                int(w_size.split("x")[0]) > self.winfo_screenwidth()
+                or int(w_size.split("x")[1]) > self.winfo_screenheight()
+            ):
+                chat_persistence.SETTINGS.geometry = "708x546+0+0"
+            self.wm_geometry(chat_persistence.SETTINGS.geometry)
         self.update()
 
     def quit_app(self, *args):
         """Quit application handler."""
-        chat_persistence.SETTINGS.geometry = self.wm_geometry()
+        if self.wm_state() == "zoomed":
+            chat_persistence.SETTINGS.geometry = "zoomed"
+        else:
+            chat_persistence.SETTINGS.geometry = self.wm_geometry()
         self._persistent_write()
         self.destroy()
 
