@@ -11,7 +11,7 @@ from chat.base import DARKTHEME, LIGHTTHEME
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, to_md
+from libs.utils import str_shortening, to_md, prepare_message
 
 logger = logging.getLogger(__name__)
 
@@ -235,38 +235,9 @@ class HtmlChatView(HtmlFrame, ChatView):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
-        self.add_html(to_md(self._prepare_message(text, tag, self.cols[tag])))
+        m_text = prepare_message(text, tag, str(self.cols[tag]))
+        self.add_html(to_md(m_text))
         self._see_end()
-
-    @lru_cache(maxsize=256)
-    def _prepare_message(self, text: str, tag: str, col: str) -> str:
-        """
-        Prepare and format a message based on the given tag and color.
-
-        If the tag is "TOOL", the text is shortened.
-        Adds HTML span and horizontal line based on the tag.
-
-        :param text: The input text to be formatted.
-        :param tag: The tag indicating the type of message ("HUMAN", "TOOL", etc.).
-        :param col: The color to be applied to the text and separators.
-        :return: The formatted message as a string.
-        """
-        text = str_shortening(text) if tag == "TOOL" else text
-        m_text = f'<span style="color:{col}">'
-        if tag == "HUMAN":
-            m_text += text.strip() + f'\n\n<hr style="height:2px;border-width:0;color:{col};background-color:{col}">\n'
-        elif tag == "TOOL":
-            m_text += text
-        else:
-            m_text += text
-            if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
-                # situation when LLM give text block in ``` but the ``` are unbalanced
-                # it can happen when completion tokens where not enough
-                m_text += "\n```"
-            # add horizontal line separator
-            m_text += f'\n\n<hr style="height:4px;border-width:0;color:{col};background-color:{col}">'
-        m_text += "</span>"
-        return m_text
 
     def new_chat(self, *args):
         """
