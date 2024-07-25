@@ -62,6 +62,36 @@ def to_md(text: str) -> str:
     )
 
 
+@lru_cache(maxsize=256)
+def prepare_message(text: str, tag: str, col: str) -> str:
+    """
+    Prepare and format a message based on the given tag and color.
+
+    If the tag is "TOOL", the text is shortened.
+    Adds HTML span and horizontal line based on the tag.
+
+    :param text: The input text to be formatted.
+    :param tag: The tag indicating the type of message ("HUMAN", "TOOL", etc.).
+    :param col: The color to be applied to the text and separators.
+    :return: The formatted message as a string.
+    """
+    text = str_shortening(text) if tag == "TOOL" else text
+    m_text = f'<span style="color:{col}">'
+    if tag == "HUMAN":
+        m_text += text.strip() + f'\n\n<hr style="height:2px;border-width:0;color:{col};background-color:{col}">\n'
+    elif tag == "TOOL":
+        m_text += text
+    else:
+        m_text += text
+        if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
+            # situation when LLM give text block in ``` but the ``` are unbalanced
+            # it can happen when completion tokens where not enough
+            m_text += "\n```"
+        # add horizontal line separator
+        m_text += f'\n\n<hr style="height:4px;border-width:0;color:{col};background-color:{col}">'
+    m_text += "</span>"
+    return m_text
+
 def find_lands(type: str, build_in: Path) -> List[Path]:
     """
     Generate a list of all available assistants/snippets/tools.
