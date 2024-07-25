@@ -32,7 +32,7 @@ class Assistants(dict):
         assistant_sets = find_lands("assistants", Path(__file__).parent)
 
         for assistant_set in assistant_sets:
-            for assistant in assistant_set.glob("*"):
+            for assistant in sorted(assistant_set.glob("*")):
                 if self.get(assistant.name) is not None:
                     logger.error(f"'{assistant.name}` assistant already exist")
                     continue
