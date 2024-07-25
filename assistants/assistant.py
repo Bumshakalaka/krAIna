@@ -6,6 +6,7 @@ import logging
 from collections import namedtuple
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from typing import Union, List, Dict, Optional, Callable
 
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -103,6 +104,16 @@ class BaseAssistant:
     def model(self, value: str):
         self._model = value
 
+    @lru_cache(maxsize=256)
+    def _calc_tokens(self, text) -> int:
+        """
+        Calculate number of tokens from text.
+
+        :param text:
+        :return:
+        """
+        return len(self.encoding.encode(text))
+
     def tokens_used(
         self, conv_id: Union[int, None] = None, hist: Union[List[BaseMessage], None] = None
     ) -> Dict[str, int]:
@@ -122,13 +133,11 @@ class BaseAssistant:
             "history": 0,
         }
         msgs = [msg.content for msg in (self._get_history(conv_id=conv_id) if not hist else hist)]
-        ret["prompt"] += len(self.encoding.encode(self.prompt)) + ADDITIONAL_TOKENS_PER_MSG
+        ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
         if self.tools:
             for tool in get_and_init_tools(self.tools):
-                ret["prompt"] += len(self.encoding.encode(json.dumps(convert_to_openai_tool(tool))))
-        ret["history"] += (
-            len(list(itertools.chain(*self.encoding.encode_batch(msgs)))) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
-        )
+                ret["prompt"] += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
+        ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
 
     @staticmethod
