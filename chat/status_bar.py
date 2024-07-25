@@ -35,7 +35,7 @@ class StatusBar(tk.Frame):
             self,
             f"Selected LLM to use based on:\n"
             f"1. Chat settings: '{chat_persistence.SETTINGS.last_api_type}'\n"
-            f"2. Assistant force_api setting: '{self.root.ai_assistants[self.root.selected_assistant.get()].force_api}'",
+            f"2. Assistant force_api setting: '{self.root.current_assistant.force_api}'",
         )
         self.label_api = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_name, width=10, justify=tk.RIGHT)
         ToolTip(
@@ -106,7 +106,7 @@ class StatusBar(tk.Frame):
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
-        assistant_force_api = self.root.ai_assistants[self.root.selected_assistant.get()].force_api
+        assistant_force_api = self.root.current_assistant.force_api
         force_api = data if assistant_force_api is None else assistant_force_api
         self.api_name_descr.set(
             f"Selected LLM to use based on:\n"

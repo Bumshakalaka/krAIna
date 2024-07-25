@@ -92,7 +92,7 @@ class LlmType(tk.Menu):
             AssistantResp(
                 self.parent.conv_id,
                 "not used",
-                self.parent.ai_assistants[self.parent.selected_assistant.get()].tokens_used(self.parent.conv_id),
+                self.parent.current_assistant.tokens_used(self.parent.conv_id),
             ),
         )
 

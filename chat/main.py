@@ -178,6 +178,25 @@ class App(tk.Tk):
         )
         self.chatW.userW.text.focus_force()
 
+    @property
+    def current_assistant(self):
+        """Get current assistant."""
+        try:
+            self.ai_assistants[self.selected_assistant.get()]
+        except KeyError as e:
+            if (
+                chat_settings.SETTINGS.default_assistant
+                and chat_settings.SETTINGS.default_assistant in self.ai_assistants
+            ):
+                self.selected_assistant.set(chat_settings.SETTINGS.default_assistant)
+            else:
+                self.selected_assistant.set(list(self.ai_assistants.keys())[0])
+
+            logger.warning(
+                f"{e} assistant does not exist anymore, use '{self.selected_assistant.get()}' one as fallback"
+            )
+        return self.ai_assistants[self.selected_assistant.get()]
+
     def set_title_bar_color(self, theme):
         """Set background color of title on Windows only."""
         if get_windows_version() == 10:
@@ -245,7 +264,7 @@ class App(tk.Tk):
             # get an assistant API type to avoid using built one in snippet
             # and avoid data disclosure
             temp = self.ai_snippets["nameit"].force_api
-            self.ai_snippets["nameit"].force_api = self.ai_assistants[self.selected_assistant.get()].force_api
+            self.ai_snippets["nameit"].force_api = self.current_assistant.force_api
             for _ in range(2):
                 try:
                     ret = json.loads(
@@ -287,7 +306,7 @@ class App(tk.Tk):
             AssistantResp(
                 None,
                 "not used",
-                self.ai_assistants[self.selected_assistant.get()].tokens_used(None),
+                self.current_assistant.tokens_used(None),
             ),
         )
 

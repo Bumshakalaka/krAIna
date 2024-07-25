@@ -91,7 +91,7 @@ class ChatHistory(FixedNotebook):
             AssistantResp(
                 self.root.conv_id,
                 "not used",
-                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+                self.root.current_assistant.tokens_used(self.root.conv_id),
             ),
         )
 
@@ -122,7 +122,7 @@ class ChatHistory(FixedNotebook):
             AssistantResp(
                 self.root.conv_id,
                 "not used",
-                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+                self.root.current_assistant.tokens_used(self.root.conv_id),
             ),
         )
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
@@ -196,7 +196,7 @@ class UserQuery(ttk.Frame):
         def _call(text):
             """Calculate the number of tokens per text"""
             try:
-                enc = encoding_for_model(self.root.ai_assistants[self.root.selected_assistant.get()].model)
+                enc = encoding_for_model(self.root.current_assistant.model)
             except KeyError:
                 enc = get_encoding("cl100k_base")
             self.tokens.set("Tokens: " + str(len(enc.encode(text)) + ADDITIONAL_TOKENS_PER_MSG))
@@ -229,7 +229,7 @@ class UserQuery(ttk.Frame):
                 AssistantResp(
                     None,
                     "not used",
-                    self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(None),
+                    self.root.current_assistant.tokens_used(None),
                 ),
             )
             self.root.post_event(APP_EVENTS.QUERY_ASSIST_CREATED, query)
