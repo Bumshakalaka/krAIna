@@ -3,15 +3,15 @@ import abc
 import logging
 import tkinter as tk
 import webbrowser
+from functools import lru_cache
 
-import markdown
 from tkinterweb.htmlwidgets import HtmlFrame
 
 from chat.base import DARKTHEME, LIGHTTHEME
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening
+from libs.utils import str_shortening, to_md
 
 logger = logging.getLogger(__name__)
 
@@ -235,13 +235,26 @@ class HtmlChatView(HtmlFrame, ChatView):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
+        self.add_html(to_md(self._prepare_message(text, tag, self.cols[tag])))
+        self._see_end()
+
+    @lru_cache(maxsize=256)
+    def _prepare_message(self, text: str, tag: str, col: str) -> str:
+        """
+        Prepare and format a message based on the given tag and color.
+
+        If the tag is "TOOL", the text is shortened.
+        Adds HTML span and horizontal line based on the tag.
+
+        :param text: The input text to be formatted.
+        :param tag: The tag indicating the type of message ("HUMAN", "TOOL", etc.).
+        :param col: The color to be applied to the text and separators.
+        :return: The formatted message as a string.
+        """
         text = str_shortening(text) if tag == "TOOL" else text
-        m_text = f'<span style="color:{self.cols[tag]}">'
+        m_text = f'<span style="color:{col}">'
         if tag == "HUMAN":
-            m_text += (
-                text.strip()
-                + f'\n\n<hr style="height:2px;border-width:0;color:{self.cols[tag]};background-color:{self.cols[tag]}">\n'
-            )
+            m_text += text.strip() + f'\n\n<hr style="height:2px;border-width:0;color:{col};background-color:{col}">\n'
         elif tag == "TOOL":
             m_text += text
         else:
@@ -251,22 +264,9 @@ class HtmlChatView(HtmlFrame, ChatView):
                 # it can happen when completion tokens where not enough
                 m_text += "\n```"
             # add horizontal line separator
-            m_text += (
-                f'\n\n<hr style="height:4px;border-width:0;color:{self.cols[tag]};background-color:{self.cols[tag]}">'
-            )
+            m_text += f'\n\n<hr style="height:4px;border-width:0;color:{col};background-color:{col}">'
         m_text += "</span>"
-        html = markdown.markdown(
-            m_text,
-            extensions=[
-                "pymdownx.superfences",
-                "markdown.extensions.md_in_html",
-                "markdown.extensions.tables",
-                "nl2br",
-                "sane_lists",
-            ],
-        )
-        self.add_html(html)
-        self._see_end()
+        return m_text
 
     def new_chat(self, *args):
         """
