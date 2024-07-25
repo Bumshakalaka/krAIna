@@ -1,9 +1,12 @@
 """Set of utils functions and classes."""
 import importlib.util
 import sys
+from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
 from typing import Any, List
+
+import markdown
 
 
 def import_module(path: Path) -> ModuleType:
@@ -20,6 +23,7 @@ def import_module(path: Path) -> ModuleType:
     return sys.modules[module_name]
 
 
+@lru_cache(maxsize=1024)
 def str_shortening(data: Any, limit=256) -> str:
     """
     Return a short version of data truncated if data length > limits.
@@ -36,6 +40,26 @@ def str_shortening(data: Any, limit=256) -> str:
             + data[len(data) - int(limit / 2) :]
         )
     return data
+
+
+@lru_cache(maxsize=256)
+def to_md(text: str) -> str:
+    """
+    Convert text (with html tags) to markdown.
+
+    :param text:
+    :return:
+    """
+    return markdown.markdown(
+        text,
+        extensions=[
+            "pymdownx.superfences",
+            "markdown.extensions.md_in_html",
+            "markdown.extensions.tables",
+            "nl2br",
+            "sane_lists",
+        ],
+    )
 
 
 def find_lands(type: str, build_in: Path) -> List[Path]:

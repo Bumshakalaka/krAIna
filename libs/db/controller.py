@@ -1,6 +1,7 @@
 """KrAIna database controller module."""
 import datetime
 import enum
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Union, Tuple
 
@@ -76,6 +77,7 @@ class Db:
             data = s.execute(select(Conversations.active).where(Conversations.conversation_id == conv_id)).scalar()
         return bool(data)
 
+    @lru_cache
     def is_conversation_id_valid(self, conv_id: Union[int, None] = None) -> bool:
         """
         Return true if conversation_id is valid, otherwise False.

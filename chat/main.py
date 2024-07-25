@@ -438,7 +438,7 @@ class App(tk.Tk):
             return
         self._event_queue.put(EVENT(ev, data))
         self.event_generate(ev.value, when="tail")
-        logger.info(f"Post event={ev.name} with data='{str_shortening(data)}'")
+        logger.info(f"Post event={ev.name} with data='{str_shortening(str(data))}'")
 
     def _event(self, ev_cmd):
         def wrapper(event):
@@ -453,7 +453,9 @@ class App(tk.Tk):
                 data = _data.data.data
 
             ret = ev_cmd(data)
-            logger.info(f"React on={_data.event.name}({ev_cmd.__name__}) with data='{str_shortening(data)}': {ret=}")
+            logger.info(
+                f"React on={_data.event.name}({ev_cmd.__name__}) with data='{str_shortening(str(data))}': {ret=}"
+            )
 
             if q_resp:
                 # send back response to the IPC client
