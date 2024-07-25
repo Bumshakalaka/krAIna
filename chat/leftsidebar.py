@@ -141,7 +141,7 @@ class LeftSidebar(ttk.Frame):
             AssistantResp(
                 self.root.conv_id,
                 "not used",
-                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(self.root.conv_id),
+                self.root.current_assistant.tokens_used(self.root.conv_id),
             ),
         )
         self.root.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, chat_persistence.SETTINGS.last_api_type)
@@ -241,7 +241,7 @@ class LeftSidebar(ttk.Frame):
             AssistantResp(
                 None,
                 "not used",
-                self.root.ai_assistants[self.root.selected_assistant.get()].tokens_used(None),
+                self.root.current_assistant.tokens_used(None),
             ),
         )
 
