@@ -168,11 +168,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         else:
             self.html.update_default_style(LIGHTTHEME)
 
-        self.cols = {
-            "HUMAN": self.root.get_theme_color("accent"),
-            "TOOL": "#DCBF85",
-            "AI": self.root.get_theme_color("fg"),
-        }
+        self.cols = parent.cols
 
         self._clear()
 

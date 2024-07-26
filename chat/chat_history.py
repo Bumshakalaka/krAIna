@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Union
 
+import klembord
 from tiktoken import encoding_for_model, get_encoding
 from tktooltip import ToolTip
 
@@ -16,7 +17,7 @@ from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening
+from libs.utils import str_shortening, prepare_message, to_md
 from tkinterweb import Notebook
 
 
@@ -46,6 +47,12 @@ class ChatHistory(FixedNotebook):
         self.root = parent.master
         self.parent = parent
 
+        self.cols = {
+            "HUMAN": self.root.get_theme_color("accent"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg"),
+        }
+
         self.views: Dict[str, ChatView] = {"html": HtmlChatView(self), "text": TextChatView(self)}
         for k, v in self.views.items():
             self.add(v, text=k)
@@ -61,6 +68,7 @@ class ChatHistory(FixedNotebook):
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
         self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
         self.root.bind_on_event(APP_EVENTS.UPDATE_CHAT_TITLE, self.update_title)
+        self.root.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD_CHAT, self.copy_chat)
         self.raw_messages = []
 
     def update_title(self, conv: Union[Conversations, None]):
@@ -126,6 +134,24 @@ class ChatHistory(FixedNotebook):
             ),
         )
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
+
+    def copy_chat(self, conversation: Conversations):
+        to_clip_text = ""
+        to_clip_html = ""
+        for message in conversation.messages:
+            if LlmMessageType(message.type).name == "TOOL":
+                to_clip_text += str_shortening(message.message) + "\n\n"
+            else:
+                to_clip_text += message.message + "\n\n"
+            to_clip_html += to_md(
+                prepare_message(
+                    message.message,
+                    LlmMessageType(message.type).name,
+                    str(self.cols[LlmMessageType(message.type).name]),
+                )
+            )
+        klembord.init()
+        klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
 
     def ai_message(self, message: str):
         """Call view methods."""

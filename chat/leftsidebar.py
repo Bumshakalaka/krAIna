@@ -185,6 +185,7 @@ class LeftSidebar(ttk.Frame):
         pinned = event.widget.conversation.priority
         active = event.widget.conversation.active
         w.add_command(label=f"Chat: {conv_id}", state="disabled")
+        w.add_command(label=f"Copy", command=functools.partial(self.copy_chat, conv_id))
         w.add_command(
             label=f"{'Pin' if pinned == 0 else 'Unpin'}",
             command=functools.partial(self.pin_unpin_chat, event.widget),
@@ -256,4 +257,13 @@ class LeftSidebar(ttk.Frame):
         :param conv_id: conversion_id
         :return:
         """
-        self.root.post_event(APP_EVENTS.GET_CHAT, conv_id)
+        self.root.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=conv_id, ev="LOAD_CHAT"))
+
+    def copy_chat(self, conv_id: int):
+        """
+        Callback on chat entry to get and load conversion_id chat
+
+        :param conv_id: conversion_id
+        :return:
+        """
+        self.root.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=conv_id, ev="COPY_TO_CLIPBOARD_CHAT"))
