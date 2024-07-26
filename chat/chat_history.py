@@ -133,7 +133,7 @@ class ChatHistory(FixedNotebook):
         for view in self.views.values():
             view.ai_message(message)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
-
+        self.root.post_event(APP_EVENTS.COPY_TO_CLIPBOARD, message)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) == 1:
             # update chat history after first AI response
             self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())

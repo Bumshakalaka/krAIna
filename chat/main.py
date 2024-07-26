@@ -14,6 +14,7 @@ from pathlib import Path
 from tkinter import ttk
 from typing import Callable, Dict, Union, Any
 
+import klembord
 import sv_ttk
 import yaml
 
@@ -31,7 +32,7 @@ from libs.db.controller import Db
 from PIL import ImageTk, Image
 
 from libs.llm import get_llm_type, SUPPORTED_API_TYPE
-from libs.utils import str_shortening
+from libs.utils import str_shortening, prepare_message, to_md
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
 
@@ -161,6 +162,7 @@ class App(tk.Tk):
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
         self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
         self.bind_on_event(APP_EVENTS.GET_LIST_OF_SNIPPETS, lambda x: ",".join(self.ai_snippets.keys()))
+        self.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD, self.copy_to_clipboard)
         self.bind("<Escape>", self.hide_app)
         self.bind_class(
             "Text",
@@ -196,6 +198,22 @@ class App(tk.Tk):
                 f"{e} assistant does not exist anymore, use '{self.selected_assistant.get()}' one as fallback"
             )
         return self.ai_assistants[self.selected_assistant.get()]
+
+    def copy_to_clipboard(self, text: str):
+        """
+        Copy Last AI response to system clipboard in Text and HTML format.
+
+        :param text:
+        :return:
+        """
+        if not chat_persistence.SETTINGS.copy_to_clipboard:
+            return
+        klembord.init()
+        content = {
+            "UTF8_STRING": text.encode(),
+            "text/html": to_md(prepare_message(text, "AI", str(self.get_theme_color("fg")), False)).encode(),
+        }
+        klembord.set(content)
 
     def set_title_bar_color(self, theme):
         """Set background color of title on Windows only."""
