@@ -62,6 +62,7 @@ class APP_EVENTS(enum.Enum):
     WE_HAVE_ERROR = "<<ErrorFound>>"
     GET_LIST_OF_SNIPPETS = "<<GetListOfSnippets>>"
     RUN_SNIPPET = "<<RunSnippet>>"
+    COPY_TO_CLIPBOARD = "<<CopyToClipboard>>"
 
 
 def app_interface() -> Dict:

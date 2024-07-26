@@ -11,7 +11,6 @@
 
 ## Chat Features
 - Enable streaming responses.
-- Add clipboard support.
 - Develop a settings window for user preferences—use https://github.com/JamesStallings/pyro/blob/master/pyro as yaml editor in toplevel window
 - Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
 - Check spelling in the user query window.

@@ -107,14 +107,20 @@ class SettingsMenu(tk.Menu):
         self._always_on_top.trace("w", self.always_on_top)
         self._light_mode = tk.BooleanVar(self)
         self._light_mode.trace("w", self.light_mode)
+        self._copy_to_clip = tk.BooleanVar(self)
+        self._copy_to_clip.trace("w", self.copy_to_clip)
         self.add_checkbutton(
             label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False, selectcolor=col
         )
         self.add_checkbutton(
             label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False, selectcolor=col
         )
+        self.add_checkbutton(
+            label="Copy to clipboard", variable=self._copy_to_clip, onvalue=True, offvalue=False, selectcolor=col
+        )
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
         self._light_mode.set(True if chat_persistence.SETTINGS.theme == "light" else False)
+        self._copy_to_clip.set(chat_persistence.SETTINGS.copy_to_clipboard)
         self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)
 
     def always_on_top(self, *args):
@@ -137,6 +143,11 @@ class SettingsMenu(tk.Menu):
         style.configure("ERROR.TButton", foreground="red")
         chat_persistence.SETTINGS.theme = sv_ttk.get_theme()
         self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())
+
+    def copy_to_clip(self, *args):
+        """Change Copy to clipboard setting."""
+        _var = self.getvar(name=args[0])
+        chat_persistence.SETTINGS.copy_to_clipboard = _var
 
 
 class LlmMenu(tk.Menu):

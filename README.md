@@ -216,6 +216,7 @@ features:
   * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
 * Markdown/HTML support
 * Debug Window (right-bottom corner) with the application logs
+* Copy last AI response automatically to system clipboard
 
 ## Requirements
 1. Python >= 3.10 + IDLE (Tk GUI)
