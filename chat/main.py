@@ -209,11 +209,22 @@ class App(tk.Tk):
         if not chat_persistence.SETTINGS.copy_to_clipboard:
             return
         klembord.init()
-        content = {
-            "UTF8_STRING": text.encode(),
-            "text/html": to_md(prepare_message(text, "AI", str(self.get_theme_color("fg")), False)).encode(),
-        }
-        klembord.set(content)
+        if sys.platform == "win32":
+            klembord.set(
+                {
+                    "HTML Format": klembord.wrap_html(
+                        to_md(prepare_message(text, "AI", str(self.get_theme_color("fg")), False))
+                    ),
+                    "CF_UNICODETEXT": text.encode("utf-16le"),
+                }
+            )
+        else:
+            klembord.set(
+                {
+                    "UTF8_STRING": text.encode(),
+                    "text/html": to_md(prepare_message(text, "AI", str(self.get_theme_color("fg")), False)).encode(),
+                }
+            )
 
     def set_title_bar_color(self, theme):
         """Set background color of title on Windows only."""

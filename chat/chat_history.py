@@ -1,6 +1,7 @@
 """Chat window."""
 import functools
 import logging
+import sys
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Union
@@ -151,7 +152,12 @@ class ChatHistory(FixedNotebook):
                 )
             )
         klembord.init()
-        klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
+        if sys.platform == "win32":
+            klembord.set(
+                {"HTML Format": klembord.wrap_html(to_clip_html), "CF_UNICODETEXT": to_clip_text.encode("utf-16le")}
+            )
+        else:
+            klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
 
     def ai_message(self, message: str):
         """Call view methods."""
