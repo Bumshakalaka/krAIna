@@ -203,7 +203,7 @@ features:
 * Chat with history (html and text tabs available)
 * Light/Dark theme
 * Chats history which can be recalled. They are auto-named and describe
-* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent)
+* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
 * Assistant selection
 * Support for snippets — right-click in the user query widget to apply transformation on a text
 * Overwrite Assistant settings

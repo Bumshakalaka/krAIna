@@ -63,6 +63,7 @@ class APP_EVENTS(enum.Enum):
     GET_LIST_OF_SNIPPETS = "<<GetListOfSnippets>>"
     RUN_SNIPPET = "<<RunSnippet>>"
     COPY_TO_CLIPBOARD = "<<CopyToClipboard>>"
+    COPY_TO_CLIPBOARD_CHAT = "<<CopyToClipboardChat>>"
 
 
 def app_interface() -> Dict:

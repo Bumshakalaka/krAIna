@@ -171,7 +171,7 @@ class App(tk.Tk):
         )
         self._update_geometry()
         if chat_persistence.SETTINGS.last_conv_id:
-            self.post_event(APP_EVENTS.GET_CHAT, chat_persistence.SETTINGS.last_conv_id)
+            self.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=chat_persistence.SETTINGS.last_conv_id, ev="LOAD_CHAT"))
         if chat_persistence.SETTINGS.last_assistant:
             self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
         self.setvar(
@@ -356,20 +356,22 @@ class App(tk.Tk):
             self.ai_db.list_conversations(active=active, limit=chat_settings.SETTINGS.visible_last_chats),
         )
 
-    def get_chat(self, conv_id: int):
+    def get_chat(self, data: dict):
         """
         Callback on GET_CHAT event.
 
         :param conv_id: conversation_id from GET_CHAT event
         :return:
         """
-        if self.ai_db.is_conversation_id_valid(conv_id):
-            self.conv_id = conv_id
-            self.post_event(APP_EVENTS.LOAD_CHAT, self.ai_db.get_conversation(conv_id))
-            chat_persistence.SETTINGS.last_conv_id = self.conv_id
+        if self.ai_db.is_conversation_id_valid(data["conv_id"]):
+            self.conv_id = data["conv_id"]
+            self.post_event(APP_EVENTS[data["ev"]], self.ai_db.get_conversation(data["conv_id"]))
+            if data["ev"] == "LOAD_CHAT":
+                chat_persistence.SETTINGS.last_conv_id = self.conv_id
         else:
             logger.error("conversation_id not know")
-            self.conv_id = None
+            if data["ev"] == "LOAD_CHAT":
+                self.conv_id = None
 
     def _persistent_write(self):
         """
