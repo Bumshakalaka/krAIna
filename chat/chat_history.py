@@ -1,6 +1,7 @@
 """Chat window."""
 import functools
 import logging
+import sys
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Union
@@ -136,6 +137,12 @@ class ChatHistory(FixedNotebook):
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
 
     def copy_chat(self, conversation: Conversations):
+        # Always use colors from Light Theme
+        cols = {
+            "HUMAN": self.root.get_theme_color("accent", "light"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg", "light"),
+        }
         to_clip_text = ""
         to_clip_html = ""
         for message in conversation.messages:
@@ -147,11 +154,16 @@ class ChatHistory(FixedNotebook):
                 prepare_message(
                     message.message,
                     LlmMessageType(message.type).name,
-                    str(self.cols[LlmMessageType(message.type).name]),
+                    str(cols[LlmMessageType(message.type).name]),
                 )
             )
         klembord.init()
-        klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
+        if sys.platform == "win32":
+            klembord.set(
+                {"HTML Format": klembord.wrap_html(to_clip_html), "CF_UNICODETEXT": to_clip_text.encode("utf-16le")}
+            )
+        else:
+            klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
 
     def ai_message(self, message: str):
         """Call view methods."""
