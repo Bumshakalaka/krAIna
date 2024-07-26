@@ -21,3 +21,5 @@ langchain-anthropic==0.1.15
 langchain-community==0.2.0
 pywinstyles~=1.8; os_name != 'posix'
 windows-toasts~=1.2.0; os_name != 'posix'
+klembord~=0.3.0
+setuptools~=71.1.0  # required for Python 3.12 for klemboard package
