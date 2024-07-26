@@ -137,6 +137,12 @@ class ChatHistory(FixedNotebook):
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
 
     def copy_chat(self, conversation: Conversations):
+        # Always use colors from Light Theme
+        cols = {
+            "HUMAN": self.root.get_theme_color("accent", "light"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg", "light"),
+        }
         to_clip_text = ""
         to_clip_html = ""
         for message in conversation.messages:
@@ -148,7 +154,7 @@ class ChatHistory(FixedNotebook):
                 prepare_message(
                     message.message,
                     LlmMessageType(message.type).name,
-                    str(self.cols[LlmMessageType(message.type).name]),
+                    str(cols[LlmMessageType(message.type).name]),
                 )
             )
         klembord.init()
