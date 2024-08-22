@@ -139,9 +139,9 @@ class ChatHistory(FixedNotebook):
     def copy_chat(self, conversation: Conversations):
         # Always use colors from Light Theme
         cols = {
-            "HUMAN": self.root.get_theme_color("accent", "light"),
+            "HUMAN": self.root.get_theme_color("accent", "sun-valley-light"),
             "TOOL": "#DCBF85",
-            "AI": self.root.get_theme_color("fg", "light"),
+            "AI": self.root.get_theme_color("fg", "sun-valley-light"),
         }
         to_clip_text = ""
         to_clip_html = ""
@@ -325,7 +325,7 @@ class ChatFrame(tk.PanedWindow):
         :param parent: Main App
         """
 
-        super().__init__(parent, orient=tk.VERTICAL, opaqueresize=False, sashpad=2, sashwidth=10)
+        super().__init__(parent, orient=tk.VERTICAL, opaqueresize=False, sashpad=2, sashwidth=4)
         self.root = parent
 
         chat_hist_frame = ttk.Frame()

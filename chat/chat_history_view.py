@@ -2,6 +2,7 @@
 import abc
 import logging
 import tkinter as tk
+from tkinter import ttk
 import webbrowser
 
 from tkinterweb.htmlwidgets import HtmlFrame
@@ -162,8 +163,8 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.on_done_loading(self._see_end)
 
         self.root = parent.master.master
-        theme = self.tk.call("ttk::style", "theme", "use").replace("sun-valley-", "")
-        if theme == "dark":
+        theme = ttk.Style().theme_use()
+        if "dark" in theme:
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
             self.html.update_default_style(LIGHTTHEME)
@@ -185,7 +186,7 @@ class HtmlChatView(HtmlFrame, ChatView):
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
-        if theme == "dark":
+        if "dark" in theme:
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
             self.html.update_default_style(LIGHTTHEME)

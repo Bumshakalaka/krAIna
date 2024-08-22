@@ -80,7 +80,7 @@ class DbgLogWindow(tk.Toplevel):
         if get_windows_version() == 10:
             import pywinstyles
 
-            theme = sv_ttk.get_theme()
+            theme = ttk.Style(self).theme_use()
             if theme == "dark":
                 pywinstyles.apply_style(self, "dark")
             else:
@@ -92,8 +92,11 @@ class DbgLogWindow(tk.Toplevel):
         elif get_windows_version() == 11:
             import pywinstyles
 
-            theme = sv_ttk.get_theme()
-            col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
+            if "dark" in ttk.Style(self).theme_use():
+                take_from = "dark"
+            else:
+                take_from = "light"
+            col = str(self.tk.call("set", f"ttk::theme::sv_{take_from}::colors(-bg)"))
             # Set the title bar color to the background color on Windows 11 for better appearance
             pywinstyles.change_header_color(self, col)
 

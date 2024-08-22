@@ -23,12 +23,12 @@ class StatusBar(tk.Frame):
 
         :param parent: main App
         """
-        super().__init__(parent, padx=2, pady=2)
+        super().__init__(parent, padx=2, pady=0)
         self.root = parent
         self.dbg_window = None
         ttk.Separator(self).pack(side=tk.TOP, fill=tk.X)
         self.token_usage = tk.StringVar()
-        self.label_token_usage = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.token_usage)
+        self.label_token_usage = ttk.Label(self, relief=tk.FLAT, textvariable=self.token_usage)
         ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5, y_offset=-50)
         self.api_name = tk.StringVar()
         self.api_name_descr = tk.StringVar(
@@ -37,7 +37,7 @@ class StatusBar(tk.Frame):
             f"1. Chat settings: '{chat_persistence.SETTINGS.last_api_type}'\n"
             f"2. Assistant force_api setting: '{self.root.current_assistant.force_api}'",
         )
-        self.label_api = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_name, width=10, justify=tk.RIGHT)
+        self.label_api = ttk.Label(self, relief=tk.FLAT, textvariable=self.api_name, width=10, justify=tk.RIGHT)
         ToolTip(
             self.label_api,
             msg=self.api_name_descr.get,
@@ -47,11 +47,11 @@ class StatusBar(tk.Frame):
             x_offset=-200,
         )
         self.api_params = tk.StringVar()
-        self.label_api_params = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.api_params)
-        self.label_api_params.pack(side=tk.LEFT)
-        self.label_token_usage.pack(side=tk.LEFT, fill=tk.X)
+        self.label_api_params = ttk.Label(self, relief=tk.FLAT, textvariable=self.api_params)
+        self.label_api_params.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.label_token_usage.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.dbg_window_btn = ttk.Button(self, text="\u2A00", command=self.create_dbg_window, takefocus=False)
+        self.dbg_window_btn = ttk.Button(self, text="\u2A00", command=self.create_dbg_window, takefocus=False, width=2)
         ToolTip(
             self.dbg_window_btn,
             msg="Internal logs window",
@@ -60,8 +60,9 @@ class StatusBar(tk.Frame):
             y_offset=-50,
             x_offset=-150,
         )
-        self.dbg_window_btn.pack(side=tk.RIGHT)
-        self.label_api.pack(side=tk.RIGHT)
+        ttk.Sizegrip(self).pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.dbg_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.label_api.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, self.update_statusbar_api)
         self.root.bind_on_event(
             APP_EVENTS.UPDATE_STATUS_BAR_TOKENS, lambda data: self.after_idle(self.update_statusbar, data)

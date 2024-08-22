@@ -1,7 +1,7 @@
 """Menu widget"""
 import logging
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 import sv_ttk
 
@@ -105,21 +105,16 @@ class SettingsMenu(tk.Menu):
         self.parent = parent
         self._always_on_top = tk.BooleanVar(self)
         self._always_on_top.trace("w", self.always_on_top)
-        self._light_mode = tk.BooleanVar(self)
-        self._light_mode.trace("w", self.light_mode)
         self._copy_to_clip = tk.BooleanVar(self)
         self._copy_to_clip.trace("w", self.copy_to_clip)
+        self.add_cascade(label="Theme", menu=ThemeSelect(parent, tearoff=0))
         self.add_checkbutton(
             label="Always on top", variable=self._always_on_top, onvalue=True, offvalue=False, selectcolor=col
-        )
-        self.add_checkbutton(
-            label="Light theme", variable=self._light_mode, onvalue=True, offvalue=False, selectcolor=col
         )
         self.add_checkbutton(
             label="Copy to clipboard", variable=self._copy_to_clip, onvalue=True, offvalue=False, selectcolor=col
         )
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
-        self._light_mode.set(True if chat_persistence.SETTINGS.theme == "light" else False)
         self._copy_to_clip.set(chat_persistence.SETTINGS.copy_to_clipboard)
         self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)
 
@@ -129,25 +124,43 @@ class SettingsMenu(tk.Menu):
         chat_persistence.SETTINGS.always_on_top = _var
         self.parent.wm_attributes("-topmost", _var)
 
-    def light_mode(self, *args):
-        """Change Always on top setting."""
-        _var = self.getvar(name=args[0])
-        if _var:
-            sv_ttk.set_theme("light")
-            self.parent.set_title_bar_color("light")
-        else:
-            sv_ttk.set_theme("dark")
-            self.parent.set_title_bar_color("dark")
-        style = ttk.Style(self)
-        style.configure("Hidden.TButton", foreground=self.parent.get_theme_color("disfg"))
-        style.configure("ERROR.TButton", foreground="red")
-        chat_persistence.SETTINGS.theme = sv_ttk.get_theme()
-        self.parent.post_event(APP_EVENTS.UPDATE_THEME, sv_ttk.get_theme())
-
     def copy_to_clip(self, *args):
         """Change Copy to clipboard setting."""
         _var = self.getvar(name=args[0])
         chat_persistence.SETTINGS.copy_to_clipboard = _var
+
+
+class ThemeSelect(tk.Menu):
+    def __init__(self, parent, *args, **kwargs):
+        """Create sub-menu for LLM temperature."""
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        col = parent.get_theme_color("accent")
+        self._var = tk.StringVar(self, None)
+        self._var.set(ttk.Style(self).theme_use())
+        self._var.trace("w", self.update_var)
+        for t in ttk.Style(parent).theme_names():
+            self.add_radiobutton(label=str(t), variable=self._var, value=t, selectcolor=col)
+
+    def update_var(self, *args):
+        """Callback on radiobutton change."""
+        _var = self.getvar(name=args[0])
+        style = ttk.Style(self.parent)
+        style.theme_use(_var)
+        if "dark" in _var:
+            self.parent.set_title_bar_color("dark")
+        else:
+            self.parent.set_title_bar_color("light")
+        style.configure("Hidden.TButton", foreground=self.parent.get_theme_color("disfg"))
+        style.configure("ERROR.TButton", foreground="red")
+        chat_persistence.SETTINGS.theme = style.theme_use()
+        self.parent.post_event(APP_EVENTS.UPDATE_THEME, style.theme_use())
+        self.after(
+            1000,
+            messagebox.showwarning,
+            "Theme changed",
+            "Application is fully functional after theme change but can looks ugly.\n\nReset the application to have it looks good",
+        )
 
 
 class LlmMenu(tk.Menu):

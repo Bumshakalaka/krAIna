@@ -9,7 +9,7 @@ class chat_persistence:
     """
 
     geometry: str = "708x546+0+0"
-    theme: str = "dark"
+    theme: str = "sun-valley-dark"
     always_on_top: bool = False
     last_conv_id: int = None
     last_assistant: int = None

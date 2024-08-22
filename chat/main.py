@@ -17,6 +17,7 @@ from typing import Callable, Dict, Union, Any
 import klembord
 import sv_ttk
 import yaml
+from PIL.ImageChops import darker
 
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
@@ -111,9 +112,10 @@ class App(tk.Tk):
 
         self._settings_read()
         self._persistent_read()
-        sv_ttk.set_theme(chat_persistence.SETTINGS.theme)
-        self.set_title_bar_color(chat_persistence.SETTINGS.theme)
         style = ttk.Style(self)
+        sv_ttk.get_theme(self)  # required to load svv themes and have them visible by style
+        style.theme_use(chat_persistence.SETTINGS.theme)
+        self.set_title_bar_color(chat_persistence.SETTINGS.theme)
         style.configure("Hidden.TButton", foreground=self.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
         self.withdraw()
@@ -129,7 +131,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         Menu(self)
-        self.pw_main = tk.PanedWindow(orient=tk.HORIZONTAL, height=80, opaqueresize=False, sashpad=2, sashwidth=6)
+        self.pw_main = tk.PanedWindow(orient=tk.HORIZONTAL, height=80, opaqueresize=False, sashpad=2, sashwidth=4)
 
         self.leftsidebarW = LeftSidebar(self)
         self.pw_main.add(self.leftsidebarW)
@@ -147,7 +149,7 @@ class App(tk.Tk):
 
         self.pw_main.bind("<Configure>", _set_sashpos)
         self.status = StatusBar(self)
-        self.status.pack(side=tk.BOTTOM, fill=tk.X)
+        self.status.pack(side=tk.BOTTOM, fill=tk.BOTH)
         self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
 
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
@@ -213,7 +215,7 @@ class App(tk.Tk):
             klembord.set(
                 {
                     "HTML Format": klembord.wrap_html(
-                        to_md(prepare_message(text, "AI", str(self.get_theme_color("fg", "light")), False))
+                        to_md(prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False))
                     ),
                     "CF_UNICODETEXT": text.encode("utf-16le"),
                 }
@@ -223,7 +225,7 @@ class App(tk.Tk):
                 {
                     "UTF8_STRING": text.encode(),
                     "text/html": to_md(
-                        prepare_message(text, "AI", str(self.get_theme_color("fg", "light")), False)
+                        prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False)
                     ).encode(),
                 }
             )
@@ -233,7 +235,7 @@ class App(tk.Tk):
         if get_windows_version() == 10:
             import pywinstyles
 
-            if theme == "dark":
+            if "dark" in theme:
                 pywinstyles.apply_style(self, "dark")
             else:
                 pywinstyles.apply_style(self, "normal")
@@ -244,15 +246,32 @@ class App(tk.Tk):
         elif get_windows_version() == 11:
             import pywinstyles
 
-            col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-bg)")
+            if "dark" in theme:
+                take_from = "dark"
+            else:
+                take_from = "light"
+            col = str(self.tk.call("set", f"ttk::theme::sv_{take_from}::colors(-bg)"))
             # Set the title bar color to the background color on Windows 11 for better appearance
             pywinstyles.change_header_color(self, col)
 
     def get_theme_color(self, col_name, theme=None) -> str:
         """Get theme color based on actual theme."""
         if not theme:
-            theme = sv_ttk.get_theme(self)
-        col = self.tk.call("set", f"ttk::theme::sv_{theme}::colors(-{col_name})")
+            theme = ttk.Style(self).theme_use()
+        if "dark" in theme:
+            take_from = "dark"
+        else:
+            take_from = "light"
+        if "sun-" in theme:
+            col = self.tk.call("set", f"ttk::theme::sv_{take_from}::colors(-{col_name})")
+        else:
+            col_map = {
+                "accent": "#005fb8",
+                "bg": ttk.Style(self).lookup("", "background"),
+                "fg": ttk.Style(self).lookup("", "foreground"),
+                "disfg": ttk.Style(self).lookup("", "foreground"),
+            }
+            col = col_map[col_name]
         return col
 
     def report_callback_exception(self, exc, val, tb):

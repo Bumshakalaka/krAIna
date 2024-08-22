@@ -176,7 +176,7 @@ class LeftSidebar(ttk.Frame):
             if not conversation.active:
                 but.configure(style="Hidden.TButton")
             but.bind("<ButtonRelease-3>", functools.partial(self._chat_menu, conversation.conversation_id))
-            but.pack(side=tk.TOP, fill=tk.X, pady=2, padx=6)
+            but.pack(side=tk.TOP, fill=tk.X, pady=1, padx=6)
 
     def _chat_menu(self, conv_id: int, event: tk.Event):
         # event.widget
