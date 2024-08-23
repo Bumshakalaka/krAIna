@@ -125,7 +125,10 @@ class App(tk.Tk):
         self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
         self.tk.call(
-            "wm", "iconphoto", self._w, ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "../logo.png")))
+            "wm",
+            "iconphoto",
+            self._w,
+            ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "../img/logo_big.png"))),
         )
         self.selected_assistant = tk.StringVar(self, list(self.ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
