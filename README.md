@@ -225,7 +225,7 @@ features:
 
 ## Install
 1. Clone the project.
-2. Run the `setup.sh` or `setup.bat` script, which executes the commands below, or run the commands below by yourself.
+2. Run the `setup.sh` or `setup.bat` script from `setup_script`, which executes the commands below, or run the commands below by yourself.
 
     1. Create a virtual environment: `python3 -m venv .venv`
     2. Install the requirements from `requirements.txt`: `pip install -r requirements.txt`.
@@ -282,7 +282,13 @@ alter table conversations
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
 1. Edit and save the `copyQ/ai_select.ini` file:
-   * Adjust the path `~/krAIna/kraina.sh` to your needs.
+   * Adjust the paths to your needs (on Windows use `kraina.bat` and `list_skills.bat` scripts).:
+    ``` js
+   // Set KrAIna installation folder in your home folder 
+   var kraina_dir = '/repos_personal/krAIna/';
+    var kraina_script = 'kraina.sh';
+    var list_skills = 'list_skills.sh';
+   ```
    * Change or remove shortcuts if needed (global shortcut ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
 2. Open CopyQ and go to `Command/Global shortcuts...` <F6>.
 3. Select `Load Commands...` and import the `copyQ/ai_select.ini` file.
@@ -295,6 +301,17 @@ Check also other CopyQ Custom Actions in `copyQ`.
 *Note*:
 1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with the main window focus)
 2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
+3. To have working a global hotkey to show/hide CopyQ main app (on Windows and Linux) use this custom action which defined global hotkey (`CTRL+~`)
+   ```ini
+    [Command]
+    Name=toggle
+    Command="
+        copyq:
+        toggle();"
+    IsGlobalShortcut=true
+    Icon=\xef\x85\x9b
+    GlobalShortcut=ctrl+`
+   ```
 ---
 
 ## Configuration
