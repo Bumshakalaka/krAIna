@@ -40,7 +40,8 @@ if __name__ == "__main__":
         desktop_notify.start()
         try:
             ret = snippets[args.snippet].run(args.text)
-            print(ret)
+            # workaround for Windows exception: 'charmap' codec can't encode character
+            print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"))
         except Exception as e:
             logger.exception(e)
             exit(1)
