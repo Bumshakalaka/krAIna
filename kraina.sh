@@ -13,7 +13,11 @@ cd "${CURRENT_DIR}"
 if [ -z "$VIRTUAL_ENV" ]; then
     source .venv/bin/activate
 fi
-ACTION=$1
-TEXT=$2
-RET=$(python kraina.py --snippet "${ACTION}" --text "${TEXT}")
+A=$1
+B=$2
+if [ "$B" == "" ]; then
+  RET=$(python kraina.py --file "${A}")
+else
+  RET=$(python kraina.py --snippet "${A}" --text "${B}")
+fi
 echo "${RET}"

@@ -34,10 +34,10 @@ def run_cmd(args):
         ret = client.send(*args)
         if ret:
             if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
-                print(ret, flush=True, file=sys.stderr)
+                print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"), flush=True, file=sys.stderr)
                 exit(1)
             else:
-                print(ret, flush=True, file=sys.stdout)
+                print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"), flush=True, file=sys.stdout)
 
 
 if __name__ == "__main__":

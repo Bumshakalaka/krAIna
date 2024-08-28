@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -32,14 +33,32 @@ if __name__ == "__main__":
         help="Action to perform",
     )
     parser.add_argument("--text", type=str, required=False, default="", help="User query")
+    parser.add_argument("--file", type=str, required=False, default="", help="Read snippet + query from file")
+
     args = parser.parse_args()
-    if args.text == "" and args.snippet == "":
+    # Custom validation logic
+    if args.file:
+        if args.snippet or args.text:
+            parser.error("--file cannot be used with --snippet or --text")
+
+    if args.text == "" and args.snippet == "" and args.file == "":
         print(",".join(snippets.keys()))
     else:
         desktop_notify = notifier_factory()(f"KrAina: {args.snippet}")
         desktop_notify.start()
         try:
-            ret = snippets[args.snippet].run(args.text)
+            if args.file:
+                if not (p := Path(args.file)).exists():
+                    logger.error(f"'{args.file} dos not exist")
+                    exit(1)
+                with open(p, "r") as fd:
+                    data = fd.read().split("\n")
+                    snippet = data[0]
+                    query = "\n".join(data[1:])
+            else:
+                snippet = args.snippet
+                query = args.text
+            ret = snippets[snippet].run(query)
             # workaround for Windows exception: 'charmap' codec can't encode character
             print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"))
         except Exception as e:
