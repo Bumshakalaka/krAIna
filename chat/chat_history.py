@@ -94,15 +94,16 @@ class ChatHistory(FixedNotebook):
         """Update widgets when theme changed."""
         for view in self.views.values():
             view.update_tags(theme)
-        self.root.post_event(APP_EVENTS.LOAD_CHAT, self.root.ai_db.get_conversation(self.root.conv_id))
-        self.root.post_event(
-            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
-            AssistantResp(
-                self.root.conv_id,
-                "not used",
-                self.root.current_assistant.tokens_used(self.root.conv_id),
-            ),
-        )
+        if self.root.conv_id:
+            self.root.post_event(APP_EVENTS.LOAD_CHAT, self.root.ai_db.get_conversation(self.root.conv_id))
+            self.root.post_event(
+                APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+                AssistantResp(
+                    self.root.conv_id,
+                    "not used",
+                    self.root.current_assistant.tokens_used(self.root.conv_id),
+                ),
+            )
 
     def new_chat(self, *args):
         """Call view methods."""
@@ -224,8 +225,8 @@ class UserQuery(ttk.Frame):
         self.send_btn.pack(side=tk.RIGHT, anchor=tk.NE, padx=2, pady=2)
         self.tokens = tk.StringVar(self, "Tokens: 0")
         self.tokens_after_id = None
-        self.label_tokens = ttk.Label(self, relief=tk.SUNKEN, textvariable=self.tokens)
-        self.label_tokens.pack(side=tk.LEFT, anchor=tk.NW, padx=2, pady=2)
+        self.label_tokens = ttk.Label(self, relief=tk.FLAT, textvariable=self.tokens)
+        self.label_tokens.pack(side=tk.LEFT, anchor=tk.NW, padx=2, pady=2, expand=True, fill=tk.Y)
         self.block_events = 0
 
     def _show_tokens(self, *args):
