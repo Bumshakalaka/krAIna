@@ -247,8 +247,9 @@ class LeftSidebar(ttk.Frame):
         )
 
     def reload_ai(self):
-        """Reload assistants and snippets"""
+        """Reload assistants, snippets and saved chats."""
         self.root.post_event(APP_EVENTS.RELOAD_AI, None)
+        self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
     def get_chat(self, conv_id: int):
         """
