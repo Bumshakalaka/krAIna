@@ -15,7 +15,9 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 A=$1
 B=$2
-if [ "$B" == "" ]; then
+if [ "$A" == "-h" ]; then
+  RET=$(python kraina.py --help)
+elif [ "$B" == "" ]; then
   RET=$(python kraina.py --file "${A}")
 else
   RET=$(python kraina.py --snippet "${A}" --text "${B}")

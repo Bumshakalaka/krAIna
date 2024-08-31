@@ -14,6 +14,7 @@
 - Develop a settings window for user preferences—use https://github.com/JamesStallings/pyro/blob/master/pyro as yaml editor in toplevel window
 - Include a welcome message in the chat window. When we are in new chat, switching between assistants shows description in chat history
 - Check spelling in the user query window.
+- Add auto-completion (save what you type, next type—guess what you would like to type) or text expender 
 - markdown:
   - better tables handling
   - work with better CSS
@@ -28,6 +29,7 @@
 - speedup internal SQlite DB (one session, lazy commit, indexes, cleanup chats older than 30 days, pragma optimise, normalize tables)
 - add sqlite DB versioning and migration 
 - Add DB with prompts e.g. "Give me something"
+- Add script to configure CopyQ (function addCommands())
 
 # Fixes
 - Fix the scrolling of a chat list when there are not too many chats.
@@ -52,4 +54,11 @@
   - .env
   - config.yaml
   - sqliteDB
-  - 
+
+# New
+- support for scripts (run kraina regular script from the chat app)
+- right click on assistant—edit prompt
+- reload - reload also chat history
+- RUN_SNIPPET_FROM_FILE command to chat.sh
+- RELOAD_CHATS
+- SHOW CHAT_ID

@@ -1,43 +1,40 @@
 ![logo](img/kraina_banner.png)
 ## Overview
 
-![os](https://badgen.net/badge/Windows/supported/orange)
-![os](https://badgen.net/badge/Linux/windows/green)
+![os](https://badgen.net/badge/Windows/supported/green)
+![os](https://badgen.net/badge/Linux/supported/green)
 
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
 Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic LLMs.
-1. **Snippets** — the actions that can be performed on selected text.
-2. **Assistants** — your own specialized assistants to talk with.
-3. **Tools** — your own specialized tools to use with Assistants.
+1. [Chat](#chat-gui-application) - Chat GUI application built using tkinter for Assistants and Snippets.
+2. [Snippets](#snippets) — the actions that can be performed on selected text.
+3. [Assistants](#assistants) — your own specialized assistants to talk with.
+4. [Tools](#tools) — your own specialized tools to use with Assistants.
 
-KrAIna can be easily extended by personal, third-party sets of the above beings by creating a folder (or creating a symlink) in KrAIna.
+### Chat GUI application
+Chat GUI application built using tkinter.
 
-1. The folder must contain a file named `.kraina-land` - this is a tag file for KrAIna to scan the folder
-2. To extend KrAIna with new snippets, assistants, or tools create the respective folder names
-3. Follow KrAIna structure of these new sets
-4. Example folder structure
-   ```
-    ├── kraina
-            ├──kraina-personal
-                   ├── .kraina-land
-                   ├── snippets
-                   │     ├── create_jira 
-                   │          ├── prompt.md
-                   │          ├── config.yaml
-                   ├── assistants
-                   │        ├── database 
-                   │            ├── prompt.md
-                   │            ├── config.yaml
-                   ├── tools
-                   │     ├── database 
-                   │          ├── __init__.py
-                   │          ├── ...
-                   │     ├── include.py
-   ```
+![chat](img/kraina_chat.gif)
 
-**Chat** - Chat GUI application built using tkinter for Assistants and Snippets.
-
+features:
+* Chat with history (html and text tabs available)
+* Light/Dark theme
+* Chats history which can be recalled. They are auto-named and describe
+* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
+* Assistant selection
+* Support for snippets — right-click in the user query widget to apply transformation on a text
+* Overwrite Assistant settings
+* persistence storage on exit
+* progress bar to visualize that LLM is working
+* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+* Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+* Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
+  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
+  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
+* Markdown/HTML support
+* Debug Window (right-bottom corner) with the application logs
+* Copy last AI response automatically to system clipboard
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -94,9 +91,6 @@ Take into consideration the context below while generating answers.
 ## 0
 Current date: {date}
 ```
-
-However, AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
-One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager.
 
 ### Assistants
 Your personal AI assistant. It can be a casual assistant or prompt engineer or storyteller.
@@ -194,30 +188,6 @@ To make such a tool, you need to follow these steps:
 The initialization of the tool (calling the init function) occurs when an Assistant is called, 
 not when it is initialized.
 
-### Chat GUI application
-Chat GUI application built using tkinter.
-
-![chat](img/kraina_chat.gif)
-
-features:
-* Chat with history (html and text tabs available)
-* Light/Dark theme
-* Chats history which can be recalled. They are auto-named and describe
-* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
-* Assistant selection
-* Support for snippets — right-click in the user query widget to apply transformation on a text
-* Overwrite Assistant settings
-* persistence storage on exit
-* progress bar to visualize that LLM is working
-* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
-  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
-  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
-* Markdown/HTML support
-* Debug Window (right-bottom corner) with the application logs
-* Copy last AI response automatically to system clipboard
-
 ## Requirements
 1. Python >= 3.10 + IDLE (Tk GUI)
 2. Python venv package
@@ -281,37 +251,42 @@ alter table conversations
 
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
-1. Edit and save the `copyQ/ai_select.ini` file:
-   * Adjust the paths to your needs (on Windows use `kraina.bat` and `list_skills.bat` scripts).:
+AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
+One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager using global hotkeys.
+
+Imagine that you are working with a text or code in your favorite editor, and you need to translate it or add docstring to Python method.
+Select the text, press `ALT+SHIFT+1`, choose desire transformation (translate, fix or docstring) press Enter and that's all.
+KrAIna will transform selected text.
+
+[CopyQ](https://github.com/hluk/CopyQ/tree/master) Clipboard monitor can help you with it on Windows and Linux!
+1. Install it (Use COpy! 7.1.0. The newer versions have some strange problems with the main window focus)
+2. Run it and adjust settings to your need. My settings:
+
+![CopyQ preferences general](img/copyQ_pref_general.png) ![CopyQ preferences notification](img/copyQ_pref_notif.png)
+
+3. Install Custom Action `copyQ/toggle.ini` to have working global hotkey `CTR+~` to show/hide CopyQ
+4. Install Custom Action `copyQ/kraina_run.ini` to have working global hotkey `ALT+SHITF+~` to show/hide KrAIna Chat
+5. Install Custom Action `copyQ/ai_select.ini` to have working global hotkey `ALT+SHITF+1` to show/hide CopyQ
+6. Check also other CopyQ Custom Actions in [copyQ](copyQ/README.md)
+
+How to install such action in CopyQ:
+1. Open CopyQ and go to `Command/Global shortcuts...` <F6>.
+2. Select `Load Commands...` and import the `copyQ/ai_select.ini` file.
+3. Edit snippet:
+   * Adjust the path to your needs:
     ``` js
    // Set KrAIna installation folder in your home folder 
    var kraina_dir = '/repos_personal/krAIna/';
-    var kraina_script = 'kraina.sh';
-    var list_skills = 'list_skills.sh';
    ```
-   * Change or remove shortcuts if needed (global shortcut ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
-2. Open CopyQ and go to `Command/Global shortcuts...` <F6>.
-3. Select `Load Commands...` and import the `copyQ/ai_select.ini` file.
+   * Change or remove shortcuts if needed (global hotkey ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
+4. Save and that's all.
 
-![ai:select Custom Action](img/CopyQ-command.jpg)
-
-Check also other CopyQ Custom Actions in `copyQ`.
 
 ---
 *Note*:
 1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with the main window focus)
 2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
-3. To have working a global hotkey to show/hide CopyQ main app (on Windows and Linux) use this custom action which defined global hotkey (`CTRL+~`)
-   ```ini
-    [Command]
-    Name=toggle
-    Command="
-        copyq:
-        toggle();"
-    IsGlobalShortcut=true
-    Icon=\xef\x85\x9b
-    GlobalShortcut=ctrl+`
-   ```
+3. To have working a global hotkey to show/hide CopyQ main app (on Windows and Linux) load `copyQ/toggle.ini` custom action
 ---
 
 ## Configuration
@@ -360,12 +335,93 @@ tools:
     count: 3
 ```
 
+## Extensions
+
+KrAIna can be easily extended by personal, third-party sets of the above beings by creating a folder (or creating a symlink) in KrAIna.
+
+1. The folder must contain a file named `.kraina-land` - this is a tag file for KrAIna to scan the folder
+2. To extend KrAIna with new snippets, assistants, or tools, create the respective folder names
+3. Follow KrAIna structure of these new sets
+4. Example folder structure
+   ```
+    ├── kraina
+            ├──kraina-personal
+                   ├── .kraina-land
+                   ├── snippets
+                   │     ├── create_jira 
+                   │          ├── prompt.md
+                   │          ├── config.yaml
+                   ├── assistants
+                   │        ├── database 
+                   │            ├── prompt.md
+                   │            ├── config.yaml
+                   ├── tools
+                   │     ├── database 
+                   │          ├── __init__.py
+                   │          ├── ...
+                   │     ├── include.py
+   ```
+
 ## Usage
 
 ### CLI
+
+#### kraina.sh | kraina.bat
+
+Those are helper scripts that call Python kraina.py script inside venv.
+```
+usage: kraina.sh [-h]
+                 [--snippet {commit,summary,ocr,doit,translate,nameit,docstring,fix,ticket,toztest,kup,}]
+                 [--text TEXT] [--file FILE]
+
+Transform text using snippet. To transform long text like source code or some
+long paragraph on Windows the best option is --file parameter as passing the
+text via command line parameter is problematic. File provided to --file
+parameter must include name of snippet in first line. The rest of file is
+treat as text to transform.
+
+options:
+  -h                    show this help message and exit
+  --snippet {commit,summary,ocr,doit,translate,nameit,docstring,fix,ticket,toztest,kup,}
+                        Snippet to use
+  --text TEXT           Text to transform
+  --file FILE           Read and parse snippet and text from file. File
+                        format: snippet\ntext, snippet must be in first line.
+                        Rest file is treat as text. Use instead of --snippet +
+                        --text to pass complicated text to transform
+
+```
+
 1. Get all supported snippets: `./kraina.sh` or `./kraina.bat`
-2. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"` or `./kraina.bat translate "Cześć, co słychać u Ciebie?"`
-3. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"`
+2. Alternative you can use `list_skills.sh` or `list_skills.bat` - much faster scripts as they are not use python
+3. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"` or `./kraina.bat translate "Cześć, co słychać u Ciebie?"`
+4. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"` or `echo commit > %TEMP%/diff & git diff --no-prefix -U10 >> %TEMP%/diff & kraina.bat --file %TEMP%/diff & del %TEMP%/diff`
+
+#### chat.sh | chat.bat
+
+```
+usage: chat.sh command
+
+KraIna chat application.
+Commands:
+	SHOW_APP - Trigger to display the application
+	HIDE_APP - Trigger to minimize the application
+	GET_LIST_OF_SNIPPETS - Get list of snippets
+	RUN_SNIPPET - Run snippet 'name' with 'text'
+	No argument - run GUI app. If app is already run, show it
+
+options:
+  -h, --help  show this help message and exit
+
+```
+
+1. Start the application by running `./chat.sh` or `./chat.bat`.
+2. You can also use `./chat.sh COMMAND` or `./chat.bat COMMAND` to control the application with the supported commands, e.g.:
+    ```text
+    SHOW_APP - Trigger to display the application
+    RUN_SNIPPET translate "Co słychać u Ciebie"
+    ```
+3. You can assign `./chat.sh SHOW_APP` or `./chat.bat SHOW_APP` to a system global shortcut to show KrAIna Chat quickly
 
 ### CopyQ Usage
 To use the krAIna CopyQ Custom Action **ai:select**:
@@ -382,18 +438,6 @@ Alternatively:
 3. Right-click on the copied text and select the **ai:select** Custom Action (or press ALT+RETURN).
 4. Once the action finishes, the selected text is replaced with the transformed one.
 
-### Chat
-
-1. Start the application by running `./chat.sh` or `./chat.bat`.
-2. Use its features.
-3. You can also use `./chat.sh COMMAND` or `./chat.bat COMMAND` to control the application with the following supported commands:
-```text
-SHOW_APP - Trigger to display the application
-HIDE_APP - Trigger to minimize the application
-No argument - Run the GUI app. If the app is already running, it will be shown
-```
-Assign `./chat.sh SHOW_APP` or `./chat.bat SHOW_APP` to a system global shortcut to summon KrAIna Chat quickly, 
-press Escape in the application to minimize it.
 ### Code
 
 #### Snippets

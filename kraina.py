@@ -21,7 +21,13 @@ if __name__ == "__main__":
     logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
     console_handler.setLevel(logging.ERROR)
 
-    parser = argparse.ArgumentParser(description="Perform various operations with AI")
+    parser = argparse.ArgumentParser(
+        description="Transform text using snippet.\n"
+        "To transform long text like source code or some long paragraph on Windows "
+        "the best option is --file parameter as passing the text via command line parameter is problematic.\n"
+        "File provided to --file parameter must include name of snippet in first line.\n"
+        "The rest of file is treat as text to transform."
+    )
 
     snippets = Snippets()
     parser.add_argument(
@@ -30,10 +36,17 @@ if __name__ == "__main__":
         required=False,
         choices=list(snippets.keys()) + [""],
         default="",
-        help="Action to perform",
+        help="Snippet to use",
     )
-    parser.add_argument("--text", type=str, required=False, default="", help="User query")
-    parser.add_argument("--file", type=str, required=False, default="", help="Read snippet + query from file")
+    parser.add_argument("--text", type=str, required=False, default="", help="Text to transform")
+    parser.add_argument(
+        "--file",
+        type=str,
+        required=False,
+        default="",
+        help="Read and parse snippet and text from file.\nFile format: snippet\\ntext, snippet must be in first line.\n"
+        "Rest file is treat as text.\nUse instead of --snippet + --text to pass complicated text to transform",
+    )
 
     args = parser.parse_args()
     # Custom validation logic
@@ -53,7 +66,7 @@ if __name__ == "__main__":
                     exit(1)
                 with open(p, "r") as fd:
                     data = fd.read().split("\n")
-                    snippet = data[0]
+                    snippet = data[0].strip()
                     query = "\n".join(data[1:])
             else:
                 snippet = args.snippet
