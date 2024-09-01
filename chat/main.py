@@ -168,6 +168,10 @@ class App(tk.Tk):
         self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
         self.bind_on_event(APP_EVENTS.GET_LIST_OF_SNIPPETS, lambda x: ",".join(self.ai_snippets.keys()))
         self.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD, self.copy_to_clipboard)
+        self.bind_on_event(
+            APP_EVENTS.RELOAD_CHAT_LIST,
+            lambda x: self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats()),
+        )
         self.bind("<Escape>", self.hide_app)
         self.bind_class(
             "Text",

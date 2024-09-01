@@ -100,6 +100,7 @@ class LeftSidebar(ttk.Frame):
         self.root = parent
         self.root.bind_on_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.list_saved_chats)
         self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistsnts)
+        self.root.bind_on_event(APP_EVENTS.SELECT_CHAT, self.select_chat)
         but = ttk.Button(self, text="NEW CHAT", command=self.new_chat)
         ToolTip(but, msg="Create new chat", follow=False, delay=0.5)
         but.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
@@ -250,6 +251,17 @@ class LeftSidebar(ttk.Frame):
         """Reload assistants, snippets and saved chats."""
         self.root.post_event(APP_EVENTS.RELOAD_AI, None)
         self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+
+    def select_chat(self, data: Dict):
+        """
+        Select and show chat.
+
+        Callback on SELECT_CHAT event.
+
+        :param data:
+        :return:
+        """
+        self.get_chat(data["par0"])
 
     def get_chat(self, conv_id: int):
         """

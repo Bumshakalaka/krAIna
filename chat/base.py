@@ -64,6 +64,8 @@ class APP_EVENTS(enum.Enum):
     RUN_SNIPPET = "<<RunSnippet>>"
     COPY_TO_CLIPBOARD = "<<CopyToClipboard>>"
     COPY_TO_CLIPBOARD_CHAT = "<<CopyToClipboardChat>>"
+    RELOAD_CHAT_LIST = "<<ReloadChatList>>"
+    SELECT_CHAT = "<<SelectChat>>"
 
 
 def app_interface() -> Dict:
@@ -77,6 +79,8 @@ def app_interface() -> Dict:
         APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
         APP_EVENTS.GET_LIST_OF_SNIPPETS.name: "Get list of snippets",
         APP_EVENTS.RUN_SNIPPET.name: "Run snippet 'name' with 'text'",
+        APP_EVENTS.RELOAD_CHAT_LIST.name: "Reload chat list",
+        APP_EVENTS.SELECT_CHAT.name: "Select conv_id chat",
     }
 
 

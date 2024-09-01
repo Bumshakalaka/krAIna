@@ -58,7 +58,4 @@
 # New
 - support for scripts (run kraina regular script from the chat app)
 - right click on assistant—edit prompt
-- reload - reload also chat history
 - RUN_SNIPPET_FROM_FILE command to chat.sh
-- RELOAD_CHATS
-- SHOW CHAT_ID
