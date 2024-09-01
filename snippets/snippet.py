@@ -48,7 +48,7 @@ class BaseSnippet:
             SPECIALIZED_SNIPPETS[cls.__name__] = cls
 
     @property
-    def model(self):
+    def model(self) -> str:
         return map_model(self._model, self.force_api)
 
     @model.setter

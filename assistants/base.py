@@ -14,7 +14,7 @@ from tools.base import get_available_tools
 logger = logging.getLogger(__name__)
 
 
-class Assistants(dict):
+class Assistants(Dict[str, BaseAssistant]):
     """Base assistants."""
 
     def __init__(self):

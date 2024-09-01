@@ -63,6 +63,8 @@ if __name__ == "__main__":
         with notifier_factory()(f"KrAIna: {args[0]}"):
             try:
                 run_cmd(args)
+            except AttributeError as e:
+                print(str(e).encode("utf-8").decode(sys.stdout.encoding, errors="ignore"), flush=True, file=sys.stderr)
             except ConnectionRefusedError:
                 # Application not started, run in the separate process
                 # TODO: windows

@@ -97,7 +97,7 @@ class BaseAssistant:
             return get_encoding("cl100k_base")
 
     @property
-    def model(self):
+    def model(self) -> str:
         return map_model(self._model, self.force_api)
 
     @model.setter

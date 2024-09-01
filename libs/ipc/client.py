@@ -52,8 +52,10 @@ class AppClient:
         :return: returned value as string or None
         """
         if command not in app_interface().keys():
-            logger.error(f"'{command}' not supported")
-            return
+            descr = "\n"
+            for cmd, cmd_descr in app_interface().items():
+                descr += f"\t{cmd} - {cmd_descr}\n"
+            raise AttributeError(f"'{command}' not supported.\nSupported commands: {descr}")
         params = None
         if args:
             _params = {}

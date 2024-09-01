@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 from pprint import pprint
+from typing import Dict
 
 import yaml
 from dotenv import load_dotenv, find_dotenv
@@ -12,7 +13,7 @@ from snippets.snippet import BaseSnippet
 logger = logging.getLogger(__name__)
 
 
-class Snippets(dict):
+class Snippets(Dict[str, BaseSnippet]):
     """Base snippets."""
 
     def __init__(self):
