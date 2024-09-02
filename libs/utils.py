@@ -1,10 +1,11 @@
 """Set of utils functions and classes."""
 import importlib.util
+import inspect
 import sys
 from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
-from typing import Any, List
+from typing import Any, List, Dict
 
 import markdown
 
@@ -120,3 +121,26 @@ def find_lands(type: str, build_in: Path) -> List[Path]:
         if enabler.exists() and (land / type).exists():
             set_.append(land / type)
     return set_
+
+
+import inspect
+
+
+def get_func_args(func) -> Dict:
+    """
+    Retrieve the argument names and default values of a function.
+
+    This function returns a dictionary where the keys are argument names
+    and the values are their default values as strings, or None if no default.
+
+    :param func: The function to inspect.
+    :return: A dictionary with argument names and their default values.
+    """
+    signature = inspect.signature(func)
+    ret = {}
+    for k, v in signature.parameters.items():
+        if v.default is not inspect.Parameter.empty:
+            ret[f"{k}({v.annotation.__name__})"] = str(v.default)
+        else:
+            ret[f"{k}({v.annotation.__name__})"] = None
+    return ret

@@ -19,6 +19,7 @@ class chat_persistence:
     sashpos_main: int = 149
     sashpos_chat: int = 288
     dbg_wnd_geometry: str = "708x546+0+0"
+    macro_wnd_geometry: str = "708x546+0+0"
     copy_to_clipboard: bool = False
 
     def keys(self) -> List:

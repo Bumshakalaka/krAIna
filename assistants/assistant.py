@@ -168,7 +168,7 @@ class BaseAssistant:
         :param kwargs: Additional key-value pairs to substitute in System prompt
         :return: AssistantResp dataclass
         """
-        logger.info(f"{self.name}: {query=}, {kwargs=}")
+        logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
         ai_db = None
         if use_db:
             ai_db = Db()
@@ -195,7 +195,7 @@ class BaseAssistant:
         used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
 
         ai_db.add_message(LlmMessageType.AI, ret) if ai_db else None
-        logger.info(f"{self.name}: ret={AssistantResp(conv_id, ret, used_tokens)}")
+        logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
         return AssistantResp(conv_id, ret, used_tokens)
 
     def _run_simple_assistant(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:

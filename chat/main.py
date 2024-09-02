@@ -34,6 +34,7 @@ from PIL import ImageTk, Image
 
 from libs.llm import get_llm_type, SUPPORTED_API_TYPE
 from libs.utils import str_shortening, prepare_message, to_md
+from macros.base import Macros
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
 
@@ -122,6 +123,7 @@ class App(tk.Tk):
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
+        self.ai_macros: Dict[str, Callable] = Macros()
         self.conv_id: Union[int, None] = None
         self.title("KrAIna CHAT")
         self.tk.call(

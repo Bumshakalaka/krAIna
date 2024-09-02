@@ -95,7 +95,7 @@ class BaseSnippet:
         :param kwargs: additional key-value pairs to substitute in System prompt
         :return:
         """
-        logger.info(f"{self.name}: {query=}, {kwargs=}")
+        logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
         chat = chat_llm(
             force_api_type=self.force_api, model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
         )
@@ -110,5 +110,5 @@ class BaseSnippet:
             ]
         )
         ret = self.invoke(chat, prompt, text=query, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)
-        logger.info(f"{self.name}: ret={ret}")
+        logger.info(f"{self.name}: ret={str(ret)[0:80]}")
         return ret.content

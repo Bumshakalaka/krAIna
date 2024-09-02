@@ -3,11 +3,11 @@ import logging
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-import sv_ttk
 
 import chat.chat_persistence as chat_persistence
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
+from chat.menu_macros import MacrosMenu
 from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
 
 logger = logging.getLogger(__name__)
@@ -184,3 +184,4 @@ class Menu(tk.Menu):
         self.add_cascade(label="File", menu=FileMenu(parent, tearoff=0))
         self.add_cascade(label="Llm", menu=LlmMenu(parent, tearoff=0))
         self.add_cascade(label="Settings", menu=SettingsMenu(parent, tearoff=0))
+        self.add_cascade(label="Macros", menu=MacrosMenu(parent, tearoff=0))

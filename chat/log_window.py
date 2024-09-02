@@ -5,8 +5,6 @@ from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import asksaveasfile
 
-import sv_ttk
-
 import chat.chat_persistence as chat_persistence
 from chat.base import get_windows_version
 from chat.scroll_text import ScrolledText
