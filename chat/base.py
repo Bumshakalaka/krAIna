@@ -81,6 +81,7 @@ def app_interface() -> Dict:
         APP_EVENTS.RUN_SNIPPET.name: "Run snippet 'name' with 'text'",
         APP_EVENTS.RELOAD_CHAT_LIST.name: "Reload chat list",
         APP_EVENTS.SELECT_CHAT.name: "Select conv_id chat",
+        APP_EVENTS.DEL_CHAT.name: "Delete conv_id chat",
     }
 
 

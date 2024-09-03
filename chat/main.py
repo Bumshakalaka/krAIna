@@ -17,7 +17,6 @@ from typing import Callable, Dict, Union, Any
 import klembord
 import sv_ttk
 import yaml
-from PIL.ImageChops import darker
 
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
@@ -349,7 +348,7 @@ class App(tk.Tk):
             daemon=True,
         ).start()
 
-    def delete_chat(self, conv_id: int):
+    def delete_chat(self, conv_id: Union[int, Dict]):
         """
         Callback on DEL_CHAT event.
 
@@ -358,6 +357,9 @@ class App(tk.Tk):
         :param conv_id:
         :return:
         """
+        if isinstance(conv_id, Dict):
+            # If the event comes from IPC, the params are serialized to Dict
+            conv_id = conv_id["par0"]
         self.ai_db.delete_conversation(conv_id)
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
         self.post_event(APP_EVENTS.NEW_CHAT, None)
