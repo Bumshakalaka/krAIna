@@ -165,8 +165,10 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
         if "dark" in theme:
+            self.enable_dark_theme(True)
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
+            self.enable_dark_theme(False)
             self.html.update_default_style(LIGHTTHEME)
 
         self.cols = parent.cols
@@ -187,8 +189,10 @@ class HtmlChatView(HtmlFrame, ChatView):
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
         if "dark" in theme:
+            self.enable_dark_theme(True)
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
+            self.enable_dark_theme(False)
             self.html.update_default_style(LIGHTTHEME)
         self.cols = {
             "HUMAN": self.root.get_theme_color("accent"),
