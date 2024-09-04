@@ -1,17 +1,38 @@
 """Debug window."""
 import collections
+import copy
+import functools
 import logging
 import threading
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable
+from typing import Callable, Dict
 
 import chat.chat_persistence as chat_persistence
 from chat.base import get_windows_version
 from chat.scroll_text import ScrolledText
 from libs.utils import get_func_args
+from macros.base import Macros
 
 logger = logging.getLogger(__name__)
+
+
+def dict_merge(existing_dict: dict, new_dict: dict) -> dict:
+    """
+    Merge two dictionaries, prioritizing the new dictionary.
+
+    The function performs a deep copy of the new dictionary and updates it with
+    values from the existing dictionary if the key is not present in the new dictionary.
+
+    :param existing_dict: The dictionary with existing key-value pairs.
+    :param new_dict: The dictionary with new key-value pairs.
+    :return: A merged dictionary with updated key-value pairs.
+    """
+    ret_dict = copy.deepcopy(new_dict)
+    for k, v in existing_dict.items():
+        if ret_dict.get(k, "\xd7") != "\xd7":
+            ret_dict[k] = v
+    return ret_dict
 
 
 class LogFilter(logging.Filter):
@@ -41,19 +62,24 @@ class QueueHandler(logging.Handler):
 class MacroWindow(tk.Toplevel):
     """Create Macro Window."""
 
-    def __init__(self, parent, macro: Callable):
+    def __init__(self, parent):
         super().__init__(parent)
         self.set_title_bar_color()
         self._update_geometry()
         self.root = parent
-        self.macro = macro
-        self.macro_params = []
+        self.macros: Dict[str, Callable] = Macros()
+        self.current_macro_name: str = None
         self.macro_thread: threading.Thread = None
 
-        frame = ttk.Frame(self)
+        self.current_macro_params: Dict[str, Dict] = collections.defaultdict(dict)
+        for k, v in self.macros.items():
+            self.current_macro_params[k] = get_func_args(v)
+
+        # header
+        header = ttk.Frame(self)
         self._always_on_top = tk.BooleanVar(self, True)
         ttk.Checkbutton(
-            frame,
+            header,
             text="Always on top",
             onvalue=True,
             offvalue=False,
@@ -61,37 +87,31 @@ class MacroWindow(tk.Toplevel):
             command=self.always_on_top,
             width=14,
         ).pack(side=tk.LEFT)
-        self.level = tk.StringVar()
-        combobox = ttk.Combobox(
-            frame,
-            textvariable=self.level,
-            width=10,
-            state="readonly",
-            values=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        )
-        combobox.current(1)
-        combobox.pack(side=tk.RIGHT)
-        ttk.Label(frame, text="Level:", width=10).pack(side=tk.RIGHT)
-        frame.pack(side=tk.TOP, fill=tk.X)
+        header.pack(side=tk.TOP, fill=tk.X)
+        ###########
 
-        frame = ttk.Frame(self)
-        for k, v in get_func_args(macro).items():
-            f = ttk.Frame(frame)
-            ttk.Label(f, text=k, anchor=tk.NW, width=20).pack(side=tk.LEFT)
-            w = ttk.Entry(f)
-            self.macro_params.append(w)
-            w.insert(tk.END, str(v) if v else "")
-            w.pack(side=tk.RIGHT, fill=tk.X, expand=True)
-            f.pack(side=tk.TOP, fill=tk.X)
-        ttk.Separator(frame, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X)
-        self.pb = ttk.Progressbar(frame, orient="horizontal", mode="indeterminate")
-        self.pb.pack(side=tk.RIGHT, fill=tk.X, expand=True)
-        self.run_btn = ttk.Button(frame, text="RUN", command=self.run_macro)
-        self.run_btn.pack(side=tk.BOTTOM, anchor=tk.NW)
-        frame.pack(side=tk.TOP, fill=tk.BOTH)
+        # middle
+        middle = ttk.Frame(self)
 
-        self.text = ScrolledText(self, height=12)
-        tag_settings = dict(elide=True, lmargin2=10)
+        middle_left = ttk.Frame(middle)
+        self.macro_list_var = tk.Variable(value=list(self.macros.keys()))
+        self.macro_list = tk.Listbox(middle_left, width=20, listvariable=self.macro_list_var, selectmode=tk.SINGLE)
+        self.macro_list.bind("<<ListboxSelect>>", self.macro_selected)
+        self.macro_list.activate(0)
+        self.current_macro_name = self.macro_list.get(0)
+        self.macro_list.select_set(0)
+        self.macro_list.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        middle_left.pack(side=tk.LEFT, fill=tk.BOTH)
+
+        middle_right = ttk.Frame(middle)
+
+        self.macro_params_frame = ttk.Frame(middle_right)
+        self.macro_params_frame.pack(side=tk.TOP, fill=tk.BOTH)
+
+        ttk.Separator(middle, orient=tk.HORIZONTAL).pack(side=tk.TOP, fill=tk.X, pady=2)
+
+        self.text = ScrolledText(middle_right, height=12)
+        tag_settings = dict(lmargin2=10)
         self.text.configure(wrap=tk.WORD)
         self.text.tag_config("DEBUG", **tag_settings)
         self.text.tag_config("INFO", **tag_settings)
@@ -99,17 +119,20 @@ class MacroWindow(tk.Toplevel):
         self.text.tag_config("ERROR", foreground="red", **tag_settings)
         self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)
         self.text.tag_raise("sel")
-
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        frame = ttk.Frame(self)
-        ttk.Label(frame, text="Search:", width=8).pack(side=tk.LEFT)
-        self.search = ttk.Entry(frame, validate="all", validatecommand=(self.register(self.find_select_string), "%P"))
-        self.search.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(frame, text="Clear", width=8, command=lambda: self.text.delete("1.0", tk.END)).pack(side=tk.RIGHT)
-        frame.pack(side=tk.TOP, fill=tk.X)
+        middle_right.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
+        middle.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        self.text.insert(tk.END, macro.__doc__ + "\n")
+        # footer
+        footer = ttk.Frame(self)
+        ttk.Button(footer, text="RELOAD", width=15, command=self.macros_reload).pack(side=tk.LEFT, fill=tk.X)
+        self.run_btn = ttk.Button(footer, text="RUN", width=8, command=self.run_macro)
+        self.run_btn.pack(side=tk.LEFT)
+        self.pb = ttk.Progressbar(footer, orient="horizontal", mode="indeterminate")
+        self.pb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(footer, text="Clear", width=8, command=lambda: self.text.delete("1.0", tk.END)).pack(side=tk.LEFT)
+        footer.pack(side=tk.TOP, fill=tk.BOTH)
 
         self.log_queue = collections.deque(maxlen=1000)
         self.queue_handler = QueueHandler(self.log_queue)
@@ -118,36 +141,87 @@ class MacroWindow(tk.Toplevel):
         self.queue_handler.setLevel(logging.INFO)
         logging.getLogger().addHandler(self.queue_handler)
 
-        self.always_on_top()
-        self.view_selected()
+        self.macro_params_update()
 
-        self.bind("<<ComboboxSelected>>", self.view_selected)
+        self.always_on_top()
+
         self.protocol("WM_DELETE_WINDOW", self.close_window)
 
         self.get_logs()
 
+    def macros_reload(self):
+        """
+        Reload the macros and update the macro parameters.
+
+        This function deletes the current macros, initializes new macros, and updates the macro
+        parameters and the UI elements accordingly.
+
+        :raises KeyError: If a key in `new_params` does not exist in `current_macro_params`.
+        """
+        del self.macros
+        self.macros = Macros()
+        self.macro_list.selection_clear(0, tk.END)
+
+        new_params = collections.defaultdict(dict)
+        for k, v in self.macros.items():
+            new_params[k] = get_func_args(v)
+
+        for k in list(self.current_macro_params.keys()):
+            if new_params.get(k) is None:
+                del self.current_macro_params[k]
+
+        for k, v in new_params.items():
+            self.current_macro_params[k] = dict_merge(self.current_macro_params[k], v)
+
+        self.macro_list_var.set(list(self.macros.keys()))
+        self.macro_list.activate(0)
+        self.current_macro_name = self.macro_list.get(0)
+        self.macro_list.select_set(0)
+        self.macro_params_update()
+
+    def macro_selected(self, event: tk.Event):
+        """
+        Handle the event when a macro is selected from the list.
+
+        This function updates the current macro name and refreshes the macro parameters.
+
+        :param event: The event object containing information about the selection.
+        """
+        idx = event.widget.curselection()
+        if idx:
+            self.current_macro_name = event.widget.get(idx)
+            self.macro_params_update()
+
+    def macro_params_update(self):
+        """
+        Update the macro parameters displayed in the UI.
+
+        This function clears the current parameters and populates the UI with the parameters
+        of the currently selected macro.
+        """
+        for n in list(self.macro_params_frame.children.keys()):
+            self.macro_params_frame.children[n].destroy()
+        for k, v in self.current_macro_params[self.current_macro_name].items():
+            f = ttk.Frame(self.macro_params_frame)
+            ttk.Label(f, text=k, anchor=tk.NW, width=20).pack(side=tk.LEFT, padx=10)
+            w = ttk.Entry(f)
+            w.insert(tk.END, str(v) if v else "")
+            w.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+            f.pack(side=tk.TOP, fill=tk.X)
+            w.config(
+                validate="key", validatecommand=(self.register(functools.partial(self.macro_params_save, k)), "%P")
+            )
+
+        self.text.delete("1.0", tk.END)
+        self.text.insert(tk.END, self.macros[self.current_macro_name].__doc__ + "\n")
+
+    def macro_params_save(self, param_name, to_save):
+        self.current_macro_params[self.current_macro_name].update({param_name: to_save})
+        return True
+
     def always_on_top(self):
         """Toggle always on top window setting."""
         self.wm_attributes("-topmost", self._always_on_top.get())
-
-    def view_selected(self, event=None):
-        """
-        Show the logs at certain log level and above.
-
-        :param event:
-        :return:
-        """
-        req_lvl = self.level.get()
-        hide = True
-        for level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-            if level == req_lvl:
-                hide = False
-            self.text.tag_config(level, elide=hide)
-        if event:
-            # change logger level to DEBUG or INFO.
-            # DO not set higher levels because we would like to have those data later
-            # in case of filter change
-            self.queue_handler.setLevel(req_lvl if req_lvl == "DEBUG" else "INFO")
 
     def close_window(self):
         """Callback on Macro Window destroy event."""
@@ -159,6 +233,7 @@ class MacroWindow(tk.Toplevel):
     def run_macro(self):
         """Run the macro."""
         self.run_btn.config(state="disabled")
+        self.macro_list.config(state="disabled")
         self.pb.start(interval=20)
 
         def _call(_cmd, *args, **kwargs):
@@ -175,8 +250,8 @@ class MacroWindow(tk.Toplevel):
         self.macro_thread = threading.Thread(
             target=_call,
             args=(
-                self.macro,
-                *[w.get() for w in self.macro_params],
+                self.macros[self.current_macro_name],
+                *[v for v in self.current_macro_params[self.current_macro_name].values()],
             ),
             daemon=True,
         )
@@ -188,6 +263,7 @@ class MacroWindow(tk.Toplevel):
         if not self.macro_thread.is_alive():
             self.pb.stop()
             self.run_btn.config(state="normal")
+            self.macro_list.config(state="normal")
             return
         self.after(200, self.is_macro_running)
 
@@ -216,32 +292,6 @@ class MacroWindow(tk.Toplevel):
             # Set the title bar color to the background color on Windows 11 for better appearance
             pywinstyles.change_header_color(self, col)
 
-    def find_select_string(self, pattern: str) -> bool:
-        """
-        Find and select pattern in the log.
-
-        :param pattern: tring to find
-        :return: Always True as it bind to Entry validate command
-        """
-        self.text.tag_remove("sel", "1.0", tk.END)
-        if not pattern:
-            return True
-        self.text.mark_set("matchStart", "1.0")
-        self.text.mark_set("matchEnd", "1.0")
-        self.text.mark_set("searchLimit", tk.END)
-
-        count = tk.IntVar()
-        while True:
-            index = self.text.search(pattern, "matchEnd", "searchLimit", count=count, regexp=False)
-            if index == "":
-                break
-            if count.get() == 0:
-                break  # degenerate pattern which matches zero-length strings
-            self.text.mark_set("matchStart", index)
-            self.text.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
-            self.text.tag_add("sel", "matchStart", "matchEnd")
-        return True
-
     def _update_geometry(self):
         # Prevent that chat will always be visible
         w_size, offset_x, offset_y = chat_persistence.SETTINGS.macro_wnd_geometry.split("+")
@@ -257,8 +307,6 @@ class MacroWindow(tk.Toplevel):
     def display(self, record: logging.LogRecord):
         """Display formated log record in text widget."""
         msg = self.queue_handler.format(record)
-        print(msg)
-        print(record.levelname)
         self.text.insert(tk.END, msg + "\n", record.levelname)
         self.text.yview(tk.END)
 
@@ -273,6 +321,6 @@ class MacroWindow(tk.Toplevel):
         while True:
             try:
                 self.display(self.log_queue.popleft())
-            except IndexError as e:
+            except IndexError:
                 break
         self.after(100, self.get_logs)

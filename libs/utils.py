@@ -1,6 +1,5 @@
 """Set of utils functions and classes."""
 import importlib.util
-import inspect
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -94,7 +93,7 @@ def prepare_message(text: str, tag: str, col: str, sep=True) -> str:
         if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
             # situation when LLM give text block in ``` but the ``` are unbalanced
             # it can happen when completion tokens where not enough
-            m_text += "\n```"
+            m_text += "\n\n```"
         # add horizontal line separator
         m_text += sep_ai
     m_text += "</span>"
@@ -139,8 +138,9 @@ def get_func_args(func) -> Dict:
     signature = inspect.signature(func)
     ret = {}
     for k, v in signature.parameters.items():
+        annot = v.annotation.__name__.replace("_empty", "Any")
         if v.default is not inspect.Parameter.empty:
-            ret[f"{k}({v.annotation.__name__})"] = str(v.default)
+            ret[f"{k}({annot})"] = str(v.default)
         else:
-            ret[f"{k}({v.annotation.__name__})"] = None
+            ret[f"{k}({annot})"] = None
     return ret
