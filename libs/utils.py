@@ -1,5 +1,6 @@
 """Set of utils functions and classes."""
 import importlib.util
+import re
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -144,3 +145,48 @@ def get_func_args(func) -> Dict:
         else:
             ret[f"{k}({annot})"] = None
     return ret
+
+
+def find_hyperlinks(text: str, no_hyper_tag: str = "") -> list:
+    """
+    Extract and tag hyperlinks and file paths from text.
+
+    This function identifies URLs and file paths in the input text and tags them
+    accordingly, separating them from non-hyperlinked text with a specified tag.
+
+    :param text: The input text containing potential hyperlinks and file paths.
+    :param no_hyper_tag: Tag to use for non-hyperlinked text sections.
+    :return: A list with parts of the text tagged as hyperlinks or non-hyperlinked text.
+    """
+    # Regular expressions for URL and file paths
+    url_regex = re.compile(r"(https?://[^\s)\",]+)")
+    posix_path_regex = re.compile(r"(/[^)\s]+\.[^)\s\",]+)")
+    windows_path_regex = re.compile(r"([a-zA-Z]:\\[^)\",\s]+)")
+
+    # Combine all regex patterns
+    combined_regex = re.compile(f"{url_regex.pattern}|{posix_path_regex.pattern}|{windows_path_regex.pattern}")
+
+    # Find all matches in the text
+    matches = combined_regex.finditer(text)
+
+    parts = []
+    last_index = 0
+
+    for match in matches:
+        match_str = match.group(0)
+        start_index = match.start()
+
+        if last_index < start_index:
+            parts.append(text[last_index:start_index])
+            parts.append(no_hyper_tag)  # Add empty tag for no hyper text
+
+        parts.append(match_str)
+        parts.append("hyper")
+
+        last_index = match.end()
+
+    if last_index < len(text):
+        parts.append(text[last_index:])
+        parts.append(no_hyper_tag)  # Add empty tag for no hyper text
+
+    return parts

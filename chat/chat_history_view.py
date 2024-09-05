@@ -11,7 +11,7 @@ from chat.base import DARKTHEME, LIGHTTHEME
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, to_md, prepare_message
+from libs.utils import str_shortening, to_md, prepare_message, find_hyperlinks
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,41 @@ class TextChatView(ScrolledText, ChatView):
         self.tag_config("AI_end")
         self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
         self.tag_config("TOOL_prefix")
+        self.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+
+        self.tag_bind("hyper", "<Enter>", self._enter_hyper)
+        self.tag_bind("hyper", "<Leave>", self._leave_hyper)
+        self.tag_bind("hyper", "<Button-1>", self._click_hyper)
+
         self.tag_raise("sel")
+
+    def _enter_hyper(self, event):
+        """
+        Change the cursor to a hand when hovering over a hyperlink.
+
+        :param event: The event object containing information about the hover event.
+        """
+        self.config(cursor="hand2")
+
+    def _leave_hyper(self, event):
+        """
+        Revert the cursor back to default when leaving a hyperlink.
+
+        :param event: The event object containing information about the leave event.
+        """
+        self.config(cursor="")
+
+    def _click_hyper(self, event):
+        """
+        Open the hyperlink in a web browser when clicked.
+
+        :param event: The event object containing information about the click event.
+        :raises ValueError: If the hyperlink text cannot be retrieved.
+        """
+        link = self.get(*self.tag_prevrange("hyper", tk.CURRENT))
+        if not link:
+            raise ValueError("Unable to retrieve the hyperlink text.")
+        webbrowser.open(link, new=2, autoraise=True)
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
@@ -114,7 +148,7 @@ class TextChatView(ScrolledText, ChatView):
     def _insert_message(self, text, tag):
         text = str_shortening(text) if tag == "TOOL" else text
         for tt in text.splitlines(keepends=False):
-            self.insert(tk.END, "", f"{tag}_prefix", tt, tag, "\n", "")
+            self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt, tag), "\n", "")
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
         self.see(tk.END)
