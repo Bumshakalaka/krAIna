@@ -10,7 +10,7 @@ from tkinter import ttk
 from typing import Callable, Dict
 
 import chat.chat_persistence as chat_persistence
-from chat.base import get_windows_version
+from chat.base import get_windows_version, APP_EVENTS
 from chat.scroll_text import ScrolledText
 from libs.utils import get_func_args, find_hyperlinks
 from macros.base import Macros
@@ -65,6 +65,9 @@ class MacroWindow(tk.Toplevel):
 
     def __init__(self, parent):
         super().__init__(parent)
+        self.visible = True
+        self.hide()
+
         self.set_title_bar_color()
         self._update_geometry()
         self.root = parent
@@ -152,7 +155,8 @@ class MacroWindow(tk.Toplevel):
 
         self.always_on_top()
 
-        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        self.bind("<Escape>", self.hide)
+        self.protocol("WM_DELETE_WINDOW", self.hide)
 
         self.get_logs()
 
@@ -258,18 +262,32 @@ class MacroWindow(tk.Toplevel):
         """Toggle always on top window setting."""
         self.wm_attributes("-topmost", self._always_on_top.get())
 
-    def close_window(self):
-        """Callback on Macro Window destroy event."""
-        if int(self.geometry().split("x")[0]) > 10:
-            chat_persistence.SETTINGS.macro_wnd_geometry = self.geometry()
-        logging.getLogger().removeHandler(self.queue_handler)
-        self.destroy()
+    def hide(self, *args):
+        """Hide the window."""
+        if self.visible:
+            if int(self.geometry().split("x")[0]) > 10:
+                chat_persistence.SETTINGS.dbg_wnd_geometry = self.geometry()
+            self.withdraw()
+            self.visible = False
+
+    def show(self):
+        """Show the window."""
+        if not self.visible:
+            self.visible = True
+            self.set_title_bar_color()
+            self.get_logs()
+            self._update_geometry()
+            self.withdraw()
+            self.deiconify()
+            self.lift()
 
     def run_macro(self):
         """Run the macro."""
         self.run_btn.config(state="disabled")
         self.macro_list.config(state="disabled")
         self.pb.start(interval=20)
+
+        self.root.post_event(APP_EVENTS.MACRO_RUNNING, True)
 
         def _call(_cmd, *args, **kwargs):
             try:
@@ -299,6 +317,8 @@ class MacroWindow(tk.Toplevel):
             self.pb.stop()
             self.run_btn.config(state="normal")
             self.macro_list.config(state="normal")
+
+            self.root.post_event(APP_EVENTS.MACRO_RUNNING, False)
             return
         self.after(200, self.is_macro_running)
 
@@ -358,4 +378,5 @@ class MacroWindow(tk.Toplevel):
                 self.display(self.log_queue.popleft())
             except IndexError:
                 break
-        self.after(100, self.get_logs)
+        if self.visible:
+            self.after(100, self.get_logs)

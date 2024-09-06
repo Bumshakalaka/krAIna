@@ -66,6 +66,8 @@ class APP_EVENTS(enum.Enum):
     COPY_TO_CLIPBOARD_CHAT = "<<CopyToClipboardChat>>"
     RELOAD_CHAT_LIST = "<<ReloadChatList>>"
     SELECT_CHAT = "<<SelectChat>>"
+    CREATE_MACRO_WIN = "<<CreateMacroWindow>>"
+    MACRO_RUNNING = "<<MacroRunning>>"
 
 
 def app_interface() -> Dict:

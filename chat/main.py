@@ -117,6 +117,7 @@ class App(tk.Tk):
         self.set_title_bar_color(chat_persistence.SETTINGS.theme)
         style.configure("Hidden.TButton", foreground=self.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
+        style.configure("WORKING.TButton", foreground=self.get_theme_color("accent"))
         self.withdraw()
         self.ai_db = Db()
         self.ai_assistants = Assistants()

@@ -153,6 +153,7 @@ class ThemeSelect(tk.Menu):
             self.parent.set_title_bar_color("light")
         style.configure("Hidden.TButton", foreground=self.parent.get_theme_color("disfg"))
         style.configure("ERROR.TButton", foreground="red")
+        style.configure("WORKING.TButton", foreground=self.parent.get_theme_color("accent"))
         chat_persistence.SETTINGS.theme = style.theme_use()
         self.parent.post_event(APP_EVENTS.UPDATE_THEME, style.theme_use())
         self.after(
@@ -180,8 +181,21 @@ class Menu(tk.Menu):
     def __init__(self, parent):
         """Create menu."""
         super().__init__(parent, relief=tk.FLAT)
+        self.parent = parent
+        self.macro_window = None
         parent.config(menu=self)
         self.add_cascade(label="File", menu=FileMenu(parent, tearoff=0))
         self.add_cascade(label="Llm", menu=LlmMenu(parent, tearoff=0))
-        self.add_command(label="Macros", command=lambda: MacroWindow(parent))
+        self.add_command(label="Macros", command=self.create_macro_window)
         self.add_cascade(label="Settings", menu=SettingsMenu(parent, tearoff=0))
+
+        self.parent.bind_on_event(APP_EVENTS.CREATE_MACRO_WIN, self.create_macro_window)
+
+    def create_macro_window(self, *args):
+        """Create a debug window or summon it if it already exists."""
+        if not self.macro_window:
+            self.macro_window = MacroWindow(self.parent)
+        if not self.macro_window.visible:
+            self.macro_window.show()
+        else:
+            self.macro_window.hide()

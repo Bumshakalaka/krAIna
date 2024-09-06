@@ -54,7 +54,22 @@ class StatusBar(tk.Frame):
         self.dbg_window_btn = ttk.Button(self, text="\u2A00", command=self.create_dbg_window, takefocus=False, width=2)
         ToolTip(
             self.dbg_window_btn,
-            msg="Internal logs window",
+            msg="Internal logs window\nBlinking red - error in logs",
+            follow=False,
+            delay=0.5,
+            y_offset=-50,
+            x_offset=-150,
+        )
+        self.macro_window_btn = ttk.Button(
+            self,
+            text="\u2133",
+            takefocus=False,
+            width=2,
+            command=lambda: self.root.post_event(APP_EVENTS.CREATE_MACRO_WIN, None),
+        )
+        ToolTip(
+            self.macro_window_btn,
+            msg="Macro window\nHighlighted - Macro is running",
             follow=False,
             delay=0.5,
             y_offset=-50,
@@ -62,12 +77,14 @@ class StatusBar(tk.Frame):
         )
         ttk.Sizegrip(self).pack(side=tk.RIGHT, fill=tk.BOTH)
         self.dbg_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.macro_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.label_api.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.root.bind_on_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, self.update_statusbar_api)
         self.root.bind_on_event(
             APP_EVENTS.UPDATE_STATUS_BAR_TOKENS, lambda data: self.after_idle(self.update_statusbar, data)
         )
         self.root.bind_on_event(APP_EVENTS.WE_HAVE_ERROR, self.blink_start)
+        self.root.bind_on_event(APP_EVENTS.MACRO_RUNNING, self.change_macro_status)
         self.blink_after_id = None
 
     def blink_start(self, data):
@@ -94,6 +111,12 @@ class StatusBar(tk.Frame):
         else:
             self.dbg_window_btn.configure(style="")
         self.blink_after_id = self.after(300, self.blink)
+
+    def change_macro_status(self, running):
+        if running:
+            self.macro_window_btn.configure(style="WORKING.TButton")
+        else:
+            self.macro_window_btn.configure(style="")
 
     def create_dbg_window(self):
         """Create a debug window or summon it if it already exists."""
