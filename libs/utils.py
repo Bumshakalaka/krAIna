@@ -159,9 +159,9 @@ def find_hyperlinks(text: str, no_hyper_tag: str = "") -> list:
     :return: A list with parts of the text tagged as hyperlinks or non-hyperlinked text.
     """
     # Regular expressions for URL and file paths
-    url_regex = re.compile(r"(https?://[^\s)\",]+)")
-    posix_path_regex = re.compile(r"(/[^)\s]+\.[^)\s\",]+)")
-    windows_path_regex = re.compile(r"([a-zA-Z]:\\[^)\",\s]+)")
+    url_regex = re.compile(r"(https?://[^\s)\",'`]+)")
+    posix_path_regex = re.compile(r"(/[^)\s]+\.[^)\s\",'`]+)")
+    windows_path_regex = re.compile(r"([a-zA-Z]:\\[^)\",'`\s]+)")
 
     # Combine all regex patterns
     combined_regex = re.compile(f"{url_regex.pattern}|{posix_path_regex.pattern}|{windows_path_regex.pattern}")
