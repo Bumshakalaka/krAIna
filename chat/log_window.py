@@ -1,6 +1,7 @@
 """Debug window."""
 import logging
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import asksaveasfile
@@ -8,6 +9,7 @@ from tkinter.filedialog import asksaveasfile
 import chat.chat_persistence as chat_persistence
 from chat.base import get_windows_version
 from chat.scroll_text import ScrolledText
+from libs.utils import find_hyperlinks
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,12 @@ class DbgLogWindow(tk.Toplevel):
         self.text.tag_config("WARNING", foreground="orange", **tag_settings)
         self.text.tag_config("ERROR", foreground="red", **tag_settings)
         self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)
+        self.text.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+
+        self.text.tag_bind("hyper", "<Enter>", self._enter_hyper)
+        self.text.tag_bind("hyper", "<Leave>", self._leave_hyper)
+        self.text.tag_bind("hyper", "<Button-1>", self._click_hyper)
+
         self.text.tag_raise("sel")
 
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -72,6 +80,34 @@ class DbgLogWindow(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW", self.hide)
 
         self.view_selected()
+
+    def _enter_hyper(self, event):
+        """
+        Change the cursor to a hand when hovering over a hyperlink.
+
+        :param event: The event object containing information about the hover event.
+        """
+        self.text.config(cursor="hand2")
+
+    def _leave_hyper(self, event):
+        """
+        Revert the cursor back to default when leaving a hyperlink.
+
+        :param event: The event object containing information about the leave event.
+        """
+        self.text.config(cursor="")
+
+    def _click_hyper(self, event):
+        """
+        Open the hyperlink in a web browser when clicked.
+
+        :param event: The event object containing information about the click event.
+        :raises ValueError: If the hyperlink text cannot be retrieved.
+        """
+        link = self.text.get(*self.text.tag_prevrange("hyper", tk.CURRENT))
+        if not link:
+            raise ValueError("Unable to retrieve the hyperlink text.")
+        webbrowser.open(link, new=2, autoraise=True)
 
     def set_title_bar_color(self):
         """Set background color of title on Windows only."""
@@ -192,9 +228,11 @@ class DbgLogWindow(tk.Toplevel):
 
     def display(self, record: logging.LogRecord):
         """Display formated log record in text widget."""
+        y_pos = self.text.yview()[1]
         msg = self.root.queue_handler.format(record)
-        self.text.insert(tk.END, msg + "\n", record.levelname)
-        self.text.yview(tk.END)
+        self.text.insert(tk.END, *find_hyperlinks(msg + "\n", record.levelname))
+        if y_pos == 1.0:
+            self.text.yview(tk.END)
 
     def get_logs(self):
         """

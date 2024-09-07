@@ -121,7 +121,6 @@ class TextChatView(ScrolledText, ChatView):
         """
         if message:
             self._insert_message(message, "AI")
-            self.see(tk.END)
 
     def human_message(self, message: str):
         """
@@ -133,7 +132,6 @@ class TextChatView(ScrolledText, ChatView):
         :param message: Message to add to chat from QUERY_ASSIST_CREATED event
         """
         self._insert_message(message, "HUMAN")
-        self.see(tk.END)
 
     def tool_message(self, message: str):
         """
@@ -146,12 +144,14 @@ class TextChatView(ScrolledText, ChatView):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
+        y_pos = self.yview()[1]
         text = str_shortening(text) if tag == "TOOL" else text
         for tt in text.splitlines(keepends=False):
             self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt, tag), "\n", "")
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
-        self.see(tk.END)
+        if y_pos == 1.0:
+            self.yview(tk.END)
 
     def new_chat(self, *args):
         """
@@ -162,7 +162,6 @@ class TextChatView(ScrolledText, ChatView):
         :return:
         """
         self.delete(1.0, tk.END)
-        self.see(tk.END)
 
     def load_chat(self, conversation: Conversations):
         """
@@ -176,7 +175,6 @@ class TextChatView(ScrolledText, ChatView):
             self.root.selected_assistant.set(conversation.assistant)
         for message in conversation.messages:
             self._insert_message(message.message, LlmMessageType(message.type).name)
-        self.see(tk.END)
 
 
 class HtmlChatView(HtmlFrame, ChatView):

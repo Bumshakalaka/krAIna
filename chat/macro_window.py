@@ -361,9 +361,11 @@ class MacroWindow(tk.Toplevel):
 
     def display(self, record: logging.LogRecord):
         """Display formated log record in text widget."""
-        msg = self.queue_handler.format(record)
+        y_pos = self.text.yview()[1]
+        msg = self.root.queue_handler.format(record)
         self.text.insert(tk.END, *find_hyperlinks(msg + "\n", record.levelname))
-        self.text.yview(tk.END)
+        if y_pos == 1.0:
+            self.text.yview(tk.END)
 
     def get_logs(self):
         """
