@@ -7,7 +7,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, List, Dict
 
-import markdown
+import markdown2
 
 
 def import_module(path: Path) -> ModuleType:
@@ -51,16 +51,11 @@ def to_md(text: str) -> str:
     :param text:
     :return:
     """
-    return markdown.markdown(
+    html = markdown2.markdown(
         text,
-        extensions=[
-            "pymdownx.superfences",
-            "markdown.extensions.md_in_html",
-            "markdown.extensions.tables",
-            "nl2br",
-            "sane_lists",
-        ],
+        extras=["tables", "fenced-code-blocks", "cuddled-lists"],
     )
+    return html
 
 
 @lru_cache(maxsize=256)
@@ -84,20 +79,23 @@ def prepare_message(text: str, tag: str, col: str, sep=True) -> str:
         sep_human = ""
         sep_ai = ""
     text = str_shortening(text) if tag == "TOOL" else text
-    m_text = f'<span style="color:{col}">'
     if tag == "HUMAN":
+        m_text = f'<span style="color:{col}">'
         m_text += text.strip() + sep_human
+        m_text += "</span>"
     elif tag == "TOOL":
+        m_text = f'<span style="color:{col}">'
         m_text += text
+        m_text += "</span>"
     else:
-        m_text += text
+        m_text = text
         if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
             # situation when LLM give text block in ``` but the ``` are unbalanced
             # it can happen when completion tokens where not enough
             m_text += "\n\n```"
         # add horizontal line separator
         m_text += sep_ai
-    m_text += "</span>"
+    # m_text += "</span>"
     return m_text
 
 
