@@ -11,6 +11,7 @@ Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic
 2. [Snippets](#snippets) — the actions that can be performed on selected text.
 3. [Assistants](#assistants) — your own specialized assistants to talk with.
 4. [Tools](#tools) — your own specialized tools to use with Assistants.
+5. [Macros](#macros) - Python scripts to program Agent-like flow
 
 ### Chat GUI application
 Chat GUI application built using tkinter.
@@ -187,6 +188,25 @@ To make such a tool, you need to follow these steps:
 
 The initialization of the tool (calling the init function) occurs when an Assistant is called, 
 not when it is initialized.
+
+
+### Macros
+Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.
+
+The macro file is a regular Pytho script that can be run like a typical Python script,
+but it can also function as a macro within the Chat application.
+It must contain a `run()` function, which is the only requirement for it to be executable within the Chat application.
+When the macro file is loaded by the Chat application as a module, it inspects the `run()` function to get docstring and parameters + annotations.
+Subsequently, when the macro is called, the `run()` function is executed in a daemon thread.
+In this mode, the Chat application logger is used.
+
+The macros discover works similar to Assistants and Snippets. Search `macros` folder in KrAIna and kraina-lands to find
+all Python scripts with `run()` function inside.
+
+![Macro Window](img/chat_macros.gif)
+
+Check examples [Pokemon overview](macros/pokemon_overview.py) or [Topic overview](macros/topic_overview.py) for more details.
+
 
 ## Requirements
 1. Python >= 3.10 + IDLE (Tk GUI)
@@ -404,11 +424,14 @@ usage: chat.sh command
 
 KraIna chat application.
 Commands:
-	SHOW_APP - Trigger to display the application
-	HIDE_APP - Trigger to minimize the application
-	GET_LIST_OF_SNIPPETS - Get list of snippets
-	RUN_SNIPPET - Run snippet 'name' with 'text'
-	No argument - run GUI app. If app is already run, show it
+        SHOW_APP - Trigger to display the application
+        HIDE_APP - Trigger to minimize the application
+        GET_LIST_OF_SNIPPETS - Get list of snippets
+        RUN_SNIPPET - Run snippet 'name' with 'text'
+        RELOAD_CHAT_LIST - Reload chat list
+        SELECT_CHAT - Select conv_id chat
+        DEL_CHAT - Delete conv_id chat
+        No argument - run GUI app. If app is already run, show it
 
 options:
   -h, --help  show this help message and exit
@@ -468,4 +491,29 @@ print(first)  # AssistantResp(conv_id=192, content='Nice to meet you, Paul! How 
 ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
 print(ret)  # AssistantResp(conv_id=192, content='Your name is Paul. How can I assist you today, Paul?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 24, 'input': 8, 'total_input': 63, 'output': 17, 'total': 143}, error=None)
 
+```
+
+#### Chat interface
+
+Like [chat.sh](#chatsh--chatbat) but from Python script. It is very useful for [macro](#macros) scripts
+
+```python
+from chat.cli import ChatInterface
+from dotenv import load_dotenv, find_dotenv
+from assistants.base import Assistants
+
+load_dotenv(find_dotenv())
+assistants = Assistants()
+
+action = assistants["echo"]
+# init communication with Chat app. silent=True means, do not raise exception if Chat app is not running.
+chat = ChatInterface(silent=True)
+
+ret = action.run("What are the Pokemons?")  # First call without conv_id creates a new conversation
+
+chat("SHOW_APP")  # Show Chat app
+chat("RELOAD_CHAT_LIST")  # Reload, find new chats in Chat app
+chat("SELECT_CHAT", ret.conv_id)  # Show our conversation
+action.run("What are the types?", conv_id=ret.conv_id)  # Continue conversation
+chat("SELECT_CHAT", ret.conv_id)  # Update our conversation
 ```
