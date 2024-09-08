@@ -2,6 +2,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Union, List
 
 from langchain_anthropic import ChatAnthropic
@@ -36,6 +37,8 @@ class BaseSnippet:
     """Force to use azure or openai or anthropic"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""
+    path: Path = None
+    """Path to the snippet folder."""
 
     def __init_subclass__(cls, **kwargs):
         """

@@ -91,7 +91,7 @@ class Assistants(Dict[str, BaseAssistant]):
                         del settings["specialisation"]
                 else:
                     logger.debug(f"{assistant.name} does not use config.yaml, default will be used.")
-                self[assistant.name] = assistant_cls(name=assistant.name, prompt=prompt, **settings)
+                self[assistant.name] = assistant_cls(name=assistant.name, path=assistant, prompt=prompt, **settings)
 
 
 if __name__ == "__main__":

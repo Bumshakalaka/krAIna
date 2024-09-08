@@ -81,7 +81,7 @@ class Snippets(Dict[str, BaseSnippet]):
                         del settings["specialisation"]
                 else:
                     logger.debug(f"{snippet.name} does not use config.yaml, default will be used.")
-                self[snippet.name] = snippet_cls(name=snippet.name, prompt=prompt, **settings)
+                self[snippet.name] = snippet_cls(name=snippet.name, prompt=prompt, path=snippet, **settings)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from collections import namedtuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 from typing import Union, List, Dict, Optional, Callable
 
 from langchain.agents import create_tool_calling_agent, AgentExecutor
@@ -78,6 +79,8 @@ class BaseAssistant:
     """Force to use azure or openai or anthropic"""
     contexts: List[str] = None
     """List of additional contexts to be added to system prompt"""
+    path: Path = None
+    """Path to the assistant folder."""
 
     def __init_subclass__(cls, **kwargs):
         """
