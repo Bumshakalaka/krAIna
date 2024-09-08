@@ -220,8 +220,8 @@ class UserQuery(ttk.Frame):
         self.text.bind("<<Paste>>", self._show_tokens)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
-        self.send_btn = ttk.Button(self, text="Send", command=functools.partial(self.invoke, "assistant"))
-        ToolTip(self.send_btn, msg="Ask Assistant. <Ctrl+Enter>", follow=False, delay=0.5)
+        self.send_btn = ttk.Button(self, text="SEND", command=functools.partial(self.invoke, "assistant"))
+        ToolTip(self.send_btn, msg="<Ctrl+Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
         self.send_btn.pack(side=tk.RIGHT, anchor=tk.NE, padx=2, pady=2)
         self.tokens = tk.StringVar(self, "Tokens: 0")
         self.tokens_after_id = None

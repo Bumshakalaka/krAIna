@@ -18,7 +18,6 @@
 - markdown:
   - better tables handling
   - work with better CSS
-- Add key accelerators (New Chat, assistant switch)
 - Full-text search:
   - Find in SQLite, switch to the chat and highlight the text
 - Switch to Listbox with sidebar (do not use canvas + buttons) - possible spped optimisation on Windows

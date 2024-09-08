@@ -105,7 +105,9 @@ class LeftSidebar(ttk.Frame):
         self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistsnts)
         self.root.bind_on_event(APP_EVENTS.SELECT_CHAT, self.select_chat)
         but = ttk.Button(self, text="NEW CHAT", command=self.new_chat)
-        ToolTip(but, msg="Create new chat", follow=False, delay=0.5)
+        self.root.bind("<Control-n>", lambda x: self.new_chat())
+        self.root.bind("<Control-N>", lambda x: self.new_chat())
+        ToolTip(but, msg="<CTRL-N> Create new chat", follow=False, delay=0.5)
         but.pack(side=tk.TOP, fill=tk.X, padx=2, pady=2)
         w = ScrollFrame(self, text="Last chats")
         self.chats = w.viewPort
@@ -115,7 +117,9 @@ class LeftSidebar(ttk.Frame):
         self.list_assistsnts()
         self.assistants.pack(side=tk.BOTTOM, fill=tk.X)
         but = ttk.Button(self.assistants, text="RELOAD", command=self.reload_ai)
-        ToolTip(but, msg="Reload Assistants and Snippets", follow=False, delay=0.5)
+        self.root.bind("<Control-r>", lambda x: self.reload_ai())
+        self.root.bind("<Control-r>", lambda x: self.reload_ai())
+        ToolTip(but, msg="<CTRL-R> Reload Assistants and Snippets", follow=False, delay=0.5)
         but.pack(side=tk.BOTTOM, fill=tk.X, padx=2, pady=2)
 
     def list_assistsnts(self, *args):
@@ -285,6 +289,7 @@ class LeftSidebar(ttk.Frame):
                 self.root.current_assistant.tokens_used(None),
             ),
         )
+        self.root.chatW.userW.text.focus_force()
 
     def reload_ai(self):
         """Reload assistants, snippets and saved chats."""
