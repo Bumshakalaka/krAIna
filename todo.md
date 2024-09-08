@@ -21,6 +21,8 @@
 - Add key accelerators (New Chat, assistant switch)
 - Full-text search:
   - Find in SQLite, switch to the chat and highlight the text
+- Switch to Listbox with sidebar (do not use canvas + buttons) - possible spped optimisation on Windows
+- right click on assistant—edit prompt
 
 ## Miscellaneous
 - Introduce textual inline chat.
@@ -30,10 +32,12 @@
 - add sqlite DB versioning and migration 
 - Add DB with prompts e.g. "Give me something"
 - Add script to configure CopyQ (function addCommands())
+- RUN_SNIPPET_FROM_FILE command to chat.sh
+- Add sniper: `write code`
 
 # Fixes
 - Fix the scrolling of a chat list when there are not too many chats.
-- Use an Ipc Serializaion mechanism
+- Use an Ipc Serialization mechanism
 
 # Agents
 - 4 steps—reflections, tools, planning, multi-agents
@@ -55,7 +59,3 @@
   - config.yaml
   - sqliteDB
 
-# New
-- support for scripts (run kraina regular script from the chat app)
-- right click on assistant—edit prompt
-- RUN_SNIPPET_FROM_FILE command to chat.sh
