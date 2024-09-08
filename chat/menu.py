@@ -1,29 +1,21 @@
 """Menu widget"""
+import functools
 import logging
+import subprocess
 import tkinter as tk
+import webbrowser
+from pathlib import Path
 from tkinter import ttk, messagebox
 
 
 import chat.chat_persistence as chat_persistence
+import chat.chat_settings as chat_settings
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from chat.macro_window import MacroWindow
 from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
 
 logger = logging.getLogger(__name__)
-
-
-class FileMenu(tk.Menu):
-    """File sub-menu class."""
-
-    def __init__(self, parent, *args, **kwargs):
-        """Create menu."""
-        super().__init__(parent, *args, **kwargs)
-        self.add_command(
-            label="Settings...",
-        )
-        self.add_separator()
-        self.add_command(label="Exit", command=parent.quit_app)
 
 
 class LlmModel(tk.Menu):
@@ -114,6 +106,12 @@ class SettingsMenu(tk.Menu):
         self.add_checkbutton(
             label="Copy to clipboard", variable=self._copy_to_clip, onvalue=True, offvalue=False, selectcolor=col
         )
+        self.add_separator()
+        self.add_command(
+            label="Edit config.yaml",
+            command=functools.partial(self.edit_file, Path(__name__).parent / "config.yaml"),
+        )
+        self.add_command(label="Edit .env", command=functools.partial(self.edit_file, Path(__name__).parent / ".env"))
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
         self._copy_to_clip.set(chat_persistence.SETTINGS.copy_to_clipboard)
         self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)
@@ -128,6 +126,25 @@ class SettingsMenu(tk.Menu):
         """Change Copy to clipboard setting."""
         _var = self.getvar(name=args[0])
         chat_persistence.SETTINGS.copy_to_clipboard = _var
+
+    def edit_file(self, fn: Path):
+        """
+        Open the web page associated with an AI assistant.
+
+        This method retrieves the name of the AI assistant from the event widget and opens
+        all Assistant files.
+
+        :param event: A Tkinter event object containing the widget that triggered the event.
+        :return: None
+        """
+        if chat_settings.SETTINGS.editor:
+            if isinstance(chat_settings.SETTINGS.editor, str):
+                args = [chat_settings.SETTINGS.editor]
+            else:
+                args = chat_settings.SETTINGS.editor
+            subprocess.Popen(args + [str(fn)], start_new_session=True)
+        else:
+            webbrowser.open(str(fn), new=2, autoraise=True)
 
 
 class ThemeSelect(tk.Menu):
@@ -184,7 +201,6 @@ class Menu(tk.Menu):
         self.parent = parent
         self.macro_window = None
         parent.config(menu=self)
-        self.add_cascade(label="File", menu=FileMenu(parent, tearoff=0))
         self.add_cascade(label="Llm", menu=LlmMenu(parent, tearoff=0))
         self.add_command(label="Macros", command=self.create_macro_window)
         self.add_cascade(label="Settings", menu=SettingsMenu(parent, tearoff=0))

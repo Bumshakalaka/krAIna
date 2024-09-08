@@ -14,6 +14,7 @@ llm:
 chat:
   default_assistant: samantha
   visible_last_chats: 15
+  editor:
 tools:
   file_mgmt:
     working_dir: /home/user/Documents

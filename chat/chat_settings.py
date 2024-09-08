@@ -12,6 +12,7 @@ class chat_settings:
     theme: str = "dark"
     always_on_top: bool = False
     visible_last_chats: int = 10
+    editor: str = None
 
     def keys(self) -> List:
         """Return all settings keys."""

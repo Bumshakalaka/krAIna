@@ -1,6 +1,8 @@
 """Left Sidebar window."""
 import functools
 import logging
+import subprocess
+import webbrowser
 from pathlib import Path
 from tkinter import ttk
 import tkinter as tk
@@ -11,6 +13,7 @@ from tktooltip import ToolTip
 from assistants.assistant import AssistantType, AssistantResp
 from chat.base import APP_EVENTS
 import chat.chat_persistence as chat_persistence
+import chat.chat_settings as chat_settings
 from chat.scroll_frame import ScrollFrame
 from libs.db.model import Conversations
 
@@ -133,7 +136,43 @@ class LeftSidebar(ttk.Frame):
                 tools_ = "\n- " + "\n- ".join(assistant.tools)
                 msg_ += f"\nTools:{tools_}"
             ToolTip(rbut, msg=msg_, follow=False, delay=0.5)
+            rbut.bind("<ButtonRelease-3>", self._assistant_menu)
             rbut.pack(side=tk.TOP, fill=tk.X)
+
+    def _assistant_menu(self, event: tk.Event):
+        # event.widget
+        w = tk.Menu(self, tearoff=False)
+        w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
+
+        name = event.widget.configure("text")[-1].split("(")[0]
+        for f in self.root.ai_assistants[name].path.glob("*"):  # type: Path
+            if not f.is_dir():
+                w.add_command(label=f"{f.name}", command=functools.partial(self.edit_assistant, f))
+        w.add_separator()
+        w.add_command(label="Reload", command=self.reload_ai)
+        try:
+            w.tk_popup(event.x_root, event.y_root)
+        finally:
+            w.grab_release()
+
+    def edit_assistant(self, fn: Path):
+        """
+        Open the web page associated with an AI assistant.
+
+        This method retrieves the name of the AI assistant from the event widget and opens
+        all Assistant files.
+
+        :param event: A Tkinter event object containing the widget that triggered the event.
+        :return: None
+        """
+        if chat_settings.SETTINGS.editor:
+            if isinstance(chat_settings.SETTINGS.editor, str):
+                args = [chat_settings.SETTINGS.editor]
+            else:
+                args = chat_settings.SETTINGS.editor
+            subprocess.Popen(args + [str(fn)], start_new_session=True)
+        else:
+            webbrowser.open(str(fn), new=2, autoraise=True)
 
     def assistant_change(self, *args):
         chat_persistence.SETTINGS.last_assistant = self.root.selected_assistant.get()

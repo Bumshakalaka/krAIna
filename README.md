@@ -337,6 +337,12 @@ chat:
    default_assistant: samantha
    # maximum last chats to display in the left sidebar
    visible_last_chats: 10
+   # Default editor. It can be string or list. If nothing, default system is used
+   #   editor: subl
+   #   editor:
+   #     - subl
+   #     - -b
+   editor:
 assistants:
    # assistants settings
    # assistant name:
