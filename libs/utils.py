@@ -179,7 +179,7 @@ def find_hyperlinks(text: str, no_hyper_tag: str = "") -> list:
             parts.append(no_hyper_tag)  # Add empty tag for no hyper text
 
         parts.append(match_str)
-        parts.append("hyper")
+        parts.append(["hyper", no_hyper_tag])
 
         last_index = match.end()
 
