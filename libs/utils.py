@@ -53,7 +53,7 @@ def to_md(text: str) -> str:
     """
     html = markdown2.markdown(
         text,
-        extras=["tables", "fenced-code-blocks", "cuddled-lists"],
+        extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
     return html
 
