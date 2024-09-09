@@ -99,10 +99,9 @@ class LeftSidebar(ttk.Frame):
         :param parent: Main App
         """
         super().__init__(parent)
-        self._chat_history_dir = Path(__file__).parent / "../chat_history"
         self.root = parent
         self.root.bind_on_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.list_saved_chats)
-        self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistsnts)
+        self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistants)
         self.root.bind_on_event(APP_EVENTS.SELECT_CHAT, self.select_chat)
         but = ttk.Button(self, text="NEW CHAT", command=self.new_chat)
         self.root.bind("<Control-n>", lambda x: self.new_chat())
@@ -114,7 +113,7 @@ class LeftSidebar(ttk.Frame):
         w.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.assistants = ttk.LabelFrame(self, text="Assistants", labelanchor="n")
-        self.list_assistsnts()
+        self.list_assistants()
         self.assistants.pack(side=tk.BOTTOM, fill=tk.X)
         but = ttk.Button(self.assistants, text="RELOAD", command=self.reload_ai)
         self.root.bind("<Control-r>", lambda x: self.reload_ai())
@@ -122,10 +121,23 @@ class LeftSidebar(ttk.Frame):
         ToolTip(but, msg="<CTRL-R> Reload Assistants and Snippets", follow=False, delay=0.5)
         but.pack(side=tk.BOTTOM, fill=tk.X, padx=2, pady=2)
 
-    def list_assistsnts(self, *args):
+    def list_assistants(self, *args):
+        """
+        Populate the assistant list and bind control keys.
+
+        This function dynamically creates radio buttons for each assistant, binds control key shortcuts,
+        and sets up tooltips and context menus.
+
+        :param args: Additional arguments (not used).
+        :return: None
+        """
+        key = 1
         for n in list(self.assistants.children.keys()):
             if not isinstance(self.assistants.children[n], ttk.Button):
                 self.assistants.children[n].destroy()
+                self.root.unbind_all(f"<Control-Key-{key}>")
+                key += 1
+        key = 1
         for name, assistant in self.root.ai_assistants.items():
             name_ = name if assistant.type == AssistantType.SIMPLE else f"{name}(tools)"
             rbut = ttk.Radiobutton(
@@ -135,16 +147,36 @@ class LeftSidebar(ttk.Frame):
                 value=name,
                 command=self.assistant_change,
             )
-            msg_ = assistant.description if assistant.description else name_
+            msg_ = f"<CTRL-{key}> "
+            msg_ += assistant.description if assistant.description else name_
             if assistant.type == AssistantType.WITH_TOOLS:
                 tools_ = "\n- " + "\n- ".join(assistant.tools)
                 msg_ += f"\nTools:{tools_}"
             ToolTip(rbut, msg=msg_, follow=False, delay=0.5)
             rbut.bind("<ButtonRelease-3>", self._assistant_menu)
+            self.root.bind(f"<Control-Key-{key}>", functools.partial(self._assistant_rbut_select, rbut))
+            key += 1
             rbut.pack(side=tk.TOP, fill=tk.X)
 
+    def _assistant_rbut_select(self, w, *args):
+        """
+        Invoke the provided widget's command.
+
+        :param w: The widget to invoke.
+        :param args: Additional arguments (not used).
+        :return: None
+        """
+        w.invoke()
+
     def _assistant_menu(self, event: tk.Event):
-        # event.widget
+        """
+        Display a context menu for the assistant.
+
+        This function creates and displays a context menu with options to edit or reload the assistant.
+
+        :param event: The event triggering the menu, typically a right-click.
+        :return: None
+        """
         w = tk.Menu(self, tearoff=False)
         w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
 
