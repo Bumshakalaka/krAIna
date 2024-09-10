@@ -22,4 +22,3 @@ windows-toasts~=1.2.0; os_name != 'posix'
 klembord~=0.3.0
 setuptools~=71.1.0  # required for Python 3.12 for klemboard package
 markdown2~=2.5.0
-PyGObject~=3.48.2
