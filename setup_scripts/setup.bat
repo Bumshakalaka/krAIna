@@ -1,7 +1,5 @@
 @echo off
-set script_dir=%~dp0
-REM Navigate to the parent directory of the script directory
-cd /d "%script_dir%.."
+cd %~dp0
 cd ..
 python -m venv .venv
 call .venv\scripts\activate.bat
