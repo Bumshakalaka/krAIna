@@ -199,6 +199,9 @@ class MacroWindow(tk.Toplevel):
         """
         del self.macros
         self.macros = Macros()
+        cur_idx = self.macro_list.curselection()
+        print(cur_idx)
+        cur_macro = self.macro_list.get(cur_idx)
         self.macro_list.selection_clear(0, tk.END)
 
         new_params = collections.defaultdict(dict)
@@ -213,9 +216,14 @@ class MacroWindow(tk.Toplevel):
             self.current_macro_params[k] = dict_merge(self.current_macro_params[k], v)
 
         self.macro_list_var.set(list(self.macros.keys()))
-        self.macro_list.activate(0)
-        self.current_macro_name = self.macro_list.get(0)
-        self.macro_list.select_set(0)
+        if cur_idx[0] < len(self.macros.keys()) and cur_macro == self.macro_list.get(cur_idx):
+            self.macro_list.activate(cur_idx)
+            self.current_macro_name = self.macro_list.get(cur_idx)
+            self.macro_list.select_set(cur_idx)
+        else:
+            self.macro_list.activate(0)
+            self.current_macro_name = self.macro_list.get(0)
+            self.macro_list.select_set(0)
         self.macro_params_update()
 
     def macro_selected(self, event: tk.Event):
