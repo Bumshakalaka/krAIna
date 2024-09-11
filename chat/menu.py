@@ -1,19 +1,21 @@
 """Menu widget"""
 import functools
 import logging
+import os
 import subprocess
 import tkinter as tk
 import webbrowser
 from pathlib import Path
 from tkinter import ttk, messagebox
 
+from dotenv import find_dotenv, load_dotenv
 
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from chat.macro_window import MacroWindow
-from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
+from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE, read_model_settings
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +111,11 @@ class SettingsMenu(tk.Menu):
         self.add_separator()
         self.add_command(
             label="Edit config.yaml",
-            command=functools.partial(self.edit_file, Path(__name__).parent / "config.yaml"),
+            command=functools.partial(self.edit_file, (Path(__file__).parent / "../config.yaml").resolve()),
         )
-        self.add_command(label="Edit .env", command=functools.partial(self.edit_file, Path(__name__).parent / ".env"))
+        self.add_command(
+            label="Edit .env", command=functools.partial(self.edit_file, (Path(__file__).parent / "../.env").resolve())
+        )
         self.parent.wm_attributes("-topmost", self._always_on_top.get())
         self._copy_to_clip.set(chat_persistence.SETTINGS.copy_to_clipboard)
         self._always_on_top.set(chat_persistence.SETTINGS.always_on_top)
@@ -145,6 +149,15 @@ class SettingsMenu(tk.Menu):
             subprocess.Popen(args + [str(fn)], start_new_session=True)
         else:
             webbrowser.open(str(fn), new=2, autoraise=True)
+        ret = messagebox.askyesno(
+            "Edit", "Did you finish editing the files?\nWould you like to reload the application configuration?"
+        )
+        if ret:
+            load_dotenv(find_dotenv(), override=True)
+            self.parent._settings_read()
+            read_model_settings()
+            self.parent.post_event(APP_EVENTS.RELOAD_AI, None)
+            self.parent.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
 
 class ThemeSelect(tk.Menu):

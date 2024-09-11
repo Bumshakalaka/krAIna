@@ -465,9 +465,6 @@ class App(tk.Tk):
                     chat_settings.SETTINGS,
                     **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
                 )
-                # # fill persistence with default values
-                # for k in set(chat_persistence.SETTINGS.keys()) & set(chat_settings.SETTINGS.keys()):
-                #     setattr(chat_persistence.SETTINGS, k, getattr(chat_settings.SETTINGS, k))
             except TypeError as e:
                 logger.error("Invalid config.yaml format")
 

@@ -27,12 +27,28 @@ class SUPPORTED_API_TYPE(enum.Enum):
 
 # TODO: Add validation of model mapping dict
 MAP_MODELS = {model: {} for model in SUPPORTED_API_TYPE}
-if (Path(__file__).parent / "../config.yaml").exists():
-    with open(Path(__file__).parent / "../config.yaml") as fd:
-        settings = yaml.safe_load(fd.read())
-    if settings.get("llm") and settings["llm"].get("map_model"):
-        MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
-logger.debug(MAP_MODELS)
+
+
+def read_model_settings():
+    """
+    Read and update model settings from a configuration file.
+
+    This function reads the 'config.yaml' file located in the parent directory
+    and updates the `MAP_MODELS` dictionary with the model mapping specified
+    in the configuration file.
+
+    :return: None
+    :raises FileNotFoundError: If the 'config.yaml' file does not exist.
+    """
+    if (Path(__file__).parent / "../config.yaml").exists():
+        with open(Path(__file__).parent / "../config.yaml") as fd:
+            settings = yaml.safe_load(fd.read())
+        if settings.get("llm") and settings["llm"].get("map_model"):
+            MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
+    logger.debug(MAP_MODELS)
+
+
+read_model_settings()
 
 
 def overwrite_llm_settings(**new_settings):
