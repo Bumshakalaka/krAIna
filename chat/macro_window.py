@@ -200,7 +200,6 @@ class MacroWindow(tk.Toplevel):
         del self.macros
         self.macros = Macros()
         cur_idx = self.macro_list.curselection()
-        print(cur_idx)
         cur_macro = self.macro_list.get(cur_idx)
         self.macro_list.selection_clear(0, tk.END)
 
