@@ -1,5 +1,6 @@
 """Base class for macros."""
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Callable
 
@@ -8,7 +9,22 @@ from libs.utils import import_module, find_lands
 logger = logging.getLogger(__name__)
 
 
-class Macros(Dict[str, Callable]):
+@dataclass
+class Macro:
+    """
+    Represents a macro with a file path and an associated method.
+
+    This class holds a path to a file and a callable method associated with it.
+
+    :param path: The file path associated with the macro.
+    :param method: A callable method associated with the macro.
+    """
+
+    path: Path
+    method: Callable
+
+
+class Macros(Dict[str, Macro]):
     """Base macros."""
 
     def __init__(self):
@@ -34,7 +50,7 @@ class Macros(Dict[str, Callable]):
                     continue
                 temp = import_module(macro)
                 try:
-                    self[macro.stem] = temp.run
+                    self[macro.stem] = Macro(macro, temp.run)
                 except AttributeError:
                     logger.error(f"Required function run() not found in `{macro}` file. Not a macro file.")
 

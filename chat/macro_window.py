@@ -3,17 +3,22 @@ import collections
 import copy
 import functools
 import logging
+import subprocess
 import threading
 import tkinter as tk
 import webbrowser
-from tkinter import ttk
+from pathlib import Path
+from tkinter import ttk, messagebox
 from typing import Callable, Dict
 
+from tktooltip import ToolTip
+
 import chat.chat_persistence as chat_persistence
+import chat.chat_settings as chat_settings
 from chat.base import get_windows_version, APP_EVENTS
 from chat.scroll_text import ScrolledText
 from libs.utils import get_func_args, find_hyperlinks
-from macros.base import Macros
+from macros.base import Macros, Macro
 
 logger = logging.getLogger(__name__)
 
@@ -71,13 +76,13 @@ class MacroWindow(tk.Toplevel):
         self.set_title_bar_color()
         self._update_geometry()
         self.root = parent
-        self.macros: Dict[str, Callable] = Macros()
+        self.macros: Dict[str, Macro] = Macros()
         self.current_macro_name: str = None
         self.macro_thread: threading.Thread = None
 
         self.current_macro_params: Dict[str, Dict] = collections.defaultdict(dict)
         for k, v in self.macros.items():
-            self.current_macro_params[k] = get_func_args(v)
+            self.current_macro_params[k] = get_func_args(v.method)
 
         # header
         header = ttk.Frame(self)
@@ -100,7 +105,10 @@ class MacroWindow(tk.Toplevel):
         middle_left = ttk.Frame(middle)
         self.macro_list_var = tk.Variable(value=list(self.macros.keys()))
         self.macro_list = tk.Listbox(middle_left, width=20, listvariable=self.macro_list_var, selectmode=tk.SINGLE)
+        ToolTip(self.macro_list, msg="Right-click to edit macro", follow=False, delay=0.5)
         self.macro_list.bind("<<ListboxSelect>>", self.macro_selected)
+        self.macro_list.bind("<Button-3>", self._macro_menu)
+
         self.macro_list.activate(0)
         self.current_macro_name = self.macro_list.get(0)
         self.macro_list.select_set(0)
@@ -188,6 +196,50 @@ class MacroWindow(tk.Toplevel):
             raise ValueError("Unable to retrieve the hyperlink text.")
         webbrowser.open(link, new=2, autoraise=True)
 
+    def _macro_menu(self, event: tk.Event):
+        """
+        Handle the macro menu selection event.
+
+        This function clears the current selection, sets the new selection based on the event's y-coordinate,
+        updates the current macro name, and calls the necessary functions to update macro parameters and
+        edit the selected macro.
+
+        :param event: The Tkinter event object containing information about the menu event.
+        """
+        self.macro_list.selection_clear(0, tk.END)
+        self.macro_list.selection_set(self.macro_list.nearest(event.y))
+        self.macro_list.activate(self.macro_list.nearest(event.y))
+        idx = self.macro_list.curselection()
+        self.current_macro_name = event.widget.get(idx)
+        self.macro_params_update()
+        self.edit_macro(self.macros[self.current_macro_name].path)
+
+    def edit_macro(self, fn: Path):
+        """
+        Open the macro file in the specified editor or web browser and prompt for configuration reload.
+
+        This function opens the given macro file in the configured editor or a web browser. It then
+        prompts the user to confirm if they have finished editing and if they want to reload the
+        application configuration.
+
+        :param fn: The path to the macro file to be edited.
+        :raises subprocess.SubprocessError: If there is an issue starting the editor process.
+        :raises webbrowser.Error: If there is an issue opening the web browser.
+        """
+        if chat_settings.SETTINGS.editor:
+            if isinstance(chat_settings.SETTINGS.editor, str):
+                args = [chat_settings.SETTINGS.editor]
+            else:
+                args = chat_settings.SETTINGS.editor
+            subprocess.Popen(args + [str(fn)], start_new_session=True)
+        else:
+            webbrowser.open(str(fn), new=2, autoraise=True)
+        ret = messagebox.askyesno(
+            "Edit", "Did you finish editing the files?\nWould you like to reload the application configuration?"
+        )
+        if ret:
+            self.macros_reload()
+
     def macros_reload(self):
         """
         Reload the macros and update the macro parameters.
@@ -205,7 +257,7 @@ class MacroWindow(tk.Toplevel):
 
         new_params = collections.defaultdict(dict)
         for k, v in self.macros.items():
-            new_params[k] = get_func_args(v)
+            new_params[k] = get_func_args(v.method)
 
         for k in list(self.current_macro_params.keys()):
             if new_params.get(k) is None:
@@ -259,7 +311,7 @@ class MacroWindow(tk.Toplevel):
             )
 
         self.text.delete("1.0", tk.END)
-        self.text.insert(tk.END, self.macros[self.current_macro_name].__doc__ + "\n")
+        self.text.insert(tk.END, self.macros[self.current_macro_name].method.__doc__ + "\n")
 
     def macro_params_save(self, param_name, to_save):
         self.current_macro_params[self.current_macro_name].update({param_name: to_save})
@@ -310,7 +362,7 @@ class MacroWindow(tk.Toplevel):
         self.macro_thread = threading.Thread(
             target=_call,
             args=(
-                self.macros[self.current_macro_name],
+                self.macros[self.current_macro_name].method,
                 *[v for v in self.current_macro_params[self.current_macro_name].values()],
             ),
             daemon=True,
