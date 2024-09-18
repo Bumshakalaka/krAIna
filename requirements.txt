@@ -1,24 +1,26 @@
-requests~=2.31.0
-langchain~=0.2.0
-python-dotenv~=1.0.1
-langchain-openai~=0.1.0
-openai~=1.30.1
-PyYAML~=6.0.1
-pygobject~=3.48.2; os_name == 'posix'
-pgi~=0.0.11.2; os_name == 'posix'
-SQLAlchemy~=2.0.30
-ttkthemes~=3.2.2
-pillow~=10.3.0
 IPyC~=1.1.1
-tkinter-tooltip~=3.1.0
-sv-ttk~=2.6.0
-tkinterweb~=3.23.10
-tiktoken~=0.7.0
-anthropic==0.29.0
-langchain-anthropic==0.1.15
-langchain-community==0.2.0
-pywinstyles~=1.8; os_name != 'posix'
-windows-toasts~=1.2.0; os_name != 'posix'
+PyYAML~=6.0.1
+SQLAlchemy~=2.0.30
+anthropic~=0.34.0
 klembord~=0.3.0
-setuptools~=71.1.0  # required for Python 3.12 for klemboard package
+langchain-anthropic>=0.2
+langchain-community>=0.3,<0.4
+langchain-openai>=0.2
+langchain-core>=0.3,<0.4
+langchain>=0.3,<0.4
 markdown2~=2.5.0
+openai~=1.46.0
+pgi~=0.0.11.2; os_name == 'posix'
+pillow~=10.3.0
+pygobject~=3.48.2; os_name == 'posix'
+pygments~=2.18.0
+python-dotenv~=1.0.1
+pywinstyles~=1.8; os_name != 'posix'
+requests~=2.31.0
+setuptools~=71.1.0  # required for Python 3.12 for klemboard package
+sv-ttk~=2.6.0
+tiktoken~=0.7.0
+tkinter-tooltip~=3.1.0
+tkinterweb~=3.23.10
+ttkthemes~=3.2.2
+windows-toasts~=1.2.0; os_name != 'posix'
