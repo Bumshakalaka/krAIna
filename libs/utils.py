@@ -5,7 +5,7 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 
 import markdown2
 
@@ -44,22 +44,26 @@ def str_shortening(data: Any, limit=256) -> str:
 
 
 @lru_cache(maxsize=256)
-def to_md(text: str) -> str:
+def to_md(text: str, col: str = None) -> str:
     """
-    Convert text (with html tags) to markdown.
+    Convert markdown text to HTML with optional color styling.
 
-    :param text:
-    :return:
+    This function uses markdown2 to convert the input markdown text to HTML. If a color is specified,
+    the resulting HTML will be wrapped in a span with the specified color.
+
+    :param text: The markdown text to be converted.
+    :param col: Optional. The color to apply to the HTML content.
+    :return: The converted HTML string, optionally styled with the specified color.
     """
     html = markdown2.markdown(
         text,
         extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
-    return html
+    return f'<span style="color:{col}">{html}</span>' if col else html
 
 
 @lru_cache(maxsize=256)
-def prepare_message(text: str, tag: str, col: str, sep=True) -> str:
+def prepare_message(text: str, tag: str, col: str, sep=True) -> Tuple[str, str]:
     """
     Prepare and format a message based on the given tag and color.
 
@@ -80,13 +84,9 @@ def prepare_message(text: str, tag: str, col: str, sep=True) -> str:
         sep_ai = ""
     text = str_shortening(text) if tag == "TOOL" else text
     if tag == "HUMAN":
-        m_text = f'<span style="color:{col}">'
-        m_text += text.strip() + sep_human
-        m_text += "</span>"
+        m_text = text.strip() + sep_human
     elif tag == "TOOL":
-        m_text = f'<span style="color:{col}">'
-        m_text += text
-        m_text += "</span>"
+        m_text = text
     else:
         m_text = text
         if len([index for index in range(len(text)) if text.startswith("```", index)]) % 2 == 1:
@@ -95,8 +95,7 @@ def prepare_message(text: str, tag: str, col: str, sep=True) -> str:
             m_text += "\n\n```"
         # add horizontal line separator
         m_text += sep_ai
-    # m_text += "</span>"
-    return m_text
+    return m_text, col
 
 
 def find_lands(type: str, build_in: Path) -> List[Path]:

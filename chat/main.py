@@ -222,7 +222,7 @@ class App(tk.Tk):
             klembord.set(
                 {
                     "HTML Format": klembord.wrap_html(
-                        to_md(prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False))
+                        to_md(*prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False))
                     ),
                     "CF_UNICODETEXT": text.encode("utf-16le"),
                 }
@@ -232,7 +232,7 @@ class App(tk.Tk):
                 {
                     "UTF8_STRING": text.encode(),
                     "text/html": to_md(
-                        prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False)
+                        *prepare_message(text, "AI", str(self.get_theme_color("fg", "sun-valley-light")), False)
                     ).encode(),
                 }
             )

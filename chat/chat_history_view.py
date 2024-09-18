@@ -7,7 +7,7 @@ import webbrowser
 
 from tkinterweb.htmlwidgets import HtmlFrame
 
-from chat.base import DARKTHEME, LIGHTTHEME
+from chat.base import DARKTHEME, LIGHTTHEME, HIGHLIGHTER_CSS
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
@@ -217,6 +217,7 @@ class HtmlChatView(HtmlFrame, ChatView):
     def _clear(self):
         self.html.reset()
         self.load_html("<p></p>")
+        self.add_css(HIGHLIGHTER_CSS)
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
@@ -267,7 +268,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         self._insert_message(message, "TOOL")
 
     def _insert_message(self, text, tag):
-        self.add_html(to_md(prepare_message(text, tag, str(self.cols[tag]))))
+        self.add_html(to_md(*prepare_message(text, tag, str(self.cols[tag]))))
         self._see_end()
 
     def new_chat(self, *args):

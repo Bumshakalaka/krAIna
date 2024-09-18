@@ -311,7 +311,7 @@ class MacroWindow(tk.Toplevel):
             )
 
         self.text.delete("1.0", tk.END)
-        self.text.insert(tk.END, self.macros[self.current_macro_name].method.__doc__ + "\n")
+        self.text.insert(tk.END, str(self.macros[self.current_macro_name].method.__doc__) + "\n")
 
     def macro_params_save(self, param_name, to_save):
         self.current_macro_params[self.current_macro_name].update({param_name: to_save})

@@ -152,7 +152,7 @@ class ChatHistory(FixedNotebook):
             else:
                 to_clip_text += message.message + "\n\n"
             to_clip_html += to_md(
-                prepare_message(
+                *prepare_message(
                     message.message,
                     LlmMessageType(message.type).name,
                     str(cols[LlmMessageType(message.type).name]),
