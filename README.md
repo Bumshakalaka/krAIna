@@ -20,7 +20,7 @@ Chat GUI application built using tkinter.
 
 features:
 * Chat with history (html and text tabs available)
-* Light/Dark theme
+* Light/Dark and other build-in themes
 * Chats history which can be recalled. They are auto-named and describe
 * Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
 * Assistant selection
@@ -36,6 +36,8 @@ features:
 * Markdown/HTML support
 * Debug Window (right-bottom corner) with the application logs
 * Copy last AI response automatically to system clipboard
+* Macro management window
+* Right-click on assistant, snippet or macro allows editing it
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
