@@ -219,14 +219,18 @@ class UserQuery(ttk.Frame):
         self.text.bind("<KeyRelease>", self._show_tokens)
         self.text.bind("<<Paste>>", self._show_tokens)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        self.pb = ttk.Progressbar(self, orient="horizontal", mode="indeterminate")
-        self.send_btn = ttk.Button(self, text="SEND", command=functools.partial(self.invoke, "assistant"))
-        ToolTip(self.send_btn, msg="<Ctrl+Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
-        self.send_btn.pack(side=tk.RIGHT, anchor=tk.NE, padx=2, pady=2)
+        f = ttk.Frame(self)
         self.tokens = tk.StringVar(self, "Tokens: 0")
         self.tokens_after_id = None
-        self.label_tokens = ttk.Label(self, relief=tk.FLAT, textvariable=self.tokens)
-        self.label_tokens.pack(side=tk.LEFT, anchor=tk.NW, padx=2, pady=2, expand=True, fill=tk.Y)
+        self.label_tokens = ttk.Label(f, relief=tk.SUNKEN, textvariable=self.tokens, width=12, anchor=tk.CENTER)
+        self.label_tokens.pack(side=tk.LEFT, padx=2, pady=2, fill=tk.BOTH)
+
+        self.pb = ttk.Progressbar(f, orient="horizontal", mode="indeterminate")
+
+        self.send_btn = ttk.Button(f, text="SEND", width=12, command=functools.partial(self.invoke, "assistant"))
+        ToolTip(self.send_btn, msg="<Ctrl+Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
+        self.send_btn.pack(side=tk.RIGHT, padx=2, pady=2)
+        f.pack(side=tk.TOP, fill=tk.X)
         self.block_events = 0
 
     def _show_tokens(self, *args):
@@ -311,7 +315,7 @@ class UserQuery(ttk.Frame):
     def block(self, data=None):
         self.block_events += 1
         if str(self.send_btn.config("state")[4]) == tk.NORMAL:
-            self.pb.pack(side=tk.TOP, fill=tk.X)
+            self.pb.pack(side=tk.LEFT, fill=tk.X, expand=True)
             self.pb.start(interval=20)
             self.send_btn.configure(state=tk.DISABLED)
             self.text.unbind("<Control-Return>")
