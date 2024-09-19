@@ -18,6 +18,7 @@ from tiktoken import encoding_for_model, Encoding, get_encoding
 
 from libs.db.controller import Db, LlmMessageType
 from libs.llm import chat_llm, map_model
+from libs.utils import IMAGE_MARKDOWN_RE
 from tools.base import get_and_init_tools
 
 logger = logging.getLogger(__name__)
@@ -135,7 +136,15 @@ class BaseAssistant:
             "prompt": 0,
             "history": 0,
         }
-        msgs = [msg.content for msg in (self._get_history(conv_id=conv_id) if not hist else hist)]
+        msgs = []
+        for msg in self._get_history(conv_id=conv_id) if not hist else hist:
+            if isinstance(msg.content, str):
+                msgs.append(msg.content)
+            else:
+                # list of dicts
+                for el in msg.content:
+                    if el["type"] == "text":
+                        msgs.append(el["text"])
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
         if self.tools:
             for tool in get_and_init_tools(self.tools):
@@ -143,8 +152,7 @@ class BaseAssistant:
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
 
-    @staticmethod
-    def _get_history(conv_id: Union[int, None] = None) -> List[BaseMessage]:
+    def _get_history(self, conv_id: Union[int, None] = None) -> List[BaseMessage]:
         ai_db = Db()
         if conv_id is None:
             return []
@@ -153,11 +161,35 @@ class BaseAssistant:
         hist = []
         for message in ai_db.get_conversation(conv_id).messages:
             if message.type == LlmMessageType.HUMAN:
-                hist.append(HumanMessage(message.message))
+                hist.append(HumanMessage(content=self._format_message(message.message)))
             elif message.type == LlmMessageType.AI:
                 # Do not append TOOL messages
-                hist.append(AIMessage(message.message))
+                hist.append(AIMessage(content=message.message))
         return hist
+
+    @staticmethod
+    def _format_message(msg: str) -> List[Dict]:
+        """
+        Format a message containing text and image markdown into a list of dictionaries.
+
+        This function scans the input message for image markdown patterns and splits the
+        message into text and image segments. Each segment is stored in a dictionary with
+        keys indicating the type of content.
+
+        :param msg: The input message string containing text and image markdown.
+        :return: A list of dictionaries representing formatted message segments.
+        """
+        content = []
+        start_idx = 0
+        for m in IMAGE_MARKDOWN_RE.finditer(msg):
+            img_start = m.start(0)
+            if img_start > 0:
+                content.append(dict(type="text", text=msg[start_idx:img_start]))
+            start_idx = m.end(0)
+            content.append(dict(type="image_url", image_url=dict(url=m.group("img_data"))))
+        if msg[start_idx:]:
+            content.append(dict(type="text", text=msg[start_idx:]))
+        return content
 
     def run(self, query: str, use_db=True, conv_id: Union[int, None] = None, **kwargs) -> AssistantResp:
         """
@@ -213,10 +245,9 @@ class BaseAssistant:
             [
                 ("system", self.prompt),
                 MessagesPlaceholder("hist", optional=True),
-                ("human", "{query}"),
+                HumanMessage(content=self._format_message(query)),
             ]
         )
-        kwargs["query"] = query
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
         if hist:
             kwargs["hist"] = hist
@@ -234,11 +265,10 @@ class BaseAssistant:
             [
                 ("system", self.prompt),
                 MessagesPlaceholder("chat_history", optional=True),
-                ("human", "{input}"),
+                HumanMessage(content=self._format_message(query)),
                 MessagesPlaceholder("agent_scratchpad"),
             ]
         )
-        kwargs["input"] = query
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
         if hist:
             kwargs["chat_history"] = hist

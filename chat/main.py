@@ -17,6 +17,7 @@ from typing import Callable, Dict, Union, Any
 import klembord
 import sv_ttk
 import yaml
+from tkinterdnd2 import TkinterDnD
 
 from assistants.base import Assistants
 from chat.chat_history import ChatFrame
@@ -25,6 +26,7 @@ from assistants.assistant import AssistantResp, AssistantType
 import chat.chat_settings as chat_settings
 import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS, ipc_event, get_windows_version
+from chat.chat_images import ChatImages
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
@@ -86,7 +88,7 @@ class QueueHandler(logging.Handler):
         self.log_queue.append(record)
 
 
-class App(tk.Tk):
+class App(TkinterDnD.Tk):
     """Main application."""
 
     def __init__(self):
@@ -119,6 +121,7 @@ class App(tk.Tk):
         style.configure("ERROR.TButton", foreground="red")
         style.configure("WORKING.TButton", foreground=self.get_theme_color("accent"))
         self.withdraw()
+        self.images = ChatImages()
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()

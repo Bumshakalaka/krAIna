@@ -24,3 +24,4 @@ tkinter-tooltip~=3.1.0
 tkinterweb~=3.23.10
 ttkthemes~=3.2.2
 windows-toasts~=1.2.0; os_name != 'posix'
+tkinterdnd2-universal~=1.7.3

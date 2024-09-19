@@ -9,6 +9,8 @@ from typing import Any, List, Dict, Tuple
 
 import markdown2
 
+IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
+
 
 def import_module(path: Path) -> ModuleType:
     """
@@ -55,8 +57,13 @@ def to_md(text: str, col: str = None) -> str:
     :param col: Optional. The color to apply to the HTML content.
     :return: The converted HTML string, optionally styled with the specified color.
     """
+
+    def insert_img(m: re.Match) -> str:
+        """Convert Markdown image line into HTML"""
+        return f'<img src="{m.group("img_data")}" alt="{m.group("img_name")}" width="150" height="150"/>'
+
     html = markdown2.markdown(
-        text,
+        IMAGE_MARKDOWN_RE.sub(insert_img, text),
         extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
     return f'<span style="color:{col}">{html}</span>' if col else html

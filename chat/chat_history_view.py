@@ -11,7 +11,7 @@ from chat.base import DARKTHEME, LIGHTTHEME, HIGHLIGHTER_CSS
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, to_md, prepare_message, find_hyperlinks
+from libs.utils import str_shortening, to_md, prepare_message, find_hyperlinks, IMAGE_MARKDOWN_RE
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,18 @@ class TextChatView(ScrolledText, ChatView):
         y_pos = self.yview()[1]
         text = str_shortening(text) if tag == "TOOL" else text
         for tt in text.splitlines(keepends=False):
-            self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt, tag), "\n", "")
+            start_idx = 0
+            for m in IMAGE_MARKDOWN_RE.finditer(tt):
+                img_start = m.start(0)
+                if img_start > 0:
+                    self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt[start_idx:img_start], tag))
+                start_idx = m.end(0)
+                if self.root.images.get(m.group("img_name")) is None:
+                    name = self.root.images.create_from_url(m.group("img_data"))
+                else:
+                    name = m.group("img_name")
+                self.image_create(tk.END, image=self.root.images[name])
+            self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt[start_idx:], tag), "\n", "")
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
         if y_pos == 1.0:
@@ -197,10 +208,10 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
         if "dark" in theme:
-            self.enable_dark_theme(True)
+            self.enable_dark_theme(True, invert_images=False)
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
-            self.enable_dark_theme(False)
+            self.enable_dark_theme(False, invert_images=False)
             self.html.update_default_style(LIGHTTHEME)
 
         self.cols = parent.cols
@@ -222,10 +233,10 @@ class HtmlChatView(HtmlFrame, ChatView):
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
         if "dark" in theme:
-            self.enable_dark_theme(True)
+            self.enable_dark_theme(True, invert_images=False)
             self.html.update_default_style(LIGHTTHEME + DARKTHEME)
         else:
-            self.enable_dark_theme(False)
+            self.enable_dark_theme(False, invert_images=False)
             self.html.update_default_style(LIGHTTHEME)
         self.cols = {
             "HUMAN": self.root.get_theme_color("accent"),

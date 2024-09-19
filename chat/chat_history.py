@@ -3,11 +3,14 @@ import functools
 import logging
 import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
+from tkinter.filedialog import askopenfilename
 from typing import Dict, Union
 
 import klembord
 from tiktoken import encoding_for_model, get_encoding
+from tkinterdnd2 import DND_FILES, REFUSE_DROP
 from tktooltip import ToolTip
 
 import chat.chat_persistence as chat_persistence
@@ -230,8 +233,33 @@ class UserQuery(ttk.Frame):
         self.send_btn = ttk.Button(f, text="SEND", width=12, command=functools.partial(self.invoke, "assistant"))
         ToolTip(self.send_btn, msg="<Ctrl+Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
         self.send_btn.pack(side=tk.RIGHT, padx=2, pady=2)
+
+        self.add_file_btn = ttk.Button(f, text="ADD FILE...", width=12, command=self.add_file)
+        ToolTip(self.add_file_btn, msg="<Ins> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
+        self.add_file_btn.pack(side=tk.RIGHT, padx=2, pady=2)
+
         f.pack(side=tk.TOP, fill=tk.X)
         self.block_events = 0
+        self.drop_target_register(DND_FILES)
+        self.dnd_bind("<<Drop>>", self._dnd_drop)
+
+    def _dnd_drop(self, e):
+        if e.data and Path(e.data).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
+            name = self.root.images.create_from_file(Path(e.data))
+            self.text.image_create(tk.END, image=self.root.images[name], name=name)
+            return e.action
+        else:
+            return REFUSE_DROP
+
+    def add_file(self):
+        fn = askopenfilename(
+            parent=self,
+            initialdir=Path(__file__).parent / "..",
+            filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]), ("All files", "*.*")),
+        )
+        if fn:
+            name = self.root.images.create_from_file(Path(fn))
+            self.text.image_create(tk.END, image=self.root.images[name], name=name)
 
     def _show_tokens(self, *args):
         """Schedule tokens count on every button release of text paste."""
@@ -265,7 +293,12 @@ class UserQuery(ttk.Frame):
         :return:
         """
         if entity == "assistant":
-            query = self.text.get("1.0", tk.END)[:-1]
+            query = ""
+            for el in self.text.dump("1.0", tk.END, image=True, text=True):
+                if el[0] == "text":
+                    query += el[1]
+                elif el[0] == "image":
+                    query += f"![{el[1]}]({self.root.images.get_url(el[1])})"
             self.text.delete("1.0", tk.END)
             self.root.post_event(
                 APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
