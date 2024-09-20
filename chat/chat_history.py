@@ -2,7 +2,9 @@
 import functools
 import logging
 import sys
+import tempfile
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
@@ -222,6 +224,14 @@ class UserQuery(ttk.Frame):
         self.text.bind("<KeyRelease>", self._show_tokens)
         self.text.bind("<<Paste>>", self._show_tokens)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.text.tag_config("IMAGES")
+        self.text.tag_bind("IMAGES", "<Button-1>", self._show_image)
+        self.text.tag_bind("IMAGES", "<Enter>", self._enter_hyper)
+        self.text.tag_bind("IMAGES", "<Leave>", self._leave_hyper)
+
+        self.text.tag_raise("sel")
+
         f = ttk.Frame(self)
         self.tokens = tk.StringVar(self, "Tokens: 0")
         self.tokens_after_id = None
@@ -243,10 +253,39 @@ class UserQuery(ttk.Frame):
         self.drop_target_register(DND_FILES)
         self.dnd_bind("<<Drop>>", self._dnd_drop)
 
+    def _enter_hyper(self, event):
+        """
+        Change the cursor to a hand when hovering over a hyperlink.
+
+        :param event: The event object containing information about the hover event.
+        """
+        self.text.config(cursor="hand2")
+
+    def _leave_hyper(self, event):
+        """
+        Revert the cursor back to default when leaving a hyperlink.
+
+        :param event: The event object containing information about the leave event.
+        """
+        self.text.config(cursor="")
+
+    def _show_image(self, event):
+        print(self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False))
+        for el in self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
+            # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
+            if el[0] == "tagon" and "img-" in el[1]:
+                pic_obj = self.root.images._pil_images[el[1]]
+                with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
+                    pic_obj.save(fd, pic_obj.format)
+                    fd.seek(0)
+                    webbrowser.open(fd.name, new=2, autoraise=True)
+
     def _dnd_drop(self, e):
         if e.data and Path(e.data).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
             name = self.root.images.create_from_file(Path(e.data))
             self.text.image_create(tk.END, image=self.root.images[name], name=name)
+            self.text.tag_add(name, name)
+            self.text.tag_add("IMAGES", name)
             return e.action
         else:
             return REFUSE_DROP
@@ -257,9 +296,11 @@ class UserQuery(ttk.Frame):
             initialdir=Path(__file__).parent / "..",
             filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]), ("All files", "*.*")),
         )
-        if fn:
+        if fn and Path(fn).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
             name = self.root.images.create_from_file(Path(fn))
             self.text.image_create(tk.END, image=self.root.images[name], name=name)
+            self.text.tag_add(name, name)
+            self.text.tag_add("IMAGES", name)
 
     def _show_tokens(self, *args):
         """Schedule tokens count on every button release of text paste."""

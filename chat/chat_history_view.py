@@ -1,6 +1,8 @@
 """Chat window."""
 import abc
+import base64
 import logging
+import tempfile
 import tkinter as tk
 from tkinter import ttk
 import webbrowser
@@ -70,6 +72,10 @@ class TextChatView(ScrolledText, ChatView):
         self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
         self.tag_config("TOOL_prefix")
         self.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+        self.tag_config("IMAGES")
+        self.tag_bind("IMAGES", "<Button-1>", self._show_image)
+        self.tag_bind("IMAGES", "<Enter>", self._enter_hyper)
+        self.tag_bind("IMAGES", "<Leave>", self._leave_hyper)
 
         self.tag_bind("hyper", "<Enter>", self._enter_hyper)
         self.tag_bind("hyper", "<Leave>", self._leave_hyper)
@@ -104,6 +110,16 @@ class TextChatView(ScrolledText, ChatView):
         if not link:
             raise ValueError("Unable to retrieve the hyperlink text.")
         webbrowser.open(link, new=2, autoraise=True)
+
+    def _show_image(self, event):
+        for el in self.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
+            # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
+            if el[0] == "tagon" and "img-" in el[1]:
+                pic_obj = self.root.images._pil_images[el[1]]
+                with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
+                    pic_obj.save(fd, pic_obj.format)
+                    fd.seek(0)
+                    webbrowser.open(fd.name, new=2, autoraise=True)
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
@@ -158,6 +174,18 @@ class TextChatView(ScrolledText, ChatView):
                 else:
                     name = m.group("img_name")
                 self.image_create(tk.END, image=self.root.images[name])
+                self.tag_add(name, self.root.images[name])
+                self.tag_add("IMAGES", self.root.images[name])
+                # self.window_create(
+                #     tk.END,
+                #     window=tk.Label(
+                #         self,
+                #         image=self.root.images[name],
+                #         background=self.root.get_theme_color("accent"),
+                #         borderwidth=3,
+                #         relief=tk.SUNKEN,
+                #     ),
+                # )
             self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt[start_idx:], tag), "\n", "")
         if tag == "AI":
             self.insert(tk.END, "\n", "AI_end")
@@ -204,6 +232,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.enable_objects(False)
         self.on_link_click(self._open_webbrowser)
         self.on_done_loading(self._see_end)
+        self.bind("<Button-1>", self.left_click)
 
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
@@ -217,6 +246,17 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.cols = parent.cols
 
         self._clear()
+
+    def left_click(self, event):
+        if self.get_currently_hovered_node_tag() == "img":
+            if url := self.get_currently_hovered_node_attribute("src"):
+                # data:image/jpeg;base64,/9j
+                header, data = url.split(";")
+                suffix = "." + header.split("/")[-1]
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as fd:
+                    fd.write(base64.b64decode(data.split(",")[-1]))
+                    fd.seek(0)
+                    self._open_webbrowser(fd.name)
 
     @staticmethod
     def _open_webbrowser(url):
