@@ -1,16 +1,19 @@
 """Chat window."""
+import base64
 import functools
 import logging
 import sys
 import tempfile
 import tkinter as tk
 import webbrowser
+from io import BytesIO
 from pathlib import Path
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 from typing import Dict, Union
 
 import klembord
+from PIL import ImageGrab, UnidentifiedImageError
 from tiktoken import encoding_for_model, get_encoding
 from tkinterdnd2 import DND_FILES, REFUSE_DROP
 from tktooltip import ToolTip
@@ -222,7 +225,7 @@ class UserQuery(ttk.Frame):
         self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
         self.text.bind("<KeyRelease>", self._show_tokens)
-        self.text.bind("<<Paste>>", self._show_tokens)
+        self.text.bind("<<Paste>>", self._on_paste)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.text.tag_config("IMAGES")
@@ -301,6 +304,33 @@ class UserQuery(ttk.Frame):
             self.text.image_create(tk.END, image=self.root.images[name], name=name)
             self.text.tag_add(name, name)
             self.text.tag_add("IMAGES", name)
+
+    def _on_paste(self, *args):
+        """
+        Handle the paste event to insert an image from the clipboard.
+
+        This function attempts to grab an image from the clipboard, convert it to a PNG format,
+        and insert it into a text widget. The image is encoded in base64 and stored in a
+        custom image manager.
+
+        :param args: Additional arguments (unused).
+        :return: None
+        :raises UnidentifiedImageError: If the clipboard content is not an image.
+        """
+        try:
+            im = ImageGrab.grabclipboard()
+            if im:
+                with BytesIO() as buffer:
+                    im.save(buffer, format="PNG")
+                    name = self.root.images.create_from_url(
+                        "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+                    )
+                    self.text.image_create(tk.END, image=self.root.images[name], name=name)
+                    self.text.tag_add(name, name)
+                    self.text.tag_add("IMAGES", name)
+        except UnidentifiedImageError:
+            pass
+
 
     def _show_tokens(self, *args):
         """Schedule tokens count on every button release of text paste."""
