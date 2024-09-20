@@ -277,7 +277,7 @@ class UserQuery(ttk.Frame):
         for el in self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                pic_obj = self.root.images._pil_images[el[1]]
+                pic_obj = self.root.images.pil_image[el[1]]
                 with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
                     pic_obj.save(fd, pic_obj.format)
                     fd.seek(0)
@@ -330,7 +330,6 @@ class UserQuery(ttk.Frame):
                     self.text.tag_add("IMAGES", name)
         except UnidentifiedImageError:
             pass
-
 
     def _show_tokens(self, *args):
         """Schedule tokens count on every button release of text paste."""

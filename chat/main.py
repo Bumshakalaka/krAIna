@@ -26,7 +26,7 @@ from assistants.assistant import AssistantResp, AssistantType
 import chat.chat_settings as chat_settings
 import chat.chat_persistence as chat_persistence
 from chat.base import APP_EVENTS, ipc_event, get_windows_version
-from chat.chat_images import ChatImages
+import chat.chat_images as chat_images
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
@@ -121,7 +121,7 @@ class App(TkinterDnD.Tk):
         style.configure("ERROR.TButton", foreground="red")
         style.configure("WORKING.TButton", foreground=self.get_theme_color("accent"))
         self.withdraw()
-        self.images = ChatImages()
+        self.images = chat_images.chat_images
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()

@@ -115,7 +115,7 @@ class TextChatView(ScrolledText, ChatView):
         for el in self.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                pic_obj = self.root.images._pil_images[el[1]]
+                pic_obj = self.root.images.pil_image[el[1]]
                 with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
                     pic_obj.save(fd, pic_obj.format)
                     fd.seek(0)
@@ -169,10 +169,7 @@ class TextChatView(ScrolledText, ChatView):
                 if img_start > 0:
                     self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt[start_idx:img_start], tag))
                 start_idx = m.end(0)
-                if self.root.images.get(m.group("img_name")) is None:
-                    name = self.root.images.create_from_url(m.group("img_data"))
-                else:
-                    name = m.group("img_name")
+                name = self.root.images.create_from_url(m.group("img_data"), m.group("img_name"))
                 self.image_create(tk.END, image=self.root.images[name])
                 self.tag_add(name, self.root.images[name])
                 self.tag_add("IMAGES", self.root.images[name])

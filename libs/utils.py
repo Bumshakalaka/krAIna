@@ -9,6 +9,8 @@ from typing import Any, List, Dict, Tuple
 
 import markdown2
 
+import chat.chat_images as chat_images
+
 IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
 
 
@@ -59,8 +61,10 @@ def to_md(text: str, col: str = None) -> str:
     """
 
     def insert_img(m: re.Match) -> str:
-        """Convert Markdown image line into HTML"""
-        return f'<img src="{m.group("img_data")}" alt="{m.group("img_name")}" width="150" height="150"/>'
+        """Convert Markdown image line into HTML. If image don't exists, create it."""
+        name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"))
+        width, height = chat_images.chat_images.get_resize_xy(name)
+        return f'<img src="{m.group("img_data")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
 
     html = markdown2.markdown(
         IMAGE_MARKDOWN_RE.sub(insert_img, text),
