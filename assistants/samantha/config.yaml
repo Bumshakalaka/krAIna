@@ -4,7 +4,8 @@ max_tokens: 4096
 description: |
   Hi, I'm your casual assistant.
   How can I help you today?
-#tools:
+tools:
+  - text-to-image
 #  - wolfram_alpha
 #  - brave_web
 

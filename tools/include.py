@@ -23,6 +23,8 @@ from langchain_community.tools import BraveSearch, WolframAlphaQueryRun
 from langchain_community.utilities import WolframAlphaAPIWrapper
 from langchain_core.tools import BaseTool
 
+from tools.text_to_image import init_text_to_image
+
 
 class MyWolframAlphaQueryRun(WolframAlphaQueryRun):
     """A class to run WolframAlpha queries using an API wrapper."""
@@ -75,5 +77,10 @@ def init_file_mgmt(tool_setting: Dict) -> List[BaseTool]:
 
 
 ####
-SUPPORTED_TOOLS = {"brave_web": init_web_search, "file_mgmt": init_file_mgmt, "wolfram_alpha": init_wolfram_alpha}
+SUPPORTED_TOOLS = {
+    "brave_web": init_web_search,
+    "file_mgmt": init_file_mgmt,
+    "wolfram_alpha": init_wolfram_alpha,
+    "text-to-image": init_text_to_image,
+}
 """List of supported tools with initialisation function."""
