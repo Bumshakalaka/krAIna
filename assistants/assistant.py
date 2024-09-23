@@ -18,7 +18,7 @@ from tiktoken import encoding_for_model, Encoding, get_encoding
 
 from libs.db.controller import Db, LlmMessageType
 from libs.llm import chat_llm, map_model
-from libs.utils import IMAGE_MARKDOWN_RE
+from libs.utils import IMAGE_DATA_URL_MARKDOWN_RE
 from tools.base import get_and_init_tools
 
 logger = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ class BaseAssistant:
                         msgs.append(el["text"])
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
         if self.tools:
-            for tool in get_and_init_tools(self.tools):
+            for tool in get_and_init_tools(self.tools, self):
                 ret["prompt"] += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
@@ -181,7 +181,7 @@ class BaseAssistant:
         """
         content = []
         start_idx = 0
-        for m in IMAGE_MARKDOWN_RE.finditer(msg):
+        for m in IMAGE_DATA_URL_MARKDOWN_RE.finditer(msg):
             img_start = m.start(0)
             if img_start > 0:
                 content.append(dict(type="text", text=msg[start_idx:img_start]))
@@ -273,7 +273,7 @@ class BaseAssistant:
         if hist:
             kwargs["chat_history"] = hist
         tokens["tools"] = 0
-        tools = get_and_init_tools(self.tools)
+        tools = get_and_init_tools(self.tools, self)
         agent = create_tool_calling_agent(llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
         chunks = []

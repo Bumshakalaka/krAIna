@@ -13,7 +13,7 @@ from chat.base import DARKTHEME, LIGHTTHEME, HIGHLIGHTER_CSS
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, to_md, prepare_message, find_hyperlinks, IMAGE_MARKDOWN_RE
+from libs.utils import str_shortening, to_md, prepare_message, find_hyperlinks, IMAGE_DATA_URL_MARKDOWN_RE
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ class TextChatView(ScrolledText, ChatView):
         text = str_shortening(text) if tag == "TOOL" else text
         for tt in text.splitlines(keepends=False):
             start_idx = 0
-            for m in IMAGE_MARKDOWN_RE.finditer(tt):
+            for m in IMAGE_DATA_URL_MARKDOWN_RE.finditer(tt):
                 img_start = m.start(0)
                 if img_start > 0:
                     self.insert(tk.END, "", f"{tag}_prefix", *find_hyperlinks(tt[start_idx:img_start], tag))
@@ -229,7 +229,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.enable_objects(False)
         self.on_link_click(self._open_webbrowser)
         self.on_done_loading(self._see_end)
-        self.bind("<Button-1>", self.left_click)
+        self.bind("<Button-1>", self.left_click, True)
 
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
@@ -247,13 +247,16 @@ class HtmlChatView(HtmlFrame, ChatView):
     def left_click(self, event):
         if self.get_currently_hovered_node_tag() == "img":
             if url := self.get_currently_hovered_node_attribute("src"):
-                # data:image/jpeg;base64,/9j
-                header, data = url.split(";")
-                suffix = "." + header.split("/")[-1]
-                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as fd:
-                    fd.write(base64.b64decode(data.split(",")[-1]))
-                    fd.seek(0)
-                    self._open_webbrowser(fd.name)
+                if url.startswith("https://"):
+                    self._open_webbrowser(url)
+                else:
+                    # url = data:image/jpeg;base64,/9j
+                    header, data = url.split(";")
+                    suffix = "." + header.split("/")[-1]
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as fd:
+                        fd.write(base64.b64decode(data.split(",")[-1]))
+                        fd.seek(0)
+                        self._open_webbrowser(fd.name)
 
     @staticmethod
     def _open_webbrowser(url):

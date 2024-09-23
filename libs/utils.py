@@ -11,7 +11,8 @@ import markdown2
 
 import chat.chat_images as chat_images
 
-IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
+IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
+IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>https://[^\)]+)\)")
 
 
 def import_module(path: Path) -> ModuleType:
@@ -66,8 +67,12 @@ def to_md(text: str, col: str = None) -> str:
         width, height = chat_images.chat_images.get_resize_xy(name)
         return f'<img src="{m.group("img_data")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
 
+    def insert_img_wh(m: re.Match) -> str:
+        width, height = 256, 256
+        return f'<img src="{m.group("img_url")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
+
     html = markdown2.markdown(
-        IMAGE_MARKDOWN_RE.sub(insert_img, text),
+        IMAGE_MARKDOWN_RE.sub(insert_img_wh, IMAGE_DATA_URL_MARKDOWN_RE.sub(insert_img, text)),
         extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
     return f'<span style="color:{col}">{html}</span>' if col else html

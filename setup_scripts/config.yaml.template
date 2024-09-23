@@ -5,6 +5,8 @@ llm:
       B: gpt-35-turbo
       gpt-4-turbo: gpt-4-turbo-128k
       gpt-3.5-turbo: gpt-35-turbo
+      dall-e-2: Dalle2
+      dall-e-3: Dalle3
     openai:
       A: gpt-4o
       B: gpt-3.5-turbo
@@ -20,3 +22,5 @@ tools:
     working_dir: /home/user/Documents
   brave_web:
     count: 3
+  text-to-image:
+    model: dall-e-3

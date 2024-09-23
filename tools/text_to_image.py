@@ -1,45 +1,75 @@
+import enum
+import functools
 import json
 from typing import Dict
 
 from aenum import Enum
-import os
-import tempfile
-from io import BytesIO
 
-import requests
 from dotenv import find_dotenv, load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
-import chat.chat_images as chat_images
+from libs.llm import image_client
 
 load_dotenv(find_dotenv())
 
 
 class ImageSize(Enum):
     _init_ = "value __doc__"
-    LOW = "256x256", "Low resolution 256x256"
-    MEDIUM = "512x512", "Medium resolution 512x512"
-    HIGH = "1024x1024", "High resolution 1024x1024"
+    SMALL_SQUARE = "SMALL_SQUARE", "256x256 resolution"
+    MEDIUM_SQUARE = "MEDIUM_SQUARE", "512x512 resolution"
+    LARGE_SQUARE = "LARGE_SQUARE", "1024x1024 resolution"
+    LARGE_LANDSCAPE = "LARGE_LANDSCAPE", "1792x1024 resolution"
+    LARGE_PORTRAIT = "LARGE_PORTRAIT", "1024x1792 resolution"
+
+
+GENERATOR_PROPS = {
+    "DALLE2": {
+        "SIZE": {
+            "SMALL_SQUARE": "256x256",
+            "MEDIUM_SQUARE": "512x512",
+            "LARGE_SQUARE": "1024x1024",
+            "LARGE_LANDSCAPE": "1024x1024",
+            "LARGE_PORTRAIT": "1024x1024",
+        },
+        "MULTIPLE_IMAGES": True,
+    },
+    "DALLE3": {
+        "SIZE": {
+            "SMALL_SQUARE": "1024x1024",
+            "MEDIUM_SQUARE": "1024x1024",
+            "LARGE_SQUARE": "1024x1024",
+            "LARGE_LANDSCAPE": "1792x1024",
+            "LARGE_PORTRAIT": "1024x1792",
+        },
+        "MULTIPLE_IMAGES": False,
+    },
+}
 
 
 class TextToImageInput(BaseModel):
     query: str = Field(description="Image description")
-    size: ImageSize = Field(ImageSize.LOW, description="Size of the image to generate")
+    size: ImageSize = Field(
+        ImageSize.SMALL_SQUARE, description="Size of the image to generate, default is SMALL_SQUARE"
+    )
     no_of_images: int = Field(1, description="How many image to generate")
 
 
-def text_to_image(query: str, size: ImageSize, no_of_images: int = 1):
+def text_to_image(model: str, force_api: str, query: str, size: ImageSize, no_of_images: int = 1):
     """A wrapper around text-to-image API. Useful for when you need to generate images from a text description."""
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    # call the OpenAI API
+    client = image_client(force_api_type=force_api)
+
+    generator = "DALLE2" if "2" in model else "DALLE3"
     response = client.images.generate(
-        model="dall-e-2",
+        model=model,
         prompt=query,
-        n=no_of_images,
-        size=size.value,
+        n=1 if GENERATOR_PROPS[generator]["MULTIPLE_IMAGES"] else no_of_images,
+        size=GENERATOR_PROPS[generator]["SIZE"][size.name],
         response_format="url",
     )
+
+    # TODO: download and convert images into data uri
+    # they can be stored in database but - big image == 5MB or more of data
+    # Also LangGraph agents + content_and_artifacts + return_direct=True == support in BaseAssistant
     # ret = []
     # for i in range(no_of_images):
     #     with BytesIO() as fd:
@@ -54,9 +84,19 @@ def text_to_image(query: str, size: ImageSize, no_of_images: int = 1):
 
 
 def init_text_to_image(tool_setting: Dict) -> BaseTool:
+    """
+    Initialize the text-to-image tool with the given settings.
+
+    This function creates a StructuredTool instance for generating images
+    from text descriptions using the specified tool settings.
+
+    :param tool_setting: Dictionary containing settings for the tool,
+                         including the 'assistant' key with 'force_api'.
+    :return: An instance of BaseTool configured for text-to-image generation.
+    """
     return StructuredTool.from_function(
-        func=text_to_image,
-        name="Text-to-Image",
+        func=functools.partial(text_to_image, tool_setting["model"], tool_setting["assistant"].force_api),
+        name="text-to-image",
         description="A wrapper around text-to-image API. Useful for when you need to generate images from a text description.",
         args_schema=TextToImageInput,
         return_direct=False,

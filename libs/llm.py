@@ -3,11 +3,12 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 
 import yaml
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
+from openai import OpenAI, AzureOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +130,26 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
     }
     return models[get_llm_type(force)](**kwargs)
+
+
+def image_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:
+    """
+
+    :param kwargs:
+             force_api_type: azure or openai or anthropic - force API type
+             ... - pass to the chat object
+    :return:
+    """
+    force: Union[str, None] = kwargs.get("force_api_type", None)
+    try:
+        kwargs.pop("force_api_type")
+    except KeyError:
+        pass
+    for k, v in OVERWRITE_LLM_SETTINGS.items():
+        if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
+            kwargs[k] = v
+    llm = {
+        SUPPORTED_API_TYPE.AZURE: AzureOpenAI,
+        SUPPORTED_API_TYPE.OPENAI: OpenAI,
+    }
+    return llm[get_llm_type(force)]()

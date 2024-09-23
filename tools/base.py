@@ -18,15 +18,17 @@ for _p in _tools_sets:
         _AVAILABLE_TOOLS.update(getattr(import_module(_p / "include.py"), "SUPPORTED_TOOLS"))
 
 
-def get_and_init_tools(tools: List[str]) -> List[BaseTool]:
+def get_and_init_tools(tools: List[str], assistant=None) -> List[BaseTool]:
     """
     Init and get tools for assistant.
 
     Validation of tools required by assistant is done on config.yaml load.
 
     :param tools: List of tools specified in the assistant config.yaml
+    :param assistant: Assistant object [BaseAssistant] which will call the tools
     :return: list of tool objects
     """
+    # TODO: What will happen when snippets instead of assistants will use tools
     if (Path(__file__).parent / "../config.yaml").resolve().exists():
         with open((Path(__file__).parent / "../config.yaml").resolve(), "r") as f:
             data = yaml.load(f, Loader=yaml.SafeLoader)
@@ -43,6 +45,7 @@ def get_and_init_tools(tools: List[str]) -> List[BaseTool]:
                 dict(
                     tools_settings.get(tool_name, {}),
                     config_dir=str((Path(__file__).parent / "../config.yaml").resolve().parent),
+                    assistant=assistant,
                 )
             )
             if isinstance(ret, list):
