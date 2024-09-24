@@ -1,13 +1,20 @@
 """Set of utils functions and classes."""
 import importlib.util
+import io
 import re
+import shutil
+import subprocess
 import sys
+import os
+import tempfile
+
 from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
 from typing import Any, List, Dict, Tuple
 
 import markdown2
+from PIL import Image
 
 import chat.chat_images as chat_images
 
@@ -203,3 +210,96 @@ def find_hyperlinks(text: str, no_hyper_tag: str = "") -> list:
         parts.append(no_hyper_tag)  # Add empty tag for no hyper text
 
     return parts
+
+
+def grabclipboard():
+    """Fixed xclip hang version of ImageGrab.grabclipboard()"""
+    if sys.platform == "darwin":
+        fh, filepath = tempfile.mkstemp(".png")
+        os.close(fh)
+        commands = [
+            'set theFile to (open for access POSIX file "' + filepath + '" with write permission)',
+            "try",
+            "    write (the clipboard as «class PNGf») to theFile",
+            "end try",
+            "close access theFile",
+        ]
+        script = ["osascript"]
+        for command in commands:
+            script += ["-e", command]
+        subprocess.call(script)
+
+        im = None
+        if os.stat(filepath).st_size != 0:
+            im = Image.open(filepath)
+            im.load()
+        os.unlink(filepath)
+        return im
+    elif sys.platform == "win32":
+        fmt, data = Image.core.grabclipboard_win32()
+        if fmt == "file":  # CF_HDROP
+            import struct
+
+            o = struct.unpack_from("I", data)[0]
+            if data[16] != 0:
+                files = data[o:].decode("utf-16le").split("\0")
+            else:
+                files = data[o:].decode("mbcs").split("\0")
+            return files[: files.index("")]
+        if isinstance(data, bytes):
+            data = io.BytesIO(data)
+            if fmt == "png":
+                from PIL import PngImagePlugin
+
+                return PngImagePlugin.PngImageFile(data)
+            elif fmt == "DIB":
+                from PIL import BmpImagePlugin
+
+                return BmpImagePlugin.DibImageFile(data)
+        return None
+    else:
+        if os.getenv("WAYLAND_DISPLAY"):
+            session_type = "wayland"
+        elif os.getenv("DISPLAY"):
+            session_type = "x11"
+        else:  # Session type check failed
+            session_type = None
+
+        if shutil.which("wl-paste") and session_type in ("wayland", None):
+            args = ["wl-paste", "-t", "image"]
+        elif shutil.which("xclip") and session_type in ("x11", None):
+            args = ["xclip", "-selection", "clipboard", "-t", "image/png", "-o"]
+        else:
+            msg = "wl-paste or xclip is required for ImageGrab.grabclipboard() on Linux"
+            raise NotImplementedError(msg)
+        try:
+            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            stdout, stderr = p.communicate(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            stderr = b"cannot convert "
+        if stderr:
+            for silent_error in [
+                # wl-paste, when the clipboard is empty
+                b"Nothing is copied",
+                # Ubuntu/Debian wl-paste, when the clipboard is empty
+                b"No selection",
+                # Ubuntu/Debian wl-paste, when an image isn't available
+                b"No suitable type of content copied",
+                # wl-paste or Ubuntu/Debian xclip, when an image isn't available
+                b" not available",
+                # xclip, when an image isn't available
+                b"cannot convert ",
+                # xclip, when the clipboard isn't initialized
+                b"xclip: Error: There is no owner for the ",
+            ]:
+                if silent_error in stderr:
+                    return None
+            msg = f"{args[0]} error"
+            if stderr:
+                msg += f": {stderr.strip().decode()}"
+            raise ChildProcessError(msg)
+
+        data = io.BytesIO(stdout)
+        im = Image.open(data)
+        im.load()
+        return im

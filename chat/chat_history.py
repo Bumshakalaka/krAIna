@@ -13,7 +13,7 @@ from tkinter.filedialog import askopenfilename
 from typing import Dict, Union
 
 import klembord
-from PIL import ImageGrab, UnidentifiedImageError
+from PIL import UnidentifiedImageError
 from tiktoken import encoding_for_model, get_encoding
 from tkinterdnd2 import DND_FILES, REFUSE_DROP
 from tktooltip import ToolTip
@@ -26,7 +26,7 @@ from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, prepare_message, to_md
+from libs.utils import str_shortening, prepare_message, to_md, grabclipboard
 from tkinterweb import Notebook
 
 
@@ -318,7 +318,7 @@ class UserQuery(ttk.Frame):
         :raises UnidentifiedImageError: If the clipboard content is not an image.
         """
         try:
-            im = ImageGrab.grabclipboard()
+            im = grabclipboard()
             if im:
                 with BytesIO() as buffer:
                     im.save(buffer, format="PNG")
