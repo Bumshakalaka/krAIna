@@ -164,11 +164,11 @@ class BaseAssistant:
                 hist.append(HumanMessage(content=self._format_message(message.message)))
             elif message.type == LlmMessageType.AI:
                 # Do not append TOOL messages
-                hist.append(AIMessage(content=message.message))
+                hist.append(AIMessage(content=self._format_message(message.message, image_data=False)))
         return hist
 
     @staticmethod
-    def _format_message(msg: str) -> List[Dict]:
+    def _format_message(msg: str, image_data=True) -> List[Dict]:
         """
         Format a message containing text and image markdown into a list of dictionaries.
 
@@ -186,7 +186,10 @@ class BaseAssistant:
             if img_start > 0:
                 content.append(dict(type="text", text=msg[start_idx:img_start]))
             start_idx = m.end(0)
-            content.append(dict(type="image_url", image_url=dict(url=m.group("img_data"))))
+            if image_data:
+                content.append(dict(type="image_url", image_url=dict(url=m.group("img_data"))))
+            else:
+                content.append(dict(type="text", text="GENERATED_IMAGE"))
         if msg[start_idx:]:
             content.append(dict(type="text", text=msg[start_idx:]))
         return content
@@ -315,4 +318,4 @@ class BaseAssistant:
                 self.callbacks["output"](chunk["output"]) if self.callbacks["output"] else None
             else:
                 raise ValueError()
-        return chunks[-1]["messages"][0].content
+        return chunks[-1]["output"]

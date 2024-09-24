@@ -38,7 +38,7 @@ def str_shortening(data: Any, limit=256) -> str:
     :param limit:
     :return:
     """
-    data = str(data).replace("\n", "\\n")
+    data = str(data).replace("\n", "\\n").replace("img-", "IMG-")
     if len(data) > limit:
         return (
             data[0 : int(limit / 2)]

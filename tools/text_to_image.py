@@ -1,13 +1,17 @@
 import enum
 import functools
 import json
+from io import BytesIO
 from typing import Dict
 
+import requests
 from aenum import Enum
 
 from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
+
+import chat.chat_images as chat_images
 from libs.llm import image_client
 
 load_dotenv(find_dotenv())
@@ -67,20 +71,16 @@ def text_to_image(model: str, force_api: str, query: str, size: ImageSize, no_of
         response_format="url",
     )
 
-    # TODO: download and convert images into data uri
+    # download and convert images into data uri
     # they can be stored in database but - big image == 5MB or more of data
-    # Also LangGraph agents + content_and_artifacts + return_direct=True == support in BaseAssistant
-    # ret = []
-    # for i in range(no_of_images):
-    #     with BytesIO() as fd:
-    #         fd.write(requests.get(response.data[i].url).content)
-    #         fd.seek(0)
-    #         img = chat_images.chat_images.create_from_file(fd)
-    #     ret.append(f"![{img}]({chat_images.chat_images.get_url(img)})")
-    ret_content = {"images": []}
+    ret = []
     for i in range(no_of_images):
-        ret_content["images"].append(dict(url=response.data[i].url, revised_prompt=response.data[i].revised_prompt))
-    return json.dumps(ret_content)
+        with BytesIO() as fd:
+            fd.write(requests.get(response.data[i].url).content)
+            fd.seek(0)
+            img = chat_images.chat_images.create_from_file(fd)
+        ret.append(f"![{img}]({chat_images.chat_images.get_url(img)})\n\nPrompt: `{response.data[i].revised_prompt}`")
+    return "\n\n".join(ret)
 
 
 def init_text_to_image(tool_setting: Dict) -> BaseTool:
@@ -99,5 +99,5 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
         name="text-to-image",
         description="A wrapper around text-to-image API. Useful for when you need to generate images from a text description.",
         args_schema=TextToImageInput,
-        return_direct=False,
+        return_direct=True,
     )
