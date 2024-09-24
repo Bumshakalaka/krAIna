@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
 
 import chat.chat_images as chat_images
-from libs.llm import image_client
+from libs.llm import image_client, map_model
 
 load_dotenv(find_dotenv())
 
@@ -95,7 +95,11 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
     :return: An instance of BaseTool configured for text-to-image generation.
     """
     return StructuredTool.from_function(
-        func=functools.partial(text_to_image, tool_setting["model"], tool_setting["assistant"].force_api),
+        func=functools.partial(
+            text_to_image,
+            map_model(tool_setting["model"], tool_setting["assistant"].force_api),
+            tool_setting["assistant"].force_api,
+        ),
         name="text-to-image",
         description="A wrapper around text-to-image API. Useful for when you need to generate images from a text description.",
         args_schema=TextToImageInput,
