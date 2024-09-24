@@ -143,7 +143,7 @@ class StatusBar(tk.Frame):
     def update_statusbar(self, data: AssistantResp):
         """Update status bar."""
         if data.error:
-            self.token_usage.set(str(data.error))
+            self.token_usage.set(str(data.error)[0:110] + "..." if len(str(data.error)) > 120 else str(data.error))
             # we have error from LLM call
             self.label_token_usage.configure(background="#ED6A5A")
         else:
