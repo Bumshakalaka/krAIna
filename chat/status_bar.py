@@ -28,8 +28,9 @@ class StatusBar(tk.Frame):
         self.dbg_window = None
         ttk.Separator(self).pack(side=tk.TOP, fill=tk.X)
         self.token_usage = tk.StringVar()
+        self.token_usage_full_str = tk.StringVar()
         self.label_token_usage = ttk.Label(self, relief=tk.FLAT, textvariable=self.token_usage)
-        ToolTip(self.label_token_usage, msg=self.token_usage.get, follow=False, delay=0.5, y_offset=-50)
+        ToolTip(self.label_token_usage, msg=self.token_usage_full_str.get, follow=False, delay=0.5, y_offset=-50)
         self.api_name = tk.StringVar()
         self.api_name_descr = tk.StringVar(
             self,
@@ -144,9 +145,11 @@ class StatusBar(tk.Frame):
         """Update status bar."""
         if data.error:
             self.token_usage.set(str(data.error)[0:110] + "..." if len(str(data.error)) > 120 else str(data.error))
+            self.token_usage_full_str.set(str(data.error))
             # we have error from LLM call
             self.label_token_usage.configure(background="#ED6A5A")
         else:
             self.api_params.set(str(data.tokens.pop("api")) + " | ")
             self.token_usage.set(str(data.tokens))
+            self.token_usage_full_str.set(str(data.error))
             self.label_token_usage.configure(background=self.root.get_theme_color("bg"))
