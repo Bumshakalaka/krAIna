@@ -189,7 +189,7 @@ class BaseAssistant:
             if image_data:
                 content.append(dict(type="image_url", image_url=dict(url=m.group("img_data"))))
             else:
-                content.append(dict(type="text", text="GENERATED_IMAGE"))
+                content.append(dict(type="text", text="generated image cannot be put here because of size"))
         if msg[start_idx:]:
             content.append(dict(type="text", text=msg[start_idx:]))
         return content

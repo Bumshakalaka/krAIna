@@ -26,7 +26,7 @@ from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, prepare_message, to_md, grabclipboard
+from libs.utils import str_shortening, prepare_message, to_md, grabclipboard, IMAGE_DATA_URL_MARKDOWN_RE
 from tkinterweb import Notebook
 
 
@@ -80,6 +80,11 @@ class ChatHistory(FixedNotebook):
         self.root.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD_CHAT, self.copy_chat)
         self.raw_messages = []
 
+    @staticmethod
+    def _remove_img_data(msg: str) -> str:
+        return IMAGE_DATA_URL_MARKDOWN_RE.sub("generated image cannot be put here because of size", msg)
+        # return msg
+
     def update_title(self, conv: Union[Conversations, None]):
         """Update chat label title."""
         if conv:
@@ -130,7 +135,7 @@ class ChatHistory(FixedNotebook):
         """Call view methods."""
         self.raw_messages = []
         for message in conversation.messages:
-            self.raw_messages.append([LlmMessageType(message.type).name, message.message])
+            self.raw_messages.append([LlmMessageType(message.type).name, self._remove_img_data(message.message)])
         for view in self.views.values():
             view.load_chat(conversation)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
@@ -176,7 +181,7 @@ class ChatHistory(FixedNotebook):
 
     def ai_message(self, message: str):
         """Call view methods."""
-        self.raw_messages.append(["AI", message])
+        self.raw_messages.append(["AI", self._remove_img_data(message)])
         for view in self.views.values():
             view.ai_message(message)
         self.root.post_event(APP_EVENTS.UNBLOCK_USER, None)
@@ -189,14 +194,14 @@ class ChatHistory(FixedNotebook):
 
     def human_message(self, message: str):
         """Call view methods."""
-        self.raw_messages.append(["HUMAN", message])
+        self.raw_messages.append(["HUMAN", self._remove_img_data(message)])
         for view in self.views.values():
             view.human_message(message)
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def tool_message(self, message: str):
         """Call view methods."""
-        self.raw_messages.append(["TOOL", message])
+        self.raw_messages.append(["TOOL", self._remove_img_data(message)])
         for view in self.views.values():
             view.tool_message(message)
 
