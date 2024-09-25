@@ -26,7 +26,14 @@ from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
 from libs.db.model import Conversations
-from libs.utils import str_shortening, prepare_message, to_md, grabclipboard, IMAGE_DATA_URL_MARKDOWN_RE
+from libs.utils import (
+    str_shortening,
+    prepare_message,
+    to_md,
+    grabclipboard,
+    IMAGE_DATA_URL_MARKDOWN_RE,
+    convert_data_url_to_file_url,
+)
 from tkinterweb import Notebook
 
 
@@ -82,8 +89,9 @@ class ChatHistory(FixedNotebook):
 
     @staticmethod
     def _remove_img_data(msg: str) -> str:
-        return IMAGE_DATA_URL_MARKDOWN_RE.sub("generated image cannot be put here because of size", msg)
-        # return msg
+        if msg:
+            return IMAGE_DATA_URL_MARKDOWN_RE.sub("generated image cannot be put here because of size", msg)
+        return msg
 
     def update_title(self, conv: Union[Conversations, None]):
         """Update chat label title."""
@@ -163,10 +171,10 @@ class ChatHistory(FixedNotebook):
             if LlmMessageType(message.type).name == "TOOL":
                 to_clip_text += str_shortening(message.message) + "\n\n"
             else:
-                to_clip_text += message.message + "\n\n"
+                to_clip_text += IMAGE_DATA_URL_MARKDOWN_RE.sub(convert_data_url_to_file_url, message.message) + "\n\n"
             to_clip_html += to_md(
                 *prepare_message(
-                    message.message,
+                    IMAGE_DATA_URL_MARKDOWN_RE.sub(convert_data_url_to_file_url, message.message),
                     LlmMessageType(message.type).name,
                     str(cols[LlmMessageType(message.type).name]),
                 )

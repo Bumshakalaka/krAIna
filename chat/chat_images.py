@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import tempfile
 from pathlib import Path
 from typing import Dict, Union, Tuple
 from PIL import Image, ImageTk
@@ -98,6 +99,25 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
         with BytesIO() as buffer:
             self.pil_image[name].save(buffer, format="PNG")
             return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    def dump_to_tempfile(self, name: str, resize=True):
+        """
+        Save an image to a temporary file with optional resizing.
+
+        This function saves an image from the `pil_image` attribute to a temporary file with a ".png" suffix.
+        The image can be optionally resized before saving.
+
+        :param name: The key to the image in the `pil_image` attribute.
+        :param resize: Boolean flag indicating whether the image should be resized. Defaults to True.
+        :return: The name of the temporary file where the image is saved.
+        """
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as fd:
+            if resize:
+                self.pil_image[name].resize(self.get_resize_xy(name)).save(fd, format="PNG")
+            else:
+                self.pil_image[name].save(fd, format="PNG")
+            fd.seek(0)
+            return fd.name
 
 
 chat_images = ChatImages()

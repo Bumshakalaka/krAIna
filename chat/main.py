@@ -34,7 +34,7 @@ from libs.db.controller import Db
 from PIL import ImageTk, Image
 
 from libs.llm import get_llm_type, SUPPORTED_API_TYPE
-from libs.utils import str_shortening, prepare_message, to_md
+from libs.utils import str_shortening, prepare_message, to_md, IMAGE_DATA_URL_MARKDOWN_RE, convert_data_url_to_file_url
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
 
@@ -220,7 +220,9 @@ class App(TkinterDnD.Tk):
         """
         if not chat_persistence.SETTINGS.copy_to_clipboard:
             return
+
         klembord.init()
+        text = IMAGE_DATA_URL_MARKDOWN_RE.sub(convert_data_url_to_file_url, text)
         if sys.platform == "win32":
             klembord.set(
                 {

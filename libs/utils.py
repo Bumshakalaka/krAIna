@@ -19,7 +19,7 @@ from PIL import Image
 import chat.chat_images as chat_images
 
 IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
-IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>https://[^\)]+)\)")
+IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>(https|file)://[^\)]+)\)")
 
 
 def import_module(path: Path) -> ModuleType:
@@ -303,3 +303,19 @@ def grabclipboard():
         im = Image.open(data)
         im.load()
         return im
+
+
+def convert_data_url_to_file_url(m: re.Match) -> str:
+    """
+    Convert Markdown data URL image into a file image.
+
+    This function extracts image data and name from a regex match object,
+    creates an image file from the data, and returns a Markdown image
+    reference pointing to the file.
+
+    :param m: A regex match object containing groups 'img_data' and 'img_name'.
+    :return: A Markdown image reference pointing to the created file.
+    """
+    name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"))
+    temp_file = chat_images.chat_images.dump_to_tempfile(name, True)
+    return f'![{m.group("img_name")}](file://{temp_file})'
