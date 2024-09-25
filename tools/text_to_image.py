@@ -90,7 +90,7 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
     return StructuredTool.from_function(
         func=functools.partial(
             text_to_image,
-            map_model(tool_setting["model"], tool_setting["assistant"].force_api),
+            map_model(tool_setting.get("model", "dall-e-3"), tool_setting["assistant"].force_api),
             tool_setting["assistant"].force_api,
         ),
         name="text-to-image",
