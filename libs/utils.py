@@ -18,7 +18,7 @@ from PIL import Image
 
 import chat.chat_images as chat_images
 
-IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[0-9a-f]+)\]\((?P<img_data>data:image/[^\)]+)\)")
+IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[^]]+)\]\((?P<img_data>data:image/[^\)]+)\)")
 IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>(https|file)://[^\)]+)\)")
 
 
@@ -305,7 +305,7 @@ def grabclipboard():
         return im
 
 
-def convert_data_url_to_file_url(m: re.Match) -> str:
+def _convert_data_url_to_file_url(m: re.Match) -> str:
     """
     Convert Markdown data URL image into a file image.
 
@@ -316,6 +316,34 @@ def convert_data_url_to_file_url(m: re.Match) -> str:
     :param m: A regex match object containing groups 'img_data' and 'img_name'.
     :return: A Markdown image reference pointing to the created file.
     """
-    name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"))
+    name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
     temp_file = chat_images.chat_images.dump_to_tempfile(name, True)
     return f'![{m.group("img_name")}](file://{temp_file})'
+
+
+def convert_llm_response(msg: str):
+    """
+    Convert Markdown data URL image found in message into a file image.
+
+    This function extracts image data and name from a regex match object,
+    creates an image file from the data, and returns a Markdown image
+    reference pointing to the file.
+
+    :param msg: Message which includes Markdown data URL images
+    :return: converted message
+    """
+
+    def _convert(m):
+        name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
+        temp_file = chat_images.chat_images.dump_to_tempfile(name, False)
+        return f'![{m.group("img_name")}](file://{temp_file})'
+
+    return IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert, msg)
+
+
+def convert_user_query(msg: str):
+    def _convert(m):
+        name = chat_images.chat_images.create_from_url(m.group("img_url"), "img-" + m.group("img_name"), False)
+        return f'![{"img-" + m.group("img_name")}]({chat_images.chat_images.get_url(name)})'
+
+    return IMAGE_MARKDOWN_RE.sub(_convert, msg)

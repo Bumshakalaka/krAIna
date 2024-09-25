@@ -1,10 +1,6 @@
-import enum
 import functools
-import json
-from io import BytesIO
 from typing import Dict
 
-import requests
 from aenum import Enum
 
 from dotenv import find_dotenv, load_dotenv
@@ -75,10 +71,7 @@ def text_to_image(model: str, force_api: str, query: str, size: ImageSize, no_of
     # they can be stored in database but - big image == 5MB or more of data
     ret = []
     for i in range(no_of_images):
-        with BytesIO() as fd:
-            fd.write(requests.get(response.data[i].url).content)
-            fd.seek(0)
-            img = chat_images.chat_images.create_from_file(fd)
+        img = chat_images.chat_images.create_from_url(response.data[i].url, None, False)
         ret.append(f"![{img}]({chat_images.chat_images.get_url(img)})\n\nPrompt: `{response.data[i].revised_prompt}`")
     return "\n\n".join(ret)
 

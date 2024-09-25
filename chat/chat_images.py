@@ -3,6 +3,8 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import Dict, Union, Tuple
+
+import requests
 from PIL import Image, ImageTk
 import base64
 from io import BytesIO
@@ -27,7 +29,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
         super().__init__()
         self.pil_image: Dict[str, Image.Image] = {}
 
-    def create_from_file(self, fn: Union[Path, BytesIO], name: str = None) -> str:
+    def create_from_file(self, fn: Union[Path, BytesIO], name: str = None, image_tk=True) -> str:
         """
         Create an image from a file and store it in the dictionary.
 
@@ -35,6 +37,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
 
         :param fn: File path or BytesIO object containing the image data.
         :param name: Name of the image, None if we'd like to create new one
+        :param image_tk: Generate ImageTk.PhotoImage (tkinter and GUI required) or not
         :return: Unique identifier for the stored image.
         :raises ValueError: If the file cannot be opened or read.
         """
@@ -52,7 +55,11 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
             logger.debug(f"Img get: {img}")
             return img
         self.pil_image[img] = Image.open(fn)
-        self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+        if image_tk:
+            self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+        else:
+            self.pil_image[img].load()
+            self[img] = None
         logger.debug(f"Img Created: {img}")
         return img
 
@@ -71,22 +78,32 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
             div = max(self.pil_image[name].height, self.pil_image[name].width) // 150
         return self.pil_image[name].width // div, self.pil_image[name].height // div
 
-    def create_from_url(self, url: str, name: str = None) -> str:
+    def create_from_url(self, url: str, name: str = None, image_tk=True) -> str:
         """
-        Create an image from a base64-encoded URL and store it in the dictionary.
+        Create an image from a URL, file path, or base64 string.
 
-        :param url: Base64-encoded URL containing the image data.
-        :param name: Name of the image, None if we'd like to create new one
-        :return: Unique identifier for the stored image.
-        :raises ValueError: If the URL cannot be decoded.
+        This function fetches image data from a given URL, file path, or base64 encoded string,
+        and creates an image object. If a name is provided and already exists, it returns the name.
+
+        :param url: The URL, file path, or base64 encoded string of the image.
+        :param name: Optional name for the image. If provided and exists, the existing name is returned.
+        :param image_tk: Boolean flag to indicate if the image should be processed for Tkinter.
+        :return: The name of the created image.
+        :raises ValueError: If the URL scheme is not recognized.
         """
         if name and self.get(name):
             logger.debug(f"Img get: {name}")
             return name
         with BytesIO() as buffer:
-            buffer.write(base64.b64decode(url.split(",")[-1]))
+            if url.startswith("https://"):
+                buffer.write(requests.get(url).content)
+            elif url.startswith("file://"):
+                with open(Path(url.replace("file://", "")), "rb") as fd:
+                    buffer.write(fd.read())
+            else:
+                buffer.write(base64.b64decode(url.split(",")[-1]))
             buffer.seek(0)
-            return self.create_from_file(buffer, name)
+            return self.create_from_file(buffer, name, image_tk)
 
     def get_url(self, name: str) -> str:
         """

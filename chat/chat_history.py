@@ -32,7 +32,7 @@ from libs.utils import (
     to_md,
     grabclipboard,
     IMAGE_DATA_URL_MARKDOWN_RE,
-    convert_data_url_to_file_url,
+    _convert_data_url_to_file_url,
 )
 from tkinterweb import Notebook
 
@@ -171,10 +171,10 @@ class ChatHistory(FixedNotebook):
             if LlmMessageType(message.type).name == "TOOL":
                 to_clip_text += str_shortening(message.message) + "\n\n"
             else:
-                to_clip_text += IMAGE_DATA_URL_MARKDOWN_RE.sub(convert_data_url_to_file_url, message.message) + "\n\n"
+                to_clip_text += IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, message.message) + "\n\n"
             to_clip_html += to_md(
                 *prepare_message(
-                    IMAGE_DATA_URL_MARKDOWN_RE.sub(convert_data_url_to_file_url, message.message),
+                    IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, message.message),
                     LlmMessageType(message.type).name,
                     str(cols[LlmMessageType(message.type).name]),
                 )
