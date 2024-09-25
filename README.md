@@ -38,6 +38,8 @@ features:
 * Copy last AI response automatically to system clipboard
 * Macro management window
 * Right-click on assistant, snippet or macro allows editing it
+* Handling text-to-image generation (Images are stored as data URLs in app memory)
+* Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -170,6 +172,7 @@ The assistants can use tools. To do this:
    tools:
      - brave_web
      - file_search
+     - text-to-image
    ```
 2. Use models capable of doing Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 
@@ -191,6 +194,30 @@ To make such a tool, you need to follow these steps:
 The initialization of the tool (calling the init function) occurs when an Assistant is called, 
 not when it is initialized.
 
+#### Text-to-image
+
+![text-to-image](img/text-to-image.png)
+
+Text-to-image tool is a wrapper for Dall-e API.
+It works with OpenAI and AzureOpenAI.
+This tool generates images based on a textual description.
+Parameters:
+- **query (string):** A description of the image you want to generate. This is the main input that defines what the image will look like.
+- **size (optional, enum):** The size of the generated image. Options include:
+  - "SMALL_SQUARE"
+  - "MEDIUM_SQUARE"
+  - "LARGE_SQUARE"
+  - "LARGE_LANDSCAPE"
+  - "LARGE_PORTRAIT"
+- **no_of_images (optional, integer):** The number of images to generate. The default value is 1.
+
+By default, `Dall-e-3` model is used, but it can be change in `config.yaml`:
+``` yaml
+tools:
+  text-to-image:
+    # dall-e-2 or dall-e-3 are supported
+    model: dall-e-3
+```
 
 ### Macros
 Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.
@@ -498,6 +525,42 @@ first = action.run("My name is Paul")  # First call without conv_id creates a ne
 print(first)  # AssistantResp(conv_id=192, content='Nice to meet you, Paul! How can I assist you today?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 7, 'input': 7, 'total_input': 45, 'output': 17, 'total': 107}, error=None)
 ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
 print(ret)  # AssistantResp(conv_id=192, content='Your name is Paul. How can I assist you today, Paul?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 24, 'input': 8, 'total_input': 63, 'output': 17, 'total': 143}, error=None)
+
+```
+
+```python
+from dotenv import load_dotenv, find_dotenv
+from assistants.base import Assistants
+from libs.utils import convert_llm_response, convert_user_query
+
+load_dotenv(find_dotenv())
+assistants = Assistants()
+
+# text-to-image
+llm = assistants["samantha"]  # Samantha assistant is equipped with text-to-image tool 
+ret = llm.run("generate me low size image of sheep with electronic head", use_db=False)
+print(ret.content[0:120])  # ![img-18b8c05e24224250cd16dcbe918e0d14](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAIAAADwf7zUAAEAAElEQVR4nE
+# convert_llm_response() function get base64 data URL and save it to temporary file
+print(convert_llm_response(ret.content))  # ![img-18b8c05e24224250cd16dcbe918e0d14](file:///tmp/tmplpa4ls70.png)  
+
+# image-to-text from URL
+# convert_user_query() gets Markdown image (with URL, local file or base64 data URL) and convert it to proper base64 data URL
+ret = llm.run(
+    convert_user_query(
+        "Do ocr of the file: ![screen](https://github.com/Bumshakalaka/krAIna/blob/main/img/chat_light_theme.png?raw=true)",
+    ),
+    use_db=False,
+)
+print(ret)  # AssistantResp(conv_id=None, content="Here is the extracted text from the image:\n\n```\nKrAIna CHAT\n\nFile Llm Settings\n\nNEW CHAT\nLast chats\n   Micros...
+
+# image-to-text from local file
+ret = llm.run(
+    convert_user_query(
+        "Do ocr of the file: ![screen](file:///home/user/kraina/img/chat_light_theme.png)",
+    ),
+    use_db=False,
+)
+print(ret)  # AssistantResp(conv_id=None, content="Here is the extracted text from the image:\n\n```\nKrAIna CHAT\n\nFile Llm Settings\n\nNEW CHAT\nLast chats\n   Micros...
 
 ```
 
