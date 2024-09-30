@@ -7,7 +7,11 @@ function err_trap () {
 set -E
 trap 'err_trap ${LINENO} ${$?}' ERR
 
-cd ..
+# ALWAYS CURRENT_DIR == kraina
+CURRENT_DIR=$(realpath "$(dirname "$0")"/.. )
+
+cd ${CURRENT_DIR}
+
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
