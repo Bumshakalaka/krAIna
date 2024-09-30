@@ -14,9 +14,13 @@ cd ${CURRENT_DIR}
 
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-cp setup_scripts/.env.template .env
-cp setup_scripts/config.yaml.template config.yaml
+pip install -r requirements.txt --upgrade
+if [ ! -f .env ]; then
+  cp setup_scripts/.env.template .env
+fi
+if [ ! -f config.yaml ]; then
+  cp setup_scripts/config.yaml.template config.yaml
+fi
 
 echo "*************************************************"
 echo "REMEMBER to edit .env file and add your API keys"
