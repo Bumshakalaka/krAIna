@@ -14,7 +14,7 @@ llm:
       A: claude-3-5-sonnet-20240620
       B: claude-3-haiku-20240307
 chat:
-  default_assistant: samantha
+  default_assistant:
   visible_last_chats: 15
   editor:
 tools:

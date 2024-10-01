@@ -361,8 +361,8 @@ llm:
       A: claude-3-5-sonnet-20240620
       B: claude-3-haiku-20240307
 chat:
-   # chat settings
-   # Always start New Chat with selected assistant
+   # Chat settings
+   # Always start New Chat with selected assistant. If defaulted, last used will be used
    default_assistant: samantha
    # maximum last chats to display in the left sidebar
    visible_last_chats: 10

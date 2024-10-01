@@ -68,7 +68,7 @@ class Assistants(Dict[str, BaseAssistant]):
                                 for context_ in context:
                                     fd = ((assistant / "config.yaml").parent / context_).resolve()
                                     if not fd.exists():
-                                        logger.error(f"[{assistant.name}] context.file={fd} does not exist")
+                                        logger.warning(f"[{assistant.name}] context.file={fd} does not exist")
                                     else:
                                         if "_template" in name:
                                             contexts.append(fd.read_text().replace("{", "{{").replace("}", "}}"))
