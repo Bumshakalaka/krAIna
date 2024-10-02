@@ -220,7 +220,8 @@ class App(TkinterDnD.Tk):
         """
         if not chat_persistence.SETTINGS.copy_to_clipboard:
             return
-
+        if not text:
+            return
         klembord.init()
         text = IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, text)
         if sys.platform == "win32":
