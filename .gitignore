@@ -11,3 +11,4 @@ __pycache__/
 /*.log
 /.settings.yaml
 /kraina-*/
+/.store_files/
