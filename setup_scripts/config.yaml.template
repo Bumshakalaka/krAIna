@@ -24,3 +24,7 @@ tools:
     count: 3
   text-to-image:
     model: dall-e-3
+  vector-search:
+    model: text-embedding-ada-002
+  joplin-search:
+    model: text-embedding-ada-002

@@ -6,6 +6,7 @@ description: |
   How can I help you today?
 tools:
   - text-to-image
+  - vector-search
 #  - wolfram_alpha
 #  - brave_web
 

@@ -17,29 +17,28 @@ Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic
 Chat GUI application built using tkinter.
 
 ![chat](img/kraina_chat.gif)
-
 features:
-* Chat with history (html and text tabs available)
-* Light/Dark and other build-in themes
-* Chats history which can be recalled. They are auto-named and describe
-* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
-* Assistant selection
-* Support for snippets — right-click in the user query widget to apply transformation on a text
-* Overwrite Assistant settings
-* persistence storage on exit
-* progress bar to visualize that LLM is working
-* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
-  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
-  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
-* Markdown/HTML support
-* Debug Window (right-bottom corner) with the application logs
-* Copy last AI response automatically to system clipboard
-* Macro management window
-* Right-click on assistant, snippet or macro allows editing it
-* Handling text-to-image generation (Images are stored as data URLs in app memory)
-* Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
+- Chat conversation with text and HTML views
+- Light/Dark and other built-in themes (Note: The Sun-Valley themes use PNG bitmaps in widgets, which makes the theme really slow on Windows)
+- Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanently, copy chat to clipboard)
+- Assistant selection
+- Support for snippets — right-click in the user query widget to apply transformation on text
+- Overwrite Assistant settings
+- Persistent storage on exit
+- Progress bar to visualize that LLM is working
+- Status bar with information about estimated tokens used for system prompt, history, tools, and completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+- Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+- Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
+  - `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run the Chat application or show it. It can be assigned to a global shortcut in the OS
+  - Run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
+- Markdown/HTML support
+- Debug Window (bottom-right corner) with the application logs
+- Automatically copy the last AI response to the system clipboard
+- Macro management window
+- Right-click on assistant, snippet, or macro allows editing it. The app will reload after the file update
+- Handling text-to-image generation (Images are stored as data URLs in-app memory)
+- Handling image-to-text - Drag'n'Drop image or paste it into the user query field
+
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -167,19 +166,22 @@ Current date: {date}
 
 
 The assistants can use tools. To do this:
-1. Assign tools (LangChain BaseTools) by listing them in the assistant `config.yaml` key
+1. Assign [Tools](#tools) by listing them in the assistant `config.yaml` key
    ```yaml
    tools:
      - brave_web
      - file_search
      - text-to-image
+     - vector-search
+     - joplin-search
    ```
 2. Use models capable of doing Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 
 
 ### Tools
 
-Set of tools available to others in KrAIna. 
+Set of tools available for Assistants in KrAIna.
+**To make it available for selected Assistant, edit Assistant `config.yaml` and add it under `tools`.**
 
 To make such a tool, you need to follow these steps:
 1. Find or develop a tool derived from BaseTool.
@@ -191,8 +193,7 @@ To make such a tool, you need to follow these steps:
    2. Must return `BaseTool` or `List[BaseTool]`.
 3. Add your tool to the `SUPPORTED_TOOLS` dictionary in **tools/include.py**. The name of your tool is the key of the `SUPPORTED_TOOLS` dictionary.
 
-The initialization of the tool (calling the init function) occurs when an Assistant is called, 
-not when it is initialized.
+The initialization of the tool (calling the init function) occurs when an Assistant is called, not when it is initialized.
 
 #### Text-to-image
 
@@ -217,6 +218,70 @@ tools:
   text-to-image:
     # dall-e-2 or dall-e-3 are supported
     model: dall-e-3
+```
+
+#### Vector-search
+
+This tool is used to perform semantic searches on documents.
+User uploads a document to an in-memory vector database and then query it with a specific question.
+The tool will return the top results that are most relevant to the query.
+Parameters:
+- **query**: A short, well-structured query string that you want to search for within the document. This query should clearly represent the information you are seeking.
+- **file_path**: The local file path of the document you want to upload and query in the vector database.
+- **k**: An integer specifying how many top similar results to return. Relevance ranks the results, with the first one being the most valuable. The maximum value for this parameter is 15.
+
+The tool uses LangChain document loaders and in-memory vector storage to process local files.
+The file is split and stored only once (embedding is done once),
+and the vector database is dumped to a local file (located in `.store_files`),
+so the next queries against the file do not require new file processing.
+
+Depends on the LLM used, whether it's OpenAI or Azure, the corresponding embedding endpoint is used.
+
+By default, `text-embedding-ada-002` model is used, but it can be change in `config.yaml`:
+``` yaml
+tools:
+  vector-search:
+    model: text-embedding-ada-002
+```
+
+Currently supported file formats:
+- *.pdf
+- *.txt
+- *.log
+- *.csv
+- *.md
+
+The file splitters are created by inherit `FileSplitter` class from [vector_store_file_splitter](tools/vector_store_file_splitter.py) file.
+Check this file to find how to add new file splitters.
+
+#### joplin-search
+
+This tool is used to perform semantic searches on data stored in [Joplin](https://joplinapp.org), local note-taking app.
+User uploads a document to an in-memory vector database and then query it with a specific question.
+The tool will return the top results that are most relevant to the query.
+Parameters:
+- **query**: A short, well-structured query string that you want to search for within the document. This query should clearly represent the information you are seeking.
+- **k**: An integer specifying how many top similar results to return. Relevance ranks the results, with the first one being the most valuable. The maximum value for this parameter is 15.
+
+The tool uses LangChain document loader and in-memory vector storage to process local files.
+The LangChain Joplin loader requires an API key:
+1. Open the Joplin app. The app must stay open while the documents are being loaded.
+2. Go to settings / options and select "Web Clipper".
+3. Make sure that the Web Clipper service is enabled.
+4. Under "Advanced Options", copy the authorization token.
+5. Write the `JOPLIN_API_KEY=<authorization token>` in .env file
+
+The data from Joplin is loaded and split using the Markdown splitter and stored only once (embedding is done once).
+The vector database is then dumped to a local file (located in `.store_files`),
+so the next queries against the file do not require new file processing unless the Joplin data updates.
+
+Depends on the LLM used, whether it's OpenAI or Azure; the corresponding embedding endpoint is used.
+
+By default, `text-embedding-ada-002` model is used, but it can be change in `config.yaml`:
+``` yaml
+tools:
+  joplin-search:
+    model: text-embedding-ada-002
 ```
 
 ### Macros
@@ -388,6 +453,12 @@ tools:
    #    settings
   brave_web:
     count: 3
+  text-to-image:
+    model: dall-e-3
+  vector-search:
+    model: text-embedding-ada-002
+  joplin-search:
+    model: text-embedding-ada-002
 ```
 
 ## Extensions
