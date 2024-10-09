@@ -1,69 +1,101 @@
 import functools
 import json
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Dict
 
-from dotenv import find_dotenv, load_dotenv
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_openai import OpenAIEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
+from langchain_core.vectorstores import InMemoryVectorStore
+from pydantic import BaseModel, Field
 
+from libs.llm import embedding, map_model
 from tools.base import logger
-
-load_dotenv(find_dotenv())
+from tools.vector_store_file_splitter import get_splitter
 
 
 
 class VectorSearchInput(BaseModel):
-    query: str = Field(description="Query the document. The query must be short, well-structured for RAG")
+    query: str = Field(description="Query the file. The query must be short, well-structured for RAG")
     file_path: str = Field(description="local file to query")
+    k: int = Field(description="How many top similar results to return. The first one, is most valuable result. Depends on user need, MAX=15")
 
 
-def vector_search(assistant, query: str, file_path:str):
+def vector_search(model: str, force_api: str, query: str, file_path: str, k: int = 4):
+    """
+    Perform a vector search on a document using a specified model and API.
+
+    This function processes a document file, creates or loads an embedded vector store,
+    and performs a similarity search based on the provided query.
+
+    :param model: The name of the model to be used for embedding.
+    :param force_api: The API type for embedding.
+    :param query: The search query string.
+    :param file_path: The path to the document file to be processed.
+    :param k: The number of top similar results to return (default is 1).
+    :return: A JSON string containing the source file path and the query results.
+    """
+    splitter = get_splitter(file_path)
+
     store_files = Path(__file__).parent / ".." / ".store_files"
     store_files.mkdir(exist_ok=True)
-    name = Path(file_path).stem
-    if (store_files / f"{name}.pkl").exists():
-        vector_store = InMemoryVectorStore.from_documents([], OpenAIEmbeddings(model="text-embedding-ada-002"))
-        with open(store_files / f"{name}.pkl", 'rb') as fd:
+    mktime = datetime.fromtimestamp(Path(file_path).stat().st_mtime).strftime('%Y%m%d_%H%M%S')
+    store_file_name = f"{mktime}_{Path(file_path).name}_{model}_{splitter.__name__}"
+
+    embed = embedding(force_api_type=force_api, model=model)
+
+    if (store_files / f"{store_file_name}.pkl").exists():
+        logger.info(f"{store_file_name} file is known and store will be recreated")
+
+        vector_store = InMemoryVectorStore.from_documents([], embed)
+        # Recall the stored structure
+        with open(store_files / f"{store_file_name}.pkl", 'rb') as fd:
             vector_store.store = pickle.load(fd)
-        logger.info(f"{name} file known and recall")
     else:
-        logger.info(f"{name} file not known and will be processed first time")
-        loader = PyPDFLoader(file_path, extraction_mode="plain", extract_images=False)
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
-        docs = loader.load_and_split(text_splitter=text_splitter)
-        vector_store = InMemoryVectorStore.from_documents(docs, OpenAIEmbeddings(model="text-embedding-ada-002"))
-        with open(store_files / f"{name}.pkl", 'wb') as fd:
+        logger.info(f"{store_file_name} file not known and store will be created")
+
+        docs = splitter.split(file_path)
+
+        vector_store = InMemoryVectorStore.from_documents(docs, embed)
+        # Store the store structure for further use
+        with open(store_files / f"{store_file_name}.pkl", 'wb') as fd:
             pickle.dump(vector_store.store, fd, pickle.HIGHEST_PROTOCOL)
-    results = vector_store.similarity_search(query, k=10)
-    ret = []
-    for result in results:
-        ret.append(dict(content=result.page_content, **result.metadata))
+
+    results = vector_store.similarity_search_with_score(query, k=k)
+    ret = {"source": file_path, "query_results": []}
+    for result, score in results:
+        if score < 0.7:
+            # remove results which are very low connected
+            print(f"Remove = {result}")
+            continue
+        result.metadata.pop("source", None)  # remove source
+        ret["query_results"].append(dict(content=result.page_content, **result.metadata))
     return json.dumps(ret)
+
+
 
 def init_vector_search(tool_setting: Dict) -> BaseTool:
     """
-    Initialize the text-to-image tool with the given settings.
+    Initialize a vector search tool with the given settings.
 
-    This function creates a StructuredTool instance for generating images
-    from text descriptions using the specified tool settings.
+    This function configures a structured tool for performing vector searches.
+    It uses a specified model to load, split, and upload documents to a vector
+    database, enabling semantic search for user queries.
 
-    :param tool_setting: Dictionary containing settings for the tool,
-                         including the 'assistant' key with 'force_api'.
-    :return: An instance of BaseTool configured for text-to-image generation.
+    :param tool_setting: A dictionary containing configuration for the tool,
+                         including model and assistant API settings.
+    :return: An instance of a structured tool configured for vector search.
     """
     return StructuredTool.from_function(
         func=functools.partial(
             vector_search,
-            tool_setting["assistant"]
+            map_model(tool_setting.get("model", "text-embedding-ada-002"), tool_setting["assistant"].force_api),
+            tool_setting["assistant"].force_api
         ),
         name="vector-search",
-        description="Load and split document and upload to vector database and use semantic search to find answer on user query. The result is list of dict(content, page, source) which must be structure and rephrase",
+        description="Load and split document and upload to vector database and use semantic search to find answer on user query. "
+                    "The result is JSON {'source': file_path, 'query_results': [dict(content, page, other_metadata), dict(content, page, other_metadata),...]} "
+                    "which must be structure and rephrase",
         args_schema=VectorSearchInput,
         return_direct=False,
     )
