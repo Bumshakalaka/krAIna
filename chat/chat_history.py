@@ -310,13 +310,17 @@ class UserQuery(ttk.Frame):
         fn = askopenfilename(
             parent=self,
             initialdir=Path(__file__).parent / "..",
-            filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]), ("All files", "*.*")),
+            filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]),
+                       ("docs", ["*.pdf", "*.txt", "*.log", "*.md", "*.rst", "*.csv"]),
+                       ("All files", "*.*")),
         )
         if fn and Path(fn).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
             name = self.root.images.create_from_file(Path(fn))
             self.text.image_create(tk.END, image=self.root.images[name], name=name)
             self.text.tag_add(name, name)
             self.text.tag_add("IMAGES", name)
+        else:
+            self.text.insert(tk.END, f"[{Path(fn).name}]({fn})\n")
 
     def _on_paste(self, *args):
         """
