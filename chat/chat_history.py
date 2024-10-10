@@ -303,6 +303,8 @@ class UserQuery(ttk.Frame):
             self.text.tag_add(name, name)
             self.text.tag_add("IMAGES", name)
             return e.action
+        elif e.data and Path(e.data).suffix.lower() in [".pdf", ".txt", ".log", ".md", ".csv"]:
+            self.text.insert(tk.END, f"[{Path(e.data).name}]({e.data})\n")
         else:
             return REFUSE_DROP
 
@@ -311,7 +313,7 @@ class UserQuery(ttk.Frame):
             parent=self,
             initialdir=Path(__file__).parent / "..",
             filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]),
-                       ("docs", ["*.pdf", "*.txt", "*.log", "*.md", "*.rst", "*.csv"]),
+                       ("docs", ["*.pdf", "*.txt", "*.log", "*.md", "*.csv"]),
                        ("All files", "*.*")),
         )
         if fn and Path(fn).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
