@@ -17,28 +17,29 @@ Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic
 Chat GUI application built using tkinter.
 
 ![chat](img/kraina_chat.gif)
-features:
-- Chat conversation with text and HTML views
-- Light/Dark and other built-in themes (Note: The Sun-Valley themes use PNG bitmaps in widgets, which makes the theme really slow on Windows)
-- Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanently, copy chat to clipboard)
-- Assistant selection
-- Support for snippets — right-click in the user query widget to apply transformation on text
-- Overwrite Assistant settings
-- Persistent storage on exit
-- Progress bar to visualize that LLM is working
-- Status bar with information about estimated tokens used for system prompt, history, tools, and completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-- Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-- Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
-  - `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run the Chat application or show it. It can be assigned to a global shortcut in the OS
-  - Run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
-- Markdown/HTML support
-- Debug Window (bottom-right corner) with the application logs
-- Automatically copy the last AI response to the system clipboard
-- Macro management window
-- Right-click on assistant, snippet, or macro allows editing it. The app will reload after the file update
-- Handling text-to-image generation (Images are stored as data URLs in-app memory)
-- Handling image-to-text - Drag'n'Drop image or paste it into the user query field
 
+features:
+* Chat with history (html and text tabs available)
+* Light/Dark and other build-in themes
+* Chats history which can be recalled. They are auto-named and describe
+* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
+* Assistant selection
+* Support for snippets — right-click in the user query widget to apply transformation on a text
+* Overwrite Assistant settings
+* persistence storage on exit
+* progress bar to visualize that LLM is working
+* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+* Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
+* Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
+  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
+  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
+* Markdown/HTML support
+* Debug Window (right-bottom corner) with the application logs
+* Copy last AI response automatically to system clipboard
+* Macro management window
+* Right-click on assistant, snippet or macro allows editing it
+* Handling text-to-image generation (Images are stored as data URLs in app memory)
+* Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 

@@ -23,6 +23,7 @@ from langchain_community.tools import BraveSearch, WolframAlphaQueryRun
 from langchain_community.utilities import WolframAlphaAPIWrapper
 from langchain_core.tools import BaseTool
 
+from tools.joplin import init_joplin_search
 from tools.text_to_image import init_text_to_image
 from tools.vector_store import init_vector_search
 
@@ -84,5 +85,6 @@ SUPPORTED_TOOLS = {
     "wolfram_alpha": init_wolfram_alpha,
     "text-to-image": init_text_to_image,
     "vector-search": init_vector_search,
+    "joplin-search": init_joplin_search,
 }
 """List of supported tools with initialisation function."""
