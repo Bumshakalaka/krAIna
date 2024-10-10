@@ -19,7 +19,7 @@ Chat GUI application built using tkinter.
 ![chat](img/kraina_chat.gif)
 
 features:
-* Chat with history (html and text tabs available)
+* Chat with history (HTML and text tabs available)
 * Light/Dark and other build-in themes
 * Chats history which can be recalled. They are auto-named and describe
 * Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
