@@ -4,7 +4,7 @@ import logging
 import subprocess
 import webbrowser
 from pathlib import Path
-from tkinter import ttk, messagebox
+from tkinter import ttk
 import tkinter as tk
 from tkinter.simpledialog import Dialog
 from typing import List, Dict
@@ -16,7 +16,6 @@ import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
 from chat.scroll_frame import ScrollFrame
 from libs.db.model import Conversations
-from libs.llm import read_model_settings
 
 logger = logging.getLogger(__name__)
 
@@ -208,12 +207,6 @@ class LeftSidebar(ttk.Frame):
             subprocess.Popen(args + [str(fn)], start_new_session=True)
         else:
             webbrowser.open(str(fn), new=2, autoraise=True)
-        ret = messagebox.askyesno(
-            "Edit", "Did you finish editing the files?\nWould you like to reload the application configuration?"
-        )
-        if ret:
-            read_model_settings()
-            self.root.post_event(APP_EVENTS.RELOAD_AI, None)
 
     def assistant_change(self, *args):
         chat_persistence.SETTINGS.last_assistant = self.root.selected_assistant.get()

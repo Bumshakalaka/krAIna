@@ -17,7 +17,7 @@ pygments~=2.18.0
 python-dotenv~=1.0.1
 pywinstyles~=1.8; os_name != 'posix'
 requests~=2.31.0
-setuptools~=71.1.0  # required for Python 3.12 for klemboard package
+setuptools~=71.1.0  # required for Python 3.12 for klemboard package>
 sv-ttk~=2.6.0
 tiktoken~=0.7.0
 tkinter-tooltip~=3.1.0
@@ -27,3 +27,4 @@ windows-toasts~=1.2.0; os_name != 'posix'
 tkinterdnd2-universal~=1.7.3
 pypdf[full]~=5.0.1
 aenum~=3.1.15
+watchfiles~=0.24.0

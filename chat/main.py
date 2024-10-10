@@ -30,10 +30,11 @@ import chat.chat_images as chat_images
 from chat.leftsidebar import LeftSidebar
 from chat.menu import Menu
 from chat.status_bar import StatusBar
+from chat.watch_files import watch_my_files, watch_exit_event
 from libs.db.controller import Db
 from PIL import ImageTk, Image
 
-from libs.llm import get_llm_type, SUPPORTED_API_TYPE
+from libs.llm import get_llm_type, SUPPORTED_API_TYPE, read_model_settings
 from libs.utils import str_shortening, prepare_message, to_md, IMAGE_DATA_URL_MARKDOWN_RE, _convert_data_url_to_file_url
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
@@ -136,6 +137,7 @@ class App(TkinterDnD.Tk):
         self.selected_assistant = tk.StringVar(self, list(self.ai_assistants.keys())[0])
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
+        self.macro_window = None
         Menu(self)
         self.pw_main = tk.PanedWindow(orient=tk.HORIZONTAL, height=80, opaqueresize=False, sashpad=2, sashwidth=4)
 
@@ -191,6 +193,22 @@ class App(TkinterDnD.Tk):
             "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
         )
         self.chatW.userW.text.focus_force()
+        watch_my_files(self._reload_on_file_change)
+
+    def _reload_on_file_change(self, what):
+        if what in ["assistants", "snippets"]:
+            read_model_settings()
+            self.post_event(APP_EVENTS.RELOAD_AI, None)
+        elif what == "main":
+            load_dotenv(find_dotenv(), override=True)
+            self._settings_read()
+            read_model_settings()
+            self.post_event(APP_EVENTS.RELOAD_AI, None)
+            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+        elif what == "macros":
+            if self.macro_window:
+                self.macro_window.macros_reload()
+
 
     @property
     def current_assistant(self):
@@ -492,6 +510,7 @@ class App(TkinterDnD.Tk):
 
     def quit_app(self, *args):
         """Quit application handler."""
+        watch_exit_event.set()
         if self.wm_state() == "zoomed":
             chat_persistence.SETTINGS.geometry = "zoomed"
         else:

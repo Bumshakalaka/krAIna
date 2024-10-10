@@ -1,21 +1,18 @@
 """Menu widget"""
 import functools
 import logging
-import os
 import subprocess
 import tkinter as tk
 import webbrowser
 from pathlib import Path
 from tkinter import ttk, messagebox
 
-from dotenv import find_dotenv, load_dotenv
-
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
 from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from chat.macro_window import MacroWindow
-from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE, read_model_settings
+from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -149,15 +146,6 @@ class SettingsMenu(tk.Menu):
             subprocess.Popen(args + [str(fn)], start_new_session=True)
         else:
             webbrowser.open(str(fn), new=2, autoraise=True)
-        ret = messagebox.askyesno(
-            "Edit", "Did you finish editing the files?\nWould you like to reload the application configuration?"
-        )
-        if ret:
-            load_dotenv(find_dotenv(), override=True)
-            self.parent._settings_read()
-            read_model_settings()
-            self.parent.post_event(APP_EVENTS.RELOAD_AI, None)
-            self.parent.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
 
 class ThemeSelect(tk.Menu):
@@ -212,7 +200,7 @@ class Menu(tk.Menu):
         """Create menu."""
         super().__init__(parent, relief=tk.FLAT)
         self.parent = parent
-        self.macro_window = None
+        self.parent.macro_window = None
         parent.config(menu=self)
         self.add_cascade(label="Llm", menu=LlmMenu(parent, tearoff=0))
         self.add_command(label="Macros", command=self.create_macro_window)
@@ -222,9 +210,9 @@ class Menu(tk.Menu):
 
     def create_macro_window(self, *args):
         """Create a debug window or summon it if it already exists."""
-        if not self.macro_window:
-            self.macro_window = MacroWindow(self.parent)
-        if not self.macro_window.visible:
-            self.macro_window.show()
+        if not self.parent.macro_window:
+            self.parent.macro_window = MacroWindow(self.parent)
+        if not self.parent.macro_window.visible:
+            self.parent.macro_window.show()
         else:
-            self.macro_window.hide()
+            self.parent.macro_window.hide()

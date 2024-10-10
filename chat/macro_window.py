@@ -8,8 +8,8 @@ import threading
 import tkinter as tk
 import webbrowser
 from pathlib import Path
-from tkinter import ttk, messagebox
-from typing import Callable, Dict
+from tkinter import ttk
+from typing import Dict
 
 from tktooltip import ToolTip
 
@@ -234,11 +234,6 @@ class MacroWindow(tk.Toplevel):
             subprocess.Popen(args + [str(fn)], start_new_session=True)
         else:
             webbrowser.open(str(fn), new=2, autoraise=True)
-        ret = messagebox.askyesno(
-            "Edit", "Did you finish editing the files?\nWould you like to reload the application configuration?"
-        )
-        if ret:
-            self.macros_reload()
 
     def macros_reload(self):
         """
