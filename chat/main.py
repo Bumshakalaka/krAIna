@@ -156,6 +156,7 @@ class App(TkinterDnD.Tk):
             self.pw_main.unbind("<Configure>")
 
         self.pw_main.bind("<Configure>", _set_sashpos)
+        self.dbg_window = None
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.BOTH)
         self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
@@ -511,10 +512,15 @@ class App(TkinterDnD.Tk):
     def quit_app(self, *args):
         """Quit application handler."""
         watch_exit_event.set()
+        if self.macro_window:
+            self.macro_window.hide()
+        if self.dbg_window:
+            self.dbg_window.hide()
         if self.wm_state() == "zoomed":
             chat_persistence.SETTINGS.geometry = "zoomed"
         else:
             chat_persistence.SETTINGS.geometry = self.wm_geometry()
+
         self._persistent_write()
         self.destroy()
 

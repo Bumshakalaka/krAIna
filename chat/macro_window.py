@@ -320,7 +320,7 @@ class MacroWindow(tk.Toplevel):
         """Hide the window."""
         if self.visible:
             if int(self.geometry().split("x")[0]) > 10:
-                chat_persistence.SETTINGS.dbg_wnd_geometry = self.geometry()
+                chat_persistence.SETTINGS.macro_wnd_geometry = self.geometry()
             self.withdraw()
             self.visible = False
 

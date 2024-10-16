@@ -25,7 +25,6 @@ class StatusBar(tk.Frame):
         """
         super().__init__(parent, padx=2, pady=0)
         self.root = parent
-        self.dbg_window = None
         ttk.Separator(self).pack(side=tk.TOP, fill=tk.X)
         self.token_usage = tk.StringVar()
         self.token_usage_full_str = tk.StringVar()
@@ -94,7 +93,7 @@ class StatusBar(tk.Frame):
 
         Only when the Debug window does not exist or is not visible.
         """
-        if self.dbg_window and self.dbg_window.visible:
+        if self.root.dbg_window and self.root.dbg_window.visible:
             return
         self.blink_stop()
         self.blink_after_id = self.after(300, self.blink)
@@ -122,12 +121,12 @@ class StatusBar(tk.Frame):
     def create_dbg_window(self):
         """Create a debug window or summon it if it already exists."""
         self.blink_stop()
-        if not self.dbg_window:
-            self.dbg_window = DbgLogWindow(self.root)
-        if not self.dbg_window.visible:
-            self.dbg_window.show()
+        if not self.root.dbg_window:
+            self.root.dbg_window = DbgLogWindow(self.root)
+        if not self.root.dbg_window.visible:
+            self.root.dbg_window.show()
         else:
-            self.dbg_window.hide()
+            self.root.dbg_window.hide()
 
     def update_statusbar_api(self, data: str):
         """update_statusbar_api"""
