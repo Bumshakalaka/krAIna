@@ -62,7 +62,7 @@ class BaseAssistant:
     """Description of the assistant"""
     prompt: str = None
     """Assistant system prompt"""
-    _model: str = "gpt-3.5-turbo"
+    _model: str = "B"
     """Assistant LLM model"""
     temperature: float = 0.7
     """Assistant temperature"""
@@ -228,7 +228,9 @@ class BaseAssistant:
             ret = self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
         else:
             ret = self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
-
+        if isinstance(ret, list):
+            # anthropic returns here list of dict(text, index, type)
+            ret = ret[0]["text"]
         used_tokens["output"] = len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
 

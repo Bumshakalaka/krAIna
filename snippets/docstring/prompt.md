@@ -10,6 +10,7 @@ Generate a Python docstring in reStructuredText format for the given Python obje
 - Do not mention the functionality of other functions explicitly unless it is useful to understand the main function.
 - Output the Python code with the docstring while keeping the original code intent intact.
 - Format the output as Markdown code.
+- be consisted, do not add sentence starts with: Here is, certainly, hello. I need only Python code with docstring
 
 **Example**:
 

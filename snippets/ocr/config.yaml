@@ -1,4 +1,4 @@
-model: gpt-4o
+model: A
 temperature: 0.7
 specialisation:
   file: overwrite.py

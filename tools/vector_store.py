@@ -10,6 +10,7 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import BaseModel, Field
 
 from libs.llm import embedding, map_model
+from libs.utils import str_shortening
 from tools.base import logger
 from tools.vector_store_file_splitter import get_splitter
 
@@ -40,7 +41,7 @@ def vector_search(model: str, force_api: str, query: str, file_path: str, k: int
     store_files = Path(__file__).parent / ".." / ".store_files"
     store_files.mkdir(exist_ok=True)
     mktime = datetime.fromtimestamp(Path(file_path).stat().st_mtime).strftime('%Y%m%d_%H%M%S')
-    store_file_name = f"{mktime}_{Path(file_path).name}_{model}_{splitter.__name__}"
+    store_file_name = f"{mktime}_{Path(file_path).name}_{model.replace("/", "_")}_{splitter.__name__}"
 
     embed = embedding(force_api_type=force_api, model=model)
 
@@ -64,9 +65,9 @@ def vector_search(model: str, force_api: str, query: str, file_path: str, k: int
     results = vector_store.similarity_search_with_score(query, k=k)
     ret = {"source": file_path, "query_results": []}
     for result, score in results:
-        if score < 0.7:
+        if score < 0.3:
             # remove results which are very low connected
-            print(f"Remove = {result}")
+            logger.warning(f"Remove because of score {score} < 0.3 - {str_shortening(result.page_content)}")
             continue
         result.metadata.pop("source", None)  # remove source
         ret["query_results"].append(dict(content=result.page_content, **result.metadata))

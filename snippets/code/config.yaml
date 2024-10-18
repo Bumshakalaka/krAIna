@@ -1,5 +1,5 @@
-force_api: openai
-model: gpt-4o
+#force_api: openai
+model: A
 temperature: 0.5
 max_tokens: 2048
 specialisation:

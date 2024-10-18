@@ -13,6 +13,7 @@ llm:
     anthropic:
       A: claude-3-5-sonnet-20240620
       B: claude-3-haiku-20240307
+      text-embedding-ada-002: voyage-3
 chat:
   default_assistant:
   visible_last_chats: 15

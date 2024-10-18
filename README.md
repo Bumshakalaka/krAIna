@@ -236,9 +236,12 @@ The file is split and stored only once (embedding is done once),
 and the vector database is dumped to a local file (located in `.store_files`),
 so the next queries against the file do not require new file processing.
 
-Depends on the LLM used, whether it's OpenAI or Azure, the corresponding embedding endpoint is used.
+Depends on the LLM used, whether it's OpenAI, Azure or Anthropic, the corresponding embedding endpoint is used.
 
-By default, `text-embedding-ada-002` model is used, but it can be change in `config.yaml`:
+> [!Note]
+> Anthropic LLM required [Voyage AI](https://www.voyageai.com) service. See [Voyage docs](https://docs.voyageai.com/docs/api-key-and-installation) for details
+
+By default, `text-embedding-ada-002` (for Anthropic `voyage-3`) model is used, but it can be change in `config.yaml`:
 ``` yaml
 tools:
   vector-search:

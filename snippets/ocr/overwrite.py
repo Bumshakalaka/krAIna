@@ -37,7 +37,7 @@ class Response(BaseSnippet):
             {"type": "text", "text": self.prompt},
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                "image_url": {"url": f"data:image/png;base64,{base64_image}"},
             },
         ]
         ret = chat.invoke([HumanMessage(content=content)])

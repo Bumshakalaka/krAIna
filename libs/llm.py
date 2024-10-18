@@ -3,13 +3,14 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union
 
 import yaml
 from langchain_anthropic import ChatAnthropic
 from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI, AzureChatOpenAI, OpenAIEmbeddings, AzureOpenAIEmbeddings
 from openai import OpenAI, AzureOpenAI
+from langchain_voyageai import VoyageAIEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,7 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
     }
     return models[get_llm_type(force)](**kwargs)
 
+
 def embedding(**kwargs) -> Embeddings:
     """
     Create an embedding instance based on specified parameters.
@@ -145,7 +147,7 @@ def embedding(**kwargs) -> Embeddings:
     :return: An instance of the appropriate embedding class.
     :raises KeyError: If 'model' is not provided in kwargs.
     """
-    #TODO: add support for fastembed
+    # TODO: add support for fastembed
     force = kwargs.get("force_api_type", None)
     try:
         kwargs.pop("force_api_type")
@@ -155,12 +157,12 @@ def embedding(**kwargs) -> Embeddings:
         if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
             kwargs[k] = v
     kwargs["model"] = map_model(kwargs["model"], force)
-    models = {
+    embeddings = {
         SUPPORTED_API_TYPE.AZURE: AzureOpenAIEmbeddings,
         SUPPORTED_API_TYPE.OPENAI: OpenAIEmbeddings,
+        SUPPORTED_API_TYPE.ANTHROPIC: VoyageAIEmbeddings,
     }
-    return models[get_llm_type(force)](**kwargs)
-
+    return embeddings[get_llm_type(force)](**kwargs)
 
 
 def image_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:

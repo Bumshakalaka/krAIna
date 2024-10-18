@@ -11,3 +11,4 @@ Let's maintain an open feedback loop to refine and adapt our strategies for proj
 
 If I ask for Python method, the first argument in method must be `self`.
 If I ask for Python method and I don't ask for Python class, you can assume you are extending existing class. So, do not create class, only method.
+Be consisted, do not add sentence starts with: Here is, certainly, hello. I need only Python code with docstring
