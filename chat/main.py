@@ -198,6 +198,15 @@ class App(TkinterDnD.Tk):
         watch_my_files(self._reload_on_file_change)
 
     def _reload_on_file_change(self, what):
+        """
+        Reload configurations or settings when a specific file changes.
+
+        Depending on the type of file change, the function reloads different settings and posts relevant events.
+
+        :param what: The type of file change. Expected values are "assistants", "snippets", "main", or "macros".
+        :return: None
+        :raises KeyError: If the `what` parameter is not one of the expected values.
+        """
         if what in ["assistants", "snippets"]:
             read_model_settings()
             self.post_event(APP_EVENTS.RELOAD_AI, None)
@@ -206,10 +215,13 @@ class App(TkinterDnD.Tk):
             self._settings_read()
             read_model_settings()
             self.post_event(APP_EVENTS.RELOAD_AI, None)
-            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+            self.after_idle(self.post_event, APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
         elif what == "macros":
             if self.macro_window:
                 self.macro_window.macros_reload()
+        else:
+            raise KeyError(f"Unexpected value for 'what': {what}")
+
 
 
     @property
