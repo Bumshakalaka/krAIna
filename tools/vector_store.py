@@ -41,7 +41,7 @@ def vector_search(model: str, force_api: str, query: str, file_path: str, k: int
     store_files = Path(__file__).parent / ".." / ".store_files"
     store_files.mkdir(exist_ok=True)
     mktime = datetime.fromtimestamp(Path(file_path).stat().st_mtime).strftime('%Y%m%d_%H%M%S')
-    store_file_name = f"{mktime}_{Path(file_path).name}_{model.replace("/", "_")}_{splitter.__name__}"
+    store_file_name = f"{mktime}_{Path(file_path).name}_" + model.replace("/", "_") + splitter.__name__
 
     embed = embedding(force_api_type=force_api, model=model)
 
