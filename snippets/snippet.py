@@ -86,6 +86,10 @@ class BaseSnippet:
                 prompt.append(ret)  # add the previous chunk to the conversation
                 prompt.append(HumanMessage("The response is not complete, continue"))  # ask for more
                 ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))  # send request to LLM
+                if ret.content.strip() == "":
+                    raise AttributeError(
+                        f"'max_tokens' {self.max_tokens} is too low to get response, consider increase it"
+                    )
             # now wwe have all chunks. Concatenate all AI responses and return them together with last response from LLM
             ret.content = "".join([ai_msg.content for ai_msg in prompt.messages if isinstance(ai_msg, AIMessage)])
             return ret
@@ -94,21 +98,28 @@ class BaseSnippet:
         """
         Run the snippet with a user query.
 
-        :param query: text which is passed as Human text to LLM chat.
-        :param kwargs: additional key-value pairs to substitute in System prompt
-        :return:
+        This function processes the query using a language model,
+        applying different settings based on the model type.
+
+        If o1-* reasoning model is used, the system prompt becomes user prompt and temperature is always 1.
+        https://platform.openai.com/docs/guides/reasoning/quickstart
+
+        :param query: Text passed as Human text to LLM chat.
+        :param kwargs: Additional key-value pairs to substitute in System prompt.
+        :return: The content of the language model's response.
         """
         logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
-        chat = chat_llm(
-            force_api_type=self.force_api, model=self.model, temperature=self.temperature, max_tokens=self.max_tokens
-        )
-
+        llm_kwargs = dict(force_api_type=self.force_api, model=self.model)
+        if self.model.startswith("o1"):  # reasoning models
+            llm_kwargs.update(dict(max_completion_tokens=self.max_tokens, temperature=1))
+            system_role = "human"
+        else:
+            llm_kwargs.update(dict(temperature=self.temperature, max_tokens=self.max_tokens))
+            system_role = "system"
+        chat = chat_llm(**llm_kwargs)
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    self.prompt,
-                ),
+                (system_role, self.prompt),
                 ("human", "{text}"),
             ]
         )
