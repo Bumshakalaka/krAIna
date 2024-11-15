@@ -303,6 +303,15 @@ tools:
     model: whisper-1
 ```
 
+#### image-analysis
+
+Analyze images to extract information or interpret the visual content. This tool can be used for various applications such as object detection, scene understanding, or content tagging.
+It works with the current assistant which calls the tool, So the tool must be used with models which interpret images.
+Parameters:
+- **uri**: URL or local file path of the image to analyze.
+- **prompt**: Instructions on how to analyze the image.
+
+
 ### Macros
 Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.
 

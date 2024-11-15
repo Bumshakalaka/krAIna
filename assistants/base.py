@@ -1,8 +1,9 @@
 """Base class for assistants."""
+
 import logging
 from pathlib import Path
 from pprint import pprint
-from typing import Dict
+from typing import Dict, TypeAlias
 
 import yaml
 from dotenv import load_dotenv, find_dotenv
@@ -93,6 +94,8 @@ class Assistants(Dict[str, BaseAssistant]):
                     logger.debug(f"{assistant.name} does not use config.yaml, default will be used.")
                 self[assistant.name] = assistant_cls(name=assistant.name, path=assistant, prompt=prompt, **settings)
 
+
+Assistant: TypeAlias = BaseAssistant
 
 if __name__ == "__main__":
     load_dotenv(find_dotenv())

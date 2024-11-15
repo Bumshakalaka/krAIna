@@ -60,7 +60,7 @@ class BaseAssistant:
     """Assistant name"""
     description: str = ""
     """Description of the assistant"""
-    prompt: str = None
+    prompt: str = ""
     """Assistant system prompt"""
     _model: str = "B"
     """Assistant LLM model"""
