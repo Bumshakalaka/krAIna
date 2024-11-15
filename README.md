@@ -311,6 +311,13 @@ Parameters:
 - **uri**: URL or local file path of the image to analyze.
 - **prompt**: Instructions on how to analyze the image.
 
+#### text-to-text
+
+Reads and processes text files, extracting and interpreting the content as needed.
+It works with the current assistant which calls the tool.
+Parameters:
+- **uri**: URL or local file to read.
+
 
 ### Macros
 Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.

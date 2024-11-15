@@ -27,6 +27,7 @@ from tools.audio_to_text import init_audio_to_text
 from tools.image_analyse import init_image_analysis
 from tools.joplin import init_joplin_search
 from tools.text_to_image import init_text_to_image
+from tools.text_to_text import init_text_to_text
 from tools.vector_store import init_vector_search
 
 
@@ -89,6 +90,7 @@ SUPPORTED_TOOLS = {
     "vector-search": init_vector_search,
     "joplin-search": init_joplin_search,
     "audio-to-text": init_audio_to_text,
+    "text-to-text": init_text_to_text,
     "image-analysis": init_image_analysis,
 }
 """List of supported tools with initialisation function."""
