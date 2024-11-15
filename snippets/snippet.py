@@ -1,4 +1,5 @@
 """Base snippet class."""
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,6 +11,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 
+from libs.langfuse import langfuse_handler
 from libs.llm import chat_llm, map_model
 
 logger = logging.getLogger(__name__)
@@ -70,7 +72,9 @@ class BaseSnippet:
         :param kwargs: additonal args
         :return:
         """
-        ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))
+        ret = chat.invoke(
+            prompt.format_prompt(text=text, **kwargs), config={"callbacks": [langfuse_handler(["snippet", self.name])]}
+        )
         finish_reason = "finish_reason"
         stop_str = ["stop"]
         if isinstance(chat, ChatAnthropic):
@@ -85,7 +89,10 @@ class BaseSnippet:
                 # ask for the next chunk
                 prompt.append(ret)  # add the previous chunk to the conversation
                 prompt.append(HumanMessage("The response is not complete, continue"))  # ask for more
-                ret = chat.invoke(prompt.format_prompt(text=text, **kwargs))  # send request to LLM
+                ret = chat.invoke(
+                    prompt.format_prompt(text=text, **kwargs),
+                    config={"callbacks": [langfuse_handler(["snippet", self.name])]},
+                )  # send request to LLM
                 if ret.content.strip() == "":
                     raise AttributeError(
                         f"'max_tokens' {self.max_tokens} is too low to get response, consider increase it"

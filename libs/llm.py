@@ -1,4 +1,5 @@
 """LLM handling."""
+
 import enum
 import logging
 import os
@@ -9,7 +10,7 @@ import yaml
 from langchain_anthropic import ChatAnthropic
 from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI, AzureChatOpenAI, OpenAIEmbeddings, AzureOpenAIEmbeddings
-from openai import OpenAI, AzureOpenAI
+from langfuse.openai import OpenAI, AzureOpenAI
 from langchain_voyageai import VoyageAIEmbeddings
 
 logger = logging.getLogger(__name__)

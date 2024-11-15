@@ -504,6 +504,19 @@ tools:
     model: text-embedding-ada-002
 ```
 
+## LangFuse support
+
+[LangFuse](https://langfuse.com) is a platform for Traces, evals, prompt management and metrics to debug and improve your LLM application.
+
+The support here is done via LangChain integration. To use it fill env variable in `.env` file:
+
+```
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+LANGFUSE_HOST=
+```
+
+
 ## Extensions
 
 KrAIna can be easily extended by personal, third-party sets of the above beings by creating a folder (or creating a symlink) in KrAIna.

@@ -1,4 +1,5 @@
 """Base assistant class."""
+
 import enum
 import itertools
 import json
@@ -17,6 +18,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from tiktoken import encoding_for_model, Encoding, get_encoding
 
 from libs.db.controller import Db, LlmMessageType
+from libs.langfuse import langfuse_handler
 from libs.llm import chat_llm, map_model
 from libs.utils import IMAGE_DATA_URL_MARKDOWN_RE
 from tools.base import get_and_init_tools
@@ -256,7 +258,9 @@ class BaseAssistant:
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
         if hist:
             kwargs["hist"] = hist
-        return chat.invoke(prompt.format_prompt(**kwargs)).content
+        return chat.invoke(
+            prompt.format_prompt(**kwargs), config={"callbacks": [langfuse_handler(["assistant", self.name])]}
+        ).content
 
     def _run_assistant_with_tools(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:
         """Run an assistant with the tools query."""
@@ -282,7 +286,7 @@ class BaseAssistant:
         agent = create_tool_calling_agent(llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
         chunks = []
-        for chunk in agent_executor.stream(kwargs):
+        for chunk in agent_executor.stream(kwargs, config={"callbacks": [langfuse_handler(["assistant", self.name])]}):
             chunks.append(chunk)
             # Agent Action
             if "actions" in chunk:
