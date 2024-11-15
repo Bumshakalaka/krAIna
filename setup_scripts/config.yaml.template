@@ -2,17 +2,20 @@ llm:
   map_model:
     azure:
       A: gpt-4o
-      B: gpt-35-turbo
+      B: gpt-4o-mini
+      C: gpt-35-turbo
       gpt-4-turbo: gpt-4-turbo-128k
       gpt-3.5-turbo: gpt-35-turbo
       dall-e-2: Dalle2
       dall-e-3: Dalle3
     openai:
       A: gpt-4o
-      B: gpt-3.5-turbo
+      B: gpt-4o-mini
+      C: gpt-3.5-turbo
     anthropic:
-      A: claude-3-5-sonnet-20240620
-      B: claude-3-haiku-20240307
+      A: claude-3-5-sonnet-latest
+      B: claude-3-5-haiku-20241022
+      C: claude-3-haiku-20240307
       text-embedding-ada-002: voyage-3
 chat:
   default_assistant:
