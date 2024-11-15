@@ -165,7 +165,7 @@ def embedding(**kwargs) -> Embeddings:
     return embeddings[get_llm_type(force)](**kwargs)
 
 
-def image_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:
+def llm_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:
     """
 
     :param kwargs:

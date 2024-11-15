@@ -288,6 +288,21 @@ tools:
     model: text-embedding-ada-002
 ```
 
+#### Audio-to-text
+
+Transcribes audio files into text.
+It works with OpenAI and AzureOpenAI.
+This tool generates images based on a textual description.
+Parameters:
+- **file_path**: Path to the local audio file to transcribe.
+
+By default, `whisper-1` model is used, but it can be change in `config.yaml`:
+``` yaml
+tools:
+  audio-to-text:
+    model: whisper-1
+```
+
 ### Macros
 Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
 
 import chat.chat_images as chat_images
-from libs.llm import image_client, map_model
+from libs.llm import llm_client, map_model
 
 load_dotenv(find_dotenv())
 
@@ -56,7 +56,7 @@ class TextToImageInput(BaseModel):
 
 def text_to_image(model: str, force_api: str, query: str, size: ImageSize, no_of_images: int = 1):
     """A wrapper around text-to-image API. Useful for when you need to generate images from a text description."""
-    client = image_client(force_api_type=force_api)
+    client = llm_client(force_api_type=force_api)
 
     generator = "DALLE2" if "2" in model else "DALLE3"
     response = client.images.generate(
