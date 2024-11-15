@@ -1,7 +1,8 @@
-import functools
+import tempfile
 from pathlib import Path
 from typing import Dict
 
+import requests
 from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel, Field
 from langchain_core.tools import BaseTool, StructuredTool
@@ -12,25 +13,30 @@ load_dotenv(find_dotenv())
 
 
 class AudioToTextInput(BaseModel):
-    file_path: str = Field(description="local audio file to transcript")
+    uri: str = Field(description="Audio file to transcript. Local or from URL")
 
 
-def audio_to_text(model: str, force_api: str, file_path: str):
+def audio_to_text(uri: str, model: str = "whisper-1", force_api: str = None):
     """
-    Convert audio file to text using a specified model and API.
+    Convert audio file to text using a specified model.
 
-    This function utilizes a language model client to transcribe audio content
-    from a file specified by the file path.
+    This function checks for the existence of the audio file, then uses a language model client
+    to transcribe the audio file into text.
 
-    :param model: The model to be used for transcription.
-    :param force_api: The API type to force the client to use.
-    :param file_path: The path to the audio file to be transcribed.
-    :return: The transcribed text from the audio file.
+    :param uri: Path to the audio file (local or url) to be transcribed.
+    :param model: The model to be used for transcription, default is 'whisper-1'.
+    :param force_api: Optional parameter to specify a particular API type. openai, azure
+    :return: Transcribed text from the audio file or an error message if the file does not exist.
+    :raises FileNotFoundError: If the specified audio file does not exist.
     """
-    if not Path(file_path).exists():
-        return f"'{file_path}' file not exists"
+    if uri.startswith("http"):
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb", suffix="." + uri.split(".")[-1]) as fd:
+            fd.write(requests.get(uri).content)
+        uri = fd.name
+    if not Path(uri).exists():
+        return f"'{uri}' file not exists"
     client = llm_client(force_api_type=force_api)
-    with open(file_path, "rb") as fd:
+    with open(uri, "rb") as fd:
         response = client.audio.transcriptions.create(
             model=model,
             file=fd,
@@ -49,10 +55,9 @@ def init_audio_to_text(tool_setting: Dict) -> BaseTool:
     :return: An instance of a BaseTool configured for audio-to-text transcription.
     """
     return StructuredTool.from_function(
-        func=functools.partial(
-            audio_to_text,
-            map_model(tool_setting.get("model", "whisper-1"), tool_setting["assistant"].force_api),
-            tool_setting["assistant"].force_api,
+        func=(lambda model, force_api: lambda uri: audio_to_text(uri, model, force_api))(
+            model=map_model(tool_setting.get("model", "whisper-1"), tool_setting["assistant"].force_api),
+            force_api=tool_setting["assistant"].force_api,
         ),
         name="audio-to-text",
         description="A wrapper around audio-to-text API. Useful when you need to transcript audio files",

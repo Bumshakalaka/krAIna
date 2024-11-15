@@ -1,5 +1,4 @@
-import functools
-from typing import Dict
+from typing import Dict, Literal
 
 from aenum import Enum
 
@@ -54,16 +53,37 @@ class TextToImageInput(BaseModel):
     no_of_images: int = Field(1, description="How many image to generate")
 
 
-def text_to_image(model: str, force_api: str, query: str, size: ImageSize, no_of_images: int = 1):
-    """A wrapper around text-to-image API. Useful for when you need to generate images from a text description."""
+def text_to_image(
+    query: str,
+    size: (
+        ImageSize | Literal["SMALL_SQUARE", "MEDIUM_SQUARE", "LARGE_SQUARE", "LARGE_LANDSCAPE", "LARGE_PORTRAIT"]
+    ) = ImageSize.SMALL_SQUARE,
+    no_of_images: int = 1,
+    model: str = "dall-e-3",
+    force_api: str = None,
+):
+    """
+    Generate images from a text query using a specified model and size.
+
+    This function interfaces with an LLM client to generate images from a text prompt.
+    It supports different image sizes and models, and can generate multiple images.
+
+    :param query: The text prompt to generate images from.
+    :param size: The desired size of the image(s), default is ImageSize.SMALL_SQUARE.
+    :param no_of_images: The number of images to generate, default is 1.
+    :param model: The model to use for image generation, default is "dall-e-3".
+    :param force_api: Optional parameter to force a specific API type (openai, azure).
+    :return: A string containing markdown formatted image links with their prompts.
+    :raises Exception: If image generation fails or an invalid parameter is provided.
+    """
     client = llm_client(force_api_type=force_api)
 
     generator = "DALLE2" if "2" in model else "DALLE3"
     response = client.images.generate(
-        model=model,
+        model=map_model(model, force_api),
         prompt=query,
         n=1 if GENERATOR_PROPS[generator]["MULTIPLE_IMAGES"] else no_of_images,
-        size=GENERATOR_PROPS[generator]["SIZE"][size.name],
+        size=GENERATOR_PROPS[generator]["SIZE"][size.name if isinstance(size, ImageSize) else size],
         response_format="url",
     )
 
@@ -88,10 +108,13 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
     :return: An instance of BaseTool configured for text-to-image generation.
     """
     return StructuredTool.from_function(
-        func=functools.partial(
-            text_to_image,
-            map_model(tool_setting.get("model", "dall-e-3"), tool_setting["assistant"].force_api),
-            tool_setting["assistant"].force_api,
+        func=(
+            lambda model, force_api: lambda query, size, no_of_images=1: text_to_image(
+                query, size, no_of_images, model, force_api
+            )
+        )(
+            model=tool_setting.get("model", "dall-e-3"),
+            force_api=tool_setting["assistant"].force_api,
         ),
         name="text-to-image",
         description="A wrapper around text-to-image API. Useful for when you need to generate images from a text description.",

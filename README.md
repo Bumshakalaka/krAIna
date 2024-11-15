@@ -196,6 +196,14 @@ To make such a tool, you need to follow these steps:
 
 The initialization of the tool (calling the init function) occurs when an Assistant is called, not when it is initialized.
 
+The core tool function can be called separately as a regular Python function.
+It can be useful in scripting
+by combining tools to do more complex tasks like summarize article where the images and audio is included.
+
+In such a mode:
+1. LLM is chosen based on .env variables and `force_api` function parameter
+2. model can be passed via `model` function parameter
+
 #### Text-to-image
 
 ![text-to-image](img/text-to-image.png)
@@ -667,9 +675,19 @@ ret = llm.run(
     use_db=False,
 )
 print(ret)  # AssistantResp(conv_id=None, content="Here is the extracted text from the image:\n\n```\nKrAIna CHAT\n\nFile Llm Settings\n\nNEW CHAT\nLast chats\n   Micros...
-
 ```
 
+```python
+from dotenv import load_dotenv, find_dotenv
+from libs.utils import convert_llm_response
+from tools.text_to_image import text_to_image
+
+if __name__ == "__main__":
+    load_dotenv(find_dotenv())
+    ret = text_to_image("Red LEGO tiger", "SMALL_SQUARE")
+    print(convert_llm_response(ret))  # ![img-18b8c05e24224250cd16dcbe918e0d14](file:///tmp/tmplpa4ls70.png)
+
+```
 #### Chat interface
 
 Like [chat.sh](#chatsh--chatbat) but from Python script. It is very useful for [macro](#macros) scripts
