@@ -3,6 +3,10 @@
 ## Core Tasks
 - Enhance asynchronous processing.
 - common codebase for snippets and assistants
+- divide code into:
+  - kraina - core assistant/snippets/tools base (as whl)
+  - kraina-chat
+  - kraina-api
 
 ## Assistant Enhancements
 - Implement memory and vector search capabilities.
@@ -24,6 +28,7 @@
 - Switch to Listbox with sidebar (do not use canvas + buttons) - possible speed optimization on Windows
 - Fix the scrolling of a chat list when there are not too many chats.
 - Currently, the images are stored in conversation DB as base64; maybe it would be better to store them as files
+- database switch/selection (also in memory db)
 
 ### Sidebar
 - add modify time to conversation
@@ -56,3 +61,8 @@
 ## Tools
 - add to a vector-search mechanism to iterate through already stored documents
 - vector-search - better handling of PDFs, process documents with images
+
+## Fixes:
+- token calculation for images
+- token calculation for audio
+- should user message be f-string like system message? BaseAssistant property maybe? This not the case for chat app 
