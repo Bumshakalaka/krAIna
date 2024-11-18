@@ -15,7 +15,7 @@ class ImageAnalyseInput(BaseModel):
     prompt: str = Field(description="What to do, how to analyse the image")
 
 
-def image_analyse(uri: str, prompt: str, model: str = "A", force_api: str = None):
+def image_analyse(uri: str, prompt: str, system_prompt: str = "", model: str = "A", force_api: str = None):
     """
     Analyze an image using an assistant.
 
@@ -24,6 +24,7 @@ def image_analyse(uri: str, prompt: str, model: str = "A", force_api: str = None
 
     :param uri: The URI of the image can be an HTTP link or a local file path.
     :param prompt: A textual prompt providing context or instructions for analysis.
+    :param system_prompt: A textual system prompt providing global instruction for analysis.
     :param model: The name of the model to be used for embedding.
     :param force_api: The API type: openai, azure, anthropic.
     :return: The content result from the assistant's analysis.
@@ -36,6 +37,7 @@ def image_analyse(uri: str, prompt: str, model: str = "A", force_api: str = None
 
     llm = Assistant()
     llm.force_api = force_api
+    llm.prompt = system_prompt
     llm.model = model
     llm.temperature = 1.0
     user_prompt = f"{prompt}\n![screen]({uri})\nUse fewest words possible and look closely."
@@ -54,9 +56,14 @@ def init_image_analysis(tool_setting: Dict) -> BaseTool:
     :return: A configured StructuredTool instance for image analysis.
     """
     return StructuredTool.from_function(
-        func=(lambda model, force_api: lambda uri, prompt: image_analyse(uri, prompt, model, force_api))(
+        func=(
+            lambda model, force_api, system_prompt: lambda uri, prompt: image_analyse(
+                uri, prompt, system_prompt, model, force_api
+            )
+        )(
             model=tool_setting.get("model", "A"),
             force_api=tool_setting["assistant"].force_api,
+            system_prompt="",
         ),
         name="image-analysis",
         description="Useful when you need to analyse the image or screenshot",
