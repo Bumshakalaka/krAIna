@@ -40,6 +40,7 @@ features:
 * Right-click on assistant, snippet or macro allows editing it
 * Handling text-to-image generation (Images are stored as data URLs in app memory)
 * Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
+* support for json_object output as well as serialize to Pydantic BaseModel
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -699,7 +700,38 @@ if __name__ == "__main__":
     load_dotenv(find_dotenv())
     ret = text_to_image("Red LEGO tiger", "SMALL_SQUARE")
     print(convert_llm_response(ret))  # ![img-18b8c05e24224250cd16dcbe918e0d14](file:///tmp/tmplpa4ls70.png)
+```
 
+```python
+from dotenv import load_dotenv, find_dotenv
+from pydantic import BaseModel
+
+from snippets.base import Snippets
+
+
+class NameIt(BaseModel):
+    name: str
+    description: str
+
+if __name__ == "__main__":
+    load_dotenv(find_dotenv())
+    snippets = Snippets()
+    nameit = snippets["nameit"]
+    nameit.pydantic_output = NameIt
+
+    ret = nameit.run(
+        """
+        User: write me simple class based on Thread.Timer which execute my function every XX s
+        AI: Certainly! You can create a simple class that utilizes `threading.Timer` to execute a function at regular intervals. Below is a Python class called `RepeatingTimer` that demonstrates how to achieve this:
+            ...
+        User: can I inherit from Thread.Timer here instead of do the complete implementation
+        AI: `threading.Timer` in Python is not designed to be directly subclassed for repeating functionality because it is a one-shot timer. Instead, ...
+            ...
+    """
+    )  # type: NameIt
+    print(type(ret))  # <class '__main__.NameIt'>
+    print(ret.name)  # Repeating Timer Class
+    print(ret.description)  # Discussion on subclassing Timer for repeated function execution in Python.
 ```
 #### Chat interface
 

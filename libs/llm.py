@@ -115,14 +115,14 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
 
     :param kwargs:
              force_api_type: azure or openai or anthropic - force API type
+             json_mode: True if response_format=json_object, False if the text. Default is text
              ... - pass to the chat object
     :return:
     """
     force = kwargs.get("force_api_type", None)
-    try:
-        kwargs.pop("force_api_type")
-    except KeyError:
-        pass
+    kwargs.pop("force_api_type", None)
+    json_mode = kwargs.get("json_mode", False)
+    kwargs.pop("json_mode", None)
     for k, v in OVERWRITE_LLM_SETTINGS.items():
         if k not in ["api_type"] and OVERWRITE_LLM_SETTINGS.get(k, "") != "":
             kwargs[k] = v
@@ -132,7 +132,10 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         SUPPORTED_API_TYPE.OPENAI: ChatOpenAI,
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
     }
-    return models[get_llm_type(force)](**kwargs)
+    if json_mode:
+        return models[get_llm_type(force)](**kwargs).bind(response_format={"type": "json_object"})  # noqa
+    else:
+        return models[get_llm_type(force)](**kwargs)
 
 
 def embedding(**kwargs) -> Embeddings:

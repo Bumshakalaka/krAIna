@@ -9,12 +9,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Union, List, Dict, Optional, Callable
+from typing import Union, List, Dict, Optional, Callable, Type
 
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from pydantic import BaseModel
 from tiktoken import encoding_for_model, Encoding, get_encoding
 
 from libs.db.controller import Db, LlmMessageType
@@ -44,7 +45,7 @@ class AssistantResp:
 
     conv_id: Union[int, None]
     """conversion ID"""
-    content: str
+    content: Union[str, Type[BaseModel]]
     """LLM Response"""
     tokens: Dict[str, int]
     """LLM token usage in Dict"""
@@ -84,6 +85,10 @@ class BaseAssistant:
     """List of additional contexts to be added to system prompt"""
     path: Path = None
     """Path to the assistant folder."""
+    json_mode: bool = False
+    """Force LLM to output in json_object format"""
+    pydantic_output: Type[BaseModel] = None
+    """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -238,7 +243,9 @@ class BaseAssistant:
 
         ai_db.add_message(LlmMessageType.AI, ret) if ai_db else None
         logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
-        return AssistantResp(conv_id, ret, used_tokens)
+        return AssistantResp(
+            conv_id, self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret, used_tokens
+        )
 
     def _run_simple_assistant(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:
         """Run a simple assistant query."""
@@ -247,6 +254,7 @@ class BaseAssistant:
             model=self.model,
             temperature=float(self.temperature),
             max_tokens=float(self.max_tokens),
+            json_mode=self.json_mode,
         )
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -259,7 +267,10 @@ class BaseAssistant:
         if hist:
             kwargs["hist"] = hist
         return chat.invoke(
-            prompt.format_prompt(**kwargs), config={"callbacks": [langfuse_handler(["assistant", self.name])]}
+            prompt.format_prompt(**kwargs),
+            config={
+                "callbacks": [langfuse_handler(["assistant", self.name])],
+            },
         ).content
 
     def _run_assistant_with_tools(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:
@@ -269,6 +280,7 @@ class BaseAssistant:
             model=self.model,
             temperature=float(self.temperature),
             max_tokens=float(self.max_tokens),
+            json_mode=self.json_mode,
         )
         prompt = ChatPromptTemplate.from_messages(
             [

@@ -4,12 +4,13 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Type
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
+from pydantic import BaseModel
 
 from libs.langfuse import langfuse_handler
 from libs.llm import chat_llm, map_model
@@ -41,6 +42,10 @@ class BaseSnippet:
     """List of additional contexts to be added to system prompt"""
     path: Path = None
     """Path to the snippet folder."""
+    json_mode: bool = False
+    """Force LLM to output in json_object format"""
+    pydantic_output: Type[BaseModel] = None
+    """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -101,7 +106,7 @@ class BaseSnippet:
             ret.content = "".join([ai_msg.content for ai_msg in prompt.messages if isinstance(ai_msg, AIMessage)])
             return ret
 
-    def run(self, query: str, /, **kwargs) -> str:
+    def run(self, query: str, /, **kwargs) -> str | Type[BaseModel]:
         """
         Run the snippet with a user query.
 
@@ -116,7 +121,7 @@ class BaseSnippet:
         :return: The content of the language model's response.
         """
         logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
-        llm_kwargs = dict(force_api_type=self.force_api, model=self.model)
+        llm_kwargs = dict(force_api_type=self.force_api, model=self.model, json_mode=self.json_mode)
         if self.model.startswith("o1"):  # reasoning models
             llm_kwargs.update(dict(max_completion_tokens=self.max_tokens, temperature=1))
             system_role = "human"
@@ -132,4 +137,4 @@ class BaseSnippet:
         )
         ret = self.invoke(chat, prompt, text=query, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)
         logger.info(f"{self.name}: ret={str(ret)[0:80]}")
-        return ret.content
+        return self.pydantic_output.model_validate_json(ret.content) if self.pydantic_output else ret.content
