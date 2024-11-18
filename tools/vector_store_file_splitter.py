@@ -1,4 +1,5 @@
 """Vector store splitters."""
+
 import csv
 import re
 from typing import List, Dict, Type
@@ -9,6 +10,7 @@ from langchain_core.documents import Document
 from dataclasses import dataclass
 
 FILE_SPLITTERS: Dict[str, Type["FileSplitter"]] = {}
+
 
 def get_splitter(file_path: str) -> Type["FileSplitter"]:
     """
@@ -26,9 +28,12 @@ def get_splitter(file_path: str) -> Type["FileSplitter"]:
         if re.match(obj.file_pattern_re, file_path):
             ret.append([obj.priority, obj])
     if not ret:
-        raise AttributeError(f"No splitter found for file: '{file_path}'. Supported splitters: {list(FILE_SPLITTERS.keys())}")
+        raise AttributeError(
+            f"No splitter found for file: '{file_path}'. Supported splitters: {list(FILE_SPLITTERS.keys())}"
+        )
 
     return sorted(ret, key=lambda x: x[0])[-1][1]
+
 
 @dataclass(eq=False)
 class FileSplitter:
@@ -41,6 +46,7 @@ class FileSplitter:
     :param file_pattern_re: Regular expression pattern for matching file types.
     :param priority: Priority of the file splitter.
     """
+
     file_pattern_re: str = None
     priority: int = None
 
@@ -77,6 +83,7 @@ class PdfSplitter(FileSplitter):
     This class provides functionality to load and split PDF files into smaller
     document chunks using a text splitter.
     """
+
     file_pattern_re = r".+\.pdf"
     priority: int = 1
 
@@ -104,6 +111,7 @@ class TxtSplitter(FileSplitter):
     This class provides functionality to load and split text-based files
     into smaller document chunks using a text splitter.
     """
+
     file_pattern_re = r".+\.(txt|log)"
     priority: int = 1
 
@@ -131,7 +139,8 @@ class MdSplitter(FileSplitter):
     This class provides functionality to load and split text-based files
     into smaller document chunks using a text splitter.
     """
-    file_pattern_re = r".+\.(md)"
+
+    file_pattern_re = r".+\.md"
     priority: int = 1
 
     @classmethod
@@ -149,31 +158,6 @@ class MdSplitter(FileSplitter):
         text_splitter = MarkdownTextSplitter(chunk_size=3000, chunk_overlap=50)
         return loader.load_and_split(text_splitter=text_splitter)
 
-@dataclass(eq=False)
-class MdSplitter(FileSplitter):
-    """
-    Splits Markdown files into documents.
-
-    This class provides functionality to load and split markdown files
-    into smaller document chunks using a Markdown splitter.
-    """
-    file_pattern_re = r".+\.(md)"
-    priority: int = 1
-
-    @classmethod
-    def split(cls, file_path: str) -> List[Document]:
-        """
-        Splits Markdown files into documents.
-
-        This class provides functionality to load and split markdown files
-        into smaller document chunks using a Markdown splitter.
-
-        :param file_path: Path to the Markdown file to be split.
-        :return: A list of Document objects resulting from the split.
-        """
-        loader = TextLoader(file_path)
-        text_splitter = MarkdownTextSplitter(chunk_size=3000, chunk_overlap=50)
-        return loader.load_and_split(text_splitter=text_splitter)
 
 @dataclass(eq=False)
 class CsvSplitter(FileSplitter):
@@ -183,6 +167,7 @@ class CsvSplitter(FileSplitter):
     This class provides functionality to load and split markdown files
     into smaller document chunks using a Markdown splitter.
     """
+
     file_pattern_re = r".+\.(csv)"
     priority: int = 1
 
@@ -202,7 +187,7 @@ class CsvSplitter(FileSplitter):
         :raises FileNotFoundError: If the file at the specified path does not exist.
         :raises IOError: If there is an error opening or reading the file.
         """
-        with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+        with open(file_path, "r", newline="", encoding="utf-8") as csvfile:
             # Read the first line of the file
             first_line = csvfile.readline().strip()
 
@@ -214,7 +199,7 @@ class CsvSplitter(FileSplitter):
             except csv.Error:
                 # Default to comma if the sniffing fails
                 dialect = csv.Dialect()
-                dialect.delimiter = ','
+                dialect.delimiter = ","
                 dialect.quotechar = '"'
 
             # Determine column names using the detected dialect
@@ -222,14 +207,10 @@ class CsvSplitter(FileSplitter):
             column_names = next(csv_reader)
 
         # Return the extracted information
-        d = {
-            'delimiter': dialect.delimiter,
-            'fieldnames': column_names
-        }
+        d = {"delimiter": dialect.delimiter, "fieldnames": column_names}
         if dialect.quotechar:
             d.update(quotechar=dialect.quotechar)
         return d
-
 
     @classmethod
     def split(cls, file_path: str) -> List[Document]:
