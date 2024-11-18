@@ -22,7 +22,7 @@ class VectorSearchInput(BaseModel):
     )
 
 
-def vector_search(query: str, file_path: str, k: int = 4, model: str = "text-embedding-ada-002", force_api: str = None):
+def vector_search(query: str, file_path: str, k: int = 4, model: str = "embed", force_api: str = None):
     """
     Perform a vector search on a document using a specified model and API.
 
@@ -92,7 +92,7 @@ def init_vector_search(tool_setting: Dict) -> BaseTool:
         func=(
             lambda model, force_api: lambda query, file_path, k=4: vector_search(query, file_path, k, model, force_api)
         )(
-            model=tool_setting.get("model", "text-embedding-ada-002"),
+            model=tool_setting.get("model", "embed"),
             force_api=tool_setting["assistant"].force_api,
         ),
         name="vector-search",

@@ -24,7 +24,7 @@ class JoplinSearchInput(BaseModel):
     )
 
 
-def joplin_search(query: str, k: int = 4, model: str = "text-embedding-ada-002", force_api: str = None):
+def joplin_search(query: str, k: int = 4, model: str = "embed", force_api: str = None):
     """
     Perform a search on Joplin notes using a specified language model.
 
@@ -100,7 +100,7 @@ def init_joplin_search(tool_setting: Dict) -> BaseTool:
     """
     return StructuredTool.from_function(
         func=(lambda model, force_api: lambda query, k=4: joplin_search(query, k, model, force_api))(
-            model=tool_setting.get("model", "text-embedding-ada-002"),
+            model=tool_setting.get("model", "embed"),
             force_api=tool_setting["assistant"].force_api,
         ),
         name="joplin-search",

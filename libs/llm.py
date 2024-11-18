@@ -8,12 +8,19 @@ from typing import Union
 
 import yaml
 from langchain_anthropic import ChatAnthropic
+from langchain_aws import ChatBedrock, BedrockEmbeddings
 from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI, AzureChatOpenAI, OpenAIEmbeddings, AzureOpenAIEmbeddings
 from langfuse.openai import OpenAI, AzureOpenAI
 from langchain_voyageai import VoyageAIEmbeddings
 
 logger = logging.getLogger(__name__)
+
+
+class MyBedrockEmbeddings(BedrockEmbeddings):
+    def __init__(self, model):
+        super().__init__(model_id=model)
+
 
 OVERWRITE_LLM_SETTINGS = {
     "model": "",
@@ -27,6 +34,7 @@ class SUPPORTED_API_TYPE(enum.Enum):
     AZURE = "azure"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    AWS = "aws"
 
 
 # TODO: Add validation of model mapping dict
@@ -96,6 +104,8 @@ def get_llm_type(force_api_type: Union[SUPPORTED_API_TYPE, str] = None) -> SUPPO
             and os.environ.get("OPENAI_API_VERSION")
         )
         os_env_openai_ok = bool(os.environ.get("OPENAI_API_KEY"))
+        os_env_anthropic_ok = bool(os.environ.get("ANTHROPIC_API_KEY"))
+        os_env_aws_ok = bool(os.environ.get("BEDROCK_AWS_SECRET_ACCESS_KEY"))
 
         if OVERWRITE_LLM_SETTINGS["api_type"]:
             ret = OVERWRITE_LLM_SETTINGS["api_type"]
@@ -105,8 +115,10 @@ def get_llm_type(force_api_type: Union[SUPPORTED_API_TYPE, str] = None) -> SUPPO
             ret = SUPPORTED_API_TYPE.AZURE
         elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_openai_ok:
             ret = SUPPORTED_API_TYPE.OPENAI
-        else:
+        elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_anthropic_ok:
             ret = SUPPORTED_API_TYPE.ANTHROPIC
+        else:
+            ret = SUPPORTED_API_TYPE.AWS
     return SUPPORTED_API_TYPE(ret) if isinstance(ret, str) else ret
 
 
@@ -131,8 +143,9 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         SUPPORTED_API_TYPE.AZURE: AzureChatOpenAI,
         SUPPORTED_API_TYPE.OPENAI: ChatOpenAI,
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
+        SUPPORTED_API_TYPE.AWS: ChatBedrock,
     }
-    if json_mode:
+    if json_mode and get_llm_type(force) not in (SUPPORTED_API_TYPE.ANTHROPIC, SUPPORTED_API_TYPE.AWS):
         return models[get_llm_type(force)](**kwargs).bind(response_format={"type": "json_object"})  # noqa
     else:
         return models[get_llm_type(force)](**kwargs)
@@ -165,6 +178,7 @@ def embedding(**kwargs) -> Embeddings:
         SUPPORTED_API_TYPE.AZURE: AzureOpenAIEmbeddings,
         SUPPORTED_API_TYPE.OPENAI: OpenAIEmbeddings,
         SUPPORTED_API_TYPE.ANTHROPIC: VoyageAIEmbeddings,
+        SUPPORTED_API_TYPE.AWS: MyBedrockEmbeddings,
     }
     return embeddings[get_llm_type(force)](**kwargs)
 

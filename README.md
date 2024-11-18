@@ -6,7 +6,7 @@
 
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
-Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, or Anthropic LLMs.
+Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic or Amazon Bedrock LLMs.
 1. [Chat](#chat-gui-application) - Chat GUI application built using tkinter for Assistants and Snippets.
 2. [Snippets](#snippets) — the actions that can be performed on selected text.
 3. [Assistants](#assistants) — your own specialized assistants to talk with.
@@ -57,7 +57,7 @@ snipptes/
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
-# Optional. Force api: azure or openai or anthropic
+# Optional. Force api: azure or openai or anthropic or aws
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.5
@@ -107,7 +107,7 @@ The assistants have been designed similar to Snippets. Check the `assistants` fo
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
-# Optional. Force api: azure or openai or anthropic
+# Optional. Force api: azure or openai or anthropic or aws
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.7
@@ -245,16 +245,14 @@ The file is split and stored only once (embedding is done once),
 and the vector database is dumped to a local file (located in `.store_files`),
 so the next queries against the file do not require new file processing.
 
-Depends on the LLM used, whether it's OpenAI, Azure or Anthropic, the corresponding embedding endpoint is used.
+Depends on the LLM used, whether it's OpenAI, Azure or Anthropic, the corresponding Alias 'embed' (see [Configuration](#configuration)) is used
 
-> [!Note]
-> Anthropic LLM required [Voyage AI](https://www.voyageai.com) service. See [Voyage docs](https://docs.voyageai.com/docs/api-key-and-installation) for details
 
-By default, `text-embedding-ada-002` (for Anthropic `voyage-3`) model is used, but it can be change in `config.yaml`:
+By default, `embed` model is used, but it can be change in `config.yaml`:
 ``` yaml
 tools:
   vector-search:
-    model: text-embedding-ada-002
+    model: embed
 ```
 
 Currently supported file formats:
@@ -290,11 +288,11 @@ so the next queries against the file do not require new file processing unless t
 
 Depends on the LLM used, whether it's OpenAI or Azure; the corresponding embedding endpoint is used.
 
-By default, `text-embedding-ada-002` model is used, but it can be change in `config.yaml`:
+By default, `embed` model is used, but it can be change in `config.yaml`:
 ``` yaml
 tools:
   joplin-search:
-    model: text-embedding-ada-002
+    model: embed
 ```
 
 #### Audio-to-text
@@ -361,12 +359,13 @@ Check examples [Pokemon overview](macros/pokemon_overview.py) or [Topic overview
         1. `OPENAI_API_KEY=sk-...` - OpenAI API key
         2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
         3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
-        4. Tools providers API key
+        4. `AWS_DEFAULT_REGION` + `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` - Amazon Bedrock keys if you'd like to use it
+        5. Tools providers API key
     4. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed.
 
 ---
 *Note*:
-By default, the highest priority has Azure OpenAI LLM, next OpenAI and the last Anthropic.
+By default, the highest priority has Azure OpenAI LLM, next OpenAI next Anthropic and the last Amazon Bedrock.
 Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAI is selected.
 ---
 *Note*:
@@ -457,18 +456,31 @@ llm:
   # LLM settings
   map_model:
     # map model names from snippet/assistant yaml files into models per API type
-    # Using alias like `A` or `B`, you can quickly change API from OpenAI to Anthropic
+    # Using alias like `A` or `B`, you can quickly change API providers
     azure:
       A: gpt-4o
-      B: gpt-35-turbo
+      B: gpt-4o-mini
+      C: gpt-35-turbo
       gpt-4-turbo: gpt-4-turbo-128k
       gpt-3.5-turbo: gpt-35-turbo
+      dall-e-2: Dalle2
+      dall-e-3: Dalle3
+      embed: text-embedding-ada-002
     openai:
       A: gpt-4o
-      B: gpt-3.5-turbo
+      B: gpt-4o-mini
+      C: gpt-3.5-turbo
+      embed: text-embedding-ada-002
     anthropic:
-      A: claude-3-5-sonnet-20240620
-      B: claude-3-haiku-20240307
+      A: claude-3-5-sonnet-latest
+      B: claude-3-5-haiku-20241022
+      C: claude-3-haiku-20240307
+      embed: voyage-3
+    aws:
+      A: anthropic.claude-3-5-sonnet-20240620-v1:0
+      B: anthropic.claude-3-5-haiku-20241022-v1:0
+      C: anthropic.claude-3-haiku-20240307-v1:0
+      embed: cohere.embed-multilingual-v3
 chat:
    # Chat settings
    # Always start New Chat with selected assistant. If defaulted, last used will be used
@@ -500,9 +512,9 @@ tools:
   text-to-image:
     model: dall-e-3
   vector-search:
-    model: text-embedding-ada-002
+    model: embed
   joplin-search:
-    model: text-embedding-ada-002
+    model: embed
 ```
 
 ## LangFuse support

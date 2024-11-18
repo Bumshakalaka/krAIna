@@ -99,7 +99,7 @@ class PdfSplitter(FileSplitter):
         :return: A list of Document objects resulting from the split.
         """
         loader = PyPDFLoader(file_path, extraction_mode="plain", extract_images=False)
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=50, length_function=len)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150, length_function=len)
         return loader.load_and_split(text_splitter=text_splitter)
 
 
