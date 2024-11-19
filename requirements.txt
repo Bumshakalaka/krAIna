@@ -33,3 +33,4 @@ voyageai~=0.2.4
 pydantic~=2.9.2
 langfuse~=2.48.1
 langchain-aws~=0.2.7
+langchain-ollama~=0.2.0

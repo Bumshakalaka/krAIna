@@ -80,10 +80,17 @@ class BaseSnippet:
         ret = chat.invoke(
             prompt.format_prompt(text=text, **kwargs), config={"callbacks": [langfuse_handler(["snippet", self.name])]}
         )
-        try:
-            finish_reason = ret.response_metadata["finish_reason"]
-        except KeyError:
-            finish_reason = ret.response_metadata["stop_reason"]
+        finish_reason = None
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            try:
+                finish_reason = ret.response_metadata[reason]
+                break
+            except KeyError as e:
+                finish_reason = e
+                continue
+        else:
+            raise finish_reason
+
         stop_str = ["stop", "end_turn", "stop_sequence"]
         if finish_reason in stop_str:
             # complete response received

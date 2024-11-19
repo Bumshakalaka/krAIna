@@ -13,6 +13,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI, AzureChatOpenAI, OpenAIEmbeddings, AzureOpenAIEmbeddings
 from langfuse.openai import OpenAI, AzureOpenAI
 from langchain_voyageai import VoyageAIEmbeddings
+from langchain_ollama import ChatOllama
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,12 @@ logger = logging.getLogger(__name__)
 class MyBedrockEmbeddings(BedrockEmbeddings):
     def __init__(self, model):
         super().__init__(model_id=model)
+
+
+class MyChatOllama(ChatOllama):
+    def __init__(self, *args, **kwargs):
+        kwargs["base_url"] = os.environ.get("OLLAMA_ENDPOINT", None)
+        super().__init__(*args, **kwargs)
 
 
 OVERWRITE_LLM_SETTINGS = {
@@ -35,6 +42,7 @@ class SUPPORTED_API_TYPE(enum.Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     AWS = "aws"
+    OLLAMA = "ollama"
 
 
 # TODO: Add validation of model mapping dict
@@ -144,8 +152,13 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         SUPPORTED_API_TYPE.OPENAI: ChatOpenAI,
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
         SUPPORTED_API_TYPE.AWS: ChatBedrock,
+        SUPPORTED_API_TYPE.OLLAMA: MyChatOllama,
     }
-    if json_mode and get_llm_type(force) not in (SUPPORTED_API_TYPE.ANTHROPIC, SUPPORTED_API_TYPE.AWS):
+    if json_mode and get_llm_type(force) not in (
+        SUPPORTED_API_TYPE.ANTHROPIC,
+        SUPPORTED_API_TYPE.AWS,
+        SUPPORTED_API_TYPE.OLLAMA,
+    ):
         return models[get_llm_type(force)](**kwargs).bind(response_format={"type": "json_object"})  # noqa
     else:
         return models[get_llm_type(force)](**kwargs)
