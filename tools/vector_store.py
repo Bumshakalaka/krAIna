@@ -63,8 +63,9 @@ def vector_search(query: str, file_path: str, k: int = 4, model: str = "embed", 
         # Store the store structure for further use
         with open(store_files / f"{store_file_name}.pkl", "wb") as fd:
             pickle.dump(vector_store.store, fd, pickle.HIGHEST_PROTOCOL)
-
+    # TODO: reduce based on keywords
     results = vector_store.similarity_search_with_score(query, k=k)
+    # TODO: re-rank
     ret = {"source": file_path, "query_results": []}
     for result, score in results:
         if score < 0.3:

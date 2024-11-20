@@ -155,7 +155,7 @@ class MdSplitter(FileSplitter):
         :return: A list of Document objects resulting from the split.
         """
         loader = TextLoader(file_path)
-        text_splitter = MarkdownTextSplitter(chunk_size=3000, chunk_overlap=50)
+        text_splitter = MarkdownTextSplitter(chunk_size=1500, chunk_overlap=150)
         return loader.load_and_split(text_splitter=text_splitter)
 
 
