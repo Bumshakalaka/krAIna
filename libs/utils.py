@@ -1,4 +1,5 @@
 """Set of utils functions and classes."""
+
 import importlib.util
 import io
 import re
@@ -16,10 +17,21 @@ from typing import Any, List, Dict, Tuple
 import markdown2
 from PIL import Image
 
+# mermind prints `Warning: IPython is not installed. Mermaidjs magic function is not available.`
+# and we don't want to see this
+original_stdout = sys.stdout
+sys.stdout = None
+import mermaid as md
+from mermaid.graph import Graph
+
+sys.stdout = original_stdout
+
+
 import chat.chat_images as chat_images
 
 IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[^]]+)\]\((?P<img_data>data:image/[^\)]+)\)")
 IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>(https|file)://[^\)]+)\)")
+MERMAID_RE = re.compile(r"```\s?(?:mermaid|mmd)\n(?P<graph>[\s\S]*?)```")
 
 
 def import_module(path: Path) -> ModuleType:
@@ -78,8 +90,22 @@ def to_md(text: str, col: str = None) -> str:
         width, height = 256, 256
         return f'<img src="{m.group("img_url")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
 
+    def insert_mermaid(m: re.Match) -> str:
+        graph = Graph("first-graph", m.group("graph"))
+        temp = md.Mermaid(graph)
+        if temp.img_response.status_code == 200:
+            name = chat_images.chat_images.create_from_url(temp.img_response.url)
+            width, height = chat_images.chat_images.get_resize_xy(name, 600)
+            return (
+                f'<img src="{chat_images.chat_images.get_url(name)}" alt="Mermaid" width="{width}" height="{height}"/>'
+            )
+        else:
+            return m.group()
+
     html = markdown2.markdown(
-        IMAGE_MARKDOWN_RE.sub(insert_img_wh, IMAGE_DATA_URL_MARKDOWN_RE.sub(insert_img, text)),
+        IMAGE_MARKDOWN_RE.sub(
+            insert_img_wh, IMAGE_DATA_URL_MARKDOWN_RE.sub(insert_img, MERMAID_RE.sub(insert_mermaid, text))
+        ),
         extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
     return f'<span style="color:{col}">{html}</span>' if col else html

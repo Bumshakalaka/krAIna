@@ -63,7 +63,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
         logger.debug(f"Img Created: {img}")
         return img
 
-    def get_resize_xy(self, name: str) -> Tuple[int, int]:
+    def get_resize_xy(self, name: str, max_height=150) -> Tuple[int, int]:
         """
         Get the resized dimensions for an image.
 
@@ -71,11 +71,12 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
         does not exceed 150 pixels, maintaining the aspect ratio.
 
         :param name: The name of the image to resize.
+        :param max_height:
         :return: A tuple containing the new width and height of the image.
         """
         div = 1
-        if self.pil_image[name].height > 150:
-            div = max(self.pil_image[name].height, self.pil_image[name].width) // 150
+        if self.pil_image[name].height > max_height:
+            div = max(self.pil_image[name].height, self.pil_image[name].width) // max_height
         return self.pil_image[name].width // div, self.pil_image[name].height // div
 
     def create_from_url(self, url: str, name: str = None, image_tk=True) -> str:
