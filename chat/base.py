@@ -1,4 +1,5 @@
 """Base functions."""
+
 import enum
 import queue
 import sys
@@ -39,6 +40,7 @@ class APP_EVENTS(enum.Enum):
     QUERY_ASSIST_CREATED = "<<QueryAssistantCreated>>"
     QUERY_TO_ASSISTANT = "<<QueryAssistant>>"
     RESP_FROM_ASSISTANT = "<<AssistantResp>>"
+    RESP_FROM_OBSERVATION = "<<AssistantObservation>>"
     RESP_FROM_SNIPPET = "<<SkillResp>>"
     RESP_FROM_TOOL = "<<ToolResp>>"
     QUERY_SNIPPET = "<<QuerySkill>>"

@@ -72,7 +72,7 @@ class BaseAssistant:
     max_tokens: int = 512
     """Max token response"""
     callbacks: Dict[str, Optional[Callable]] = field(
-        default_factory=lambda: dict(action=None, observation=None, output=None), init=True
+        default_factory=lambda: dict(action=None, observation=None, ai_observation=None, output=None), init=True
     )
     """Set of callbacks for assistant with tools"""
     type: AssistantType = AssistantType.SIMPLE  # simple, with_tools
@@ -231,6 +231,7 @@ class BaseAssistant:
         used_tokens = self.tokens_used(conv_id, hist)
         used_tokens["input"] = len(self.encoding.encode(query)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total_input"] = used_tokens["prompt"] + used_tokens["history"] + used_tokens["input"]
+        used_tokens["output"] = 0
         if self.type == AssistantType.SIMPLE:
             ret = self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
         else:
@@ -238,7 +239,7 @@ class BaseAssistant:
         if isinstance(ret, list):
             # anthropic returns here list of dict(text, index, type)
             ret = ret[0]["text"]
-        used_tokens["output"] = len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
+        used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
 
         ai_db.add_message(LlmMessageType.AI, ret) if ai_db else None
@@ -298,10 +299,17 @@ class BaseAssistant:
         agent = create_tool_calling_agent(llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
         chunks = []
+        action_msg_id = ""
         for chunk in agent_executor.stream(kwargs, config={"callbacks": [langfuse_handler(["assistant", self.name])]}):
             chunks.append(chunk)
             # Agent Action
             if "actions" in chunk:
+                for message in chunk["messages"]:
+                    if action_msg_id != message.id:
+                        action_msg_id = message.id
+                        tokens["output"] += len(self.encoding.encode(message.content)) + ADDITIONAL_TOKENS_PER_MSG
+                        ai_db.add_message(LlmMessageType.AI, message.content) if ai_db else None
+                        self.callbacks["ai_observation"](message.content) if self.callbacks["ai_observation"] else None
                 for action in chunk["actions"]:
                     tokens["tools"] += (
                         len(

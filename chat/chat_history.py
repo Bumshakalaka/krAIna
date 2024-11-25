@@ -1,4 +1,5 @@
 """Chat window."""
+
 import base64
 import functools
 import logging
@@ -79,6 +80,7 @@ class ChatHistory(FixedNotebook):
 
         self.root.bind_on_event(APP_EVENTS.QUERY_ASSIST_CREATED, self.human_message)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_ASSISTANT, self.ai_message)
+        self.root.bind_on_event(APP_EVENTS.RESP_FROM_OBSERVATION, self.ai_observation)
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_TOOL, self.tool_message)
         self.root.bind_on_event(APP_EVENTS.NEW_CHAT, self.new_chat)
         self.root.bind_on_event(APP_EVENTS.LOAD_CHAT, self.load_chat)
@@ -186,6 +188,12 @@ class ChatHistory(FixedNotebook):
             )
         else:
             klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
+
+    def ai_observation(self, message: str):
+        """Call view methods."""
+        self.raw_messages.append(["AI", self._remove_img_data(message)])
+        for view in self.views.values():
+            view.ai_message(message)
 
     def ai_message(self, message: str):
         """Call view methods."""
@@ -312,9 +320,11 @@ class UserQuery(ttk.Frame):
         fn = askopenfilename(
             parent=self,
             initialdir=Path(__file__).parent / "..",
-            filetypes=(("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]),
-                       ("docs", ["*.pdf", "*.txt", "*.log", "*.md", "*.csv"]),
-                       ("All files", "*.*")),
+            filetypes=(
+                ("images", ["*.jpg", "*.png", "*.jpeg", "*.bmp"]),
+                ("docs", ["*.pdf", "*.txt", "*.log", "*.md", "*.csv"]),
+                ("All files", "*.*"),
+            ),
         )
         if fn and Path(fn).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
             name = self.root.images.create_from_file(Path(fn))

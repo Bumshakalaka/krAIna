@@ -1,4 +1,5 @@
 """Chat with LLM."""
+
 import collections
 import functools
 import json
@@ -221,8 +222,6 @@ class App(TkinterDnD.Tk):
                 self.macro_window.macros_reload()
         else:
             raise KeyError(f"Unexpected value for 'what': {what}")
-
-
 
     @property
     def current_assistant(self):
@@ -606,6 +605,7 @@ class App(TkinterDnD.Tk):
                     self.ai_assistants[assistant].callbacks = dict(
                         action=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_TOOL),
                         observation=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_TOOL),
+                        ai_observation=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_OBSERVATION),
                         output=None,
                     )
                 ret = self.ai_assistants[assistant].run(query, conv_id=conv_id)
