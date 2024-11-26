@@ -1,6 +1,8 @@
 """KrAIna database controller module."""
+
 import datetime
 import enum
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import List, Union, Tuple
@@ -59,7 +61,9 @@ class Db:
 
         Database is created, if not exists.
         """
-        self.engine = create_engine("sqlite:///" + str(Path(__file__).parent / "../../kraina.db"))
+        self.engine = create_engine(
+            "sqlite:///" + str(Path(__file__).parent / "../.." / os.environ.get("KRAINA_DB", "kraina.db"))
+        )
         Base.metadata.create_all(self.engine)
 
         """handle current conversation_id"""
@@ -161,10 +165,13 @@ class Db:
                 ret.append(row[0])
 
             stmt = (
-                select(Conversations).where(Conversations.priority == 0).order_by(Conversations.conversation_id.desc())
+                select(Conversations)
+                .where(Conversations.priority == 0)
+                .order_by(Conversations.conversation_id.desc())
+                .limit(limit)
             )
             if active is not None:
-                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority == 0)).limit(limit)
+                stmt = stmt.where(and_(Conversations.active == active, Conversations.priority == 0))
             for row in s.execute(stmt):
                 ret.append(row[0])
             return ret

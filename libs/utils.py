@@ -373,3 +373,18 @@ def convert_user_query(msg: str):
         return f'![{"img-" + m.group("img_name")}]({chat_images.chat_images.get_url(name)})'
 
     return IMAGE_MARKDOWN_RE.sub(_convert, msg)
+
+
+def kraina_db(new_db: str = None) -> str:
+    """
+    Get or set the path to the Kraina database.
+
+    If a new database name is provided, it sets the environment variable "KRAINA_DB"
+    to this new name. It then returns the absolute path to the Kraina database file.
+
+    :param new_db: Optional; The new database name to set in the environment variable.
+    :return: The absolute path to the Kraina database file.
+    """
+    if new_db:
+        os.environ["KRAINA_DB"] = new_db
+    return str((Path(__file__).parent / ".." / os.environ.get("KRAINA_DB", "kraina.db")).resolve())

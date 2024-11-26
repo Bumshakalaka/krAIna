@@ -70,6 +70,7 @@ class APP_EVENTS(enum.Enum):
     SELECT_CHAT = "<<SelectChat>>"
     CREATE_MACRO_WIN = "<<CreateMacroWindow>>"
     MACRO_RUNNING = "<<MacroRunning>>"
+    CHANGE_DATABASE = "<<ChangeDatabase>>"
 
 
 def app_interface() -> Dict:

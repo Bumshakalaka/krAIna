@@ -1,11 +1,14 @@
 """Menu widget"""
+
 import functools
 import logging
+import os
 import subprocess
 import tkinter as tk
 import webbrowser
 from pathlib import Path
 from tkinter import ttk, messagebox
+from tkinter.simpledialog import Dialog, askstring
 
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
@@ -106,6 +109,7 @@ class SettingsMenu(tk.Menu):
             label="Copy to clipboard", variable=self._copy_to_clip, onvalue=True, offvalue=False, selectcolor=col
         )
         self.add_separator()
+        self.add_cascade(label="Database", menu=DatabaseSelect(parent, tearoff=0))
         self.add_command(
             label="Edit config.yaml",
             command=functools.partial(self.edit_file, (Path(__file__).parent / "../config.yaml").resolve()),
@@ -146,6 +150,33 @@ class SettingsMenu(tk.Menu):
             subprocess.Popen(args + [str(fn)], start_new_session=True)
         else:
             webbrowser.open(str(fn), new=2, autoraise=True)
+
+
+class DatabaseSelect(tk.Menu):
+    def __init__(self, parent, *args, **kwargs):
+        """Create sub-menu for LLM temperature."""
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        col = parent.get_theme_color("accent")
+        self._var = tk.StringVar(self, None)
+        self._var.set(os.environ.get("KRAINA_DB", "kraina.db"))
+        self._var.trace("w", self.update_var)
+        self.add_command(label="New...", command=self.create_new_db)
+        for fn in (Path(__file__).parent / "..").glob("*.db"):
+            self.add_radiobutton(label=str(fn.name), variable=self._var, value=fn.name, selectcolor=col)
+
+    def create_new_db(self, *args):
+        db = askstring("Database", "Name of database to create", parent=self.parent)
+        if db:
+            col = self.parent.get_theme_color("accent")
+            self.add_radiobutton(label=db, variable=self._var, value=db, selectcolor=col)
+            self._var.set(db)
+
+    def update_var(self, *args):
+        """Callback on radiobutton change."""
+        _var = self.getvar(name=args[0])
+        chat_persistence.SETTINGS.database = _var
+        self.parent.post_event(APP_EVENTS.CHANGE_DATABASE, _var)
 
 
 class ThemeSelect(tk.Menu):

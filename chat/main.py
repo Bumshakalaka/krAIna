@@ -4,6 +4,7 @@ import collections
 import functools
 import json
 import logging
+import os
 import queue
 import sys
 import threading
@@ -125,6 +126,7 @@ class App(TkinterDnD.Tk):
         style.configure("WORKING.TButton", foreground=self.get_theme_color("accent"))
         self.withdraw()
         self.images = chat_images.chat_images
+        os.environ["KRAINA_DB"] = chat_persistence.SETTINGS.database
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
@@ -163,6 +165,7 @@ class App(TkinterDnD.Tk):
         self.status.pack(side=tk.BOTTOM, fill=tk.BOTH)
         self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
 
+        self.bind_on_event(APP_EVENTS.CHANGE_DATABASE, self._change_database)
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
         self.bind_on_event(APP_EVENTS.QUERY_SNIPPET, self.call_snippet)
         self.bind_on_event(APP_EVENTS.RUN_SNIPPET, self.call_snippet_ipc)
@@ -187,8 +190,16 @@ class App(TkinterDnD.Tk):
             lambda event: event.widget.event_generate("<<SelectAll>>"),
         )
         self._update_geometry()
-        if chat_persistence.SETTINGS.last_conv_id:
-            self.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=chat_persistence.SETTINGS.last_conv_id, ev="LOAD_CHAT"))
+        if chat_persistence.SETTINGS.last_conv_id and not isinstance(chat_persistence.SETTINGS.last_conv_id, int):
+            self.post_event(
+                APP_EVENTS.GET_CHAT,
+                dict(
+                    conv_id=chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")],
+                    ev="LOAD_CHAT",
+                ),
+            )
+        else:
+            chat_persistence.SETTINGS.last_conv_id = {os.environ.get("KRAINA_DB", "kraina.db"): None}
         if chat_persistence.SETTINGS.last_assistant:
             self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
         self.setvar(
@@ -197,6 +208,42 @@ class App(TkinterDnD.Tk):
         )
         self.chatW.userW.text.focus_force()
         watch_my_files(self._reload_on_file_change)
+
+    def _change_database(self, database: str):
+        """
+        Change the database if the specified one is different from the current.
+
+        This function updates the environment variable for the database and
+        initializes a new database connection. It triggers events to reload AI,
+        add new chat entries, and update the status bar tokens. If no conversation
+        ID is found for the new database, it initiates a new chat.
+
+        :param database: The name of the database to switch to.
+        :return: None
+        :raises KeyError: If the environment variable 'KRAINA_DB' is not set.
+        """
+        if os.environ["KRAINA_DB"] != database:
+            os.environ["KRAINA_DB"] = database
+            self.ai_db = Db()
+
+            self.post_event(APP_EVENTS.RELOAD_AI, None)
+            self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+
+            conv_id = chat_persistence.SETTINGS.last_conv_id.get(os.environ.get("KRAINA_DB", "kraina.db"), None)
+            if conv_id is None:
+                chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")] = None
+                # New chat
+                self.post_event(APP_EVENTS.NEW_CHAT, None)
+                self.post_event(
+                    APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
+                    AssistantResp(
+                        None,
+                        "not used",
+                        self.current_assistant.tokens_used(None),
+                    ),
+                )
+            else:
+                self.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=conv_id, ev="LOAD_CHAT"))
 
     def _reload_on_file_change(self, what):
         """
@@ -447,7 +494,7 @@ class App(TkinterDnD.Tk):
             self.conv_id = data["conv_id"]
             self.post_event(APP_EVENTS[data["ev"]], self.ai_db.get_conversation(data["conv_id"]))
             if data["ev"] == "LOAD_CHAT":
-                chat_persistence.SETTINGS.last_conv_id = self.conv_id
+                chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")] = self.conv_id
         else:
             logger.error("conversation_id not know")
             if data["ev"] == "LOAD_CHAT":

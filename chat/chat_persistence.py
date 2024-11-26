@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, Field
+from typing import List, Dict
 
 
 @dataclass
@@ -11,7 +11,7 @@ class chat_persistence:
     geometry: str = "708x546+0+0"
     theme: str = "sun-valley-dark"
     always_on_top: bool = False
-    last_conv_id: int = None
+    last_conv_id: Dict[str, int | None] | None = None
     last_assistant: int = None
     last_api_type: str = ""
     last_view_id: int = None
@@ -21,6 +21,7 @@ class chat_persistence:
     dbg_wnd_geometry: str = "708x546+0+0"
     macro_wnd_geometry: str = "708x546+0+0"
     copy_to_clipboard: bool = False
+    database: str = "kraina.db"
 
     def keys(self) -> List:
         """Return all settings keys."""

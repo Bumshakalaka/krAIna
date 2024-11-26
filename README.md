@@ -41,6 +41,7 @@ features:
 * Handling text-to-image generation (Images are stored as data URLs in app memory)
 * Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
 * support for json_object output as well as serialize to Pydantic BaseModel
+* Work with multiple application databases (selectable from Chat GUI)
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
@@ -653,9 +654,16 @@ print(action.run("I'd like to speak something interest"))
 ```python
 from dotenv import load_dotenv, find_dotenv
 from assistants.base import Assistants
+from libs.utils import kraina_db
 
 load_dotenv(find_dotenv())
 assistants = Assistants()
+
+# get default db
+print(kraina_db())  # /home/user/krAIna/kraina.db
+# set new or switch to different db
+print(kraina_db("temp.db"))  # /home/user/krAIna/temp.db
+
 # one shot, do not use a database
 action = assistants["echo"]
 ret = action.run("2+2", use_db=False)
