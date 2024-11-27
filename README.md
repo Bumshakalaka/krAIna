@@ -6,7 +6,7 @@
 
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
-Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic or Amazon Bedrock LLMs.
+Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic, Amazon Bedrock LLMs or [Ollama](https://ollama.com).
 1. [Chat](#chat-gui-application) - Chat GUI application built using tkinter for Assistants and Snippets.
 2. [Snippets](#snippets) — the actions that can be performed on selected text.
 3. [Assistants](#assistants) — your own specialized assistants to talk with.
@@ -58,7 +58,7 @@ snipptes/
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws
+# Optional. Force api: azure or openai or anthropic or aws or ollama
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.5
@@ -108,7 +108,7 @@ The assistants have been designed similar to Snippets. Check the `assistants` fo
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws
+# Optional. Force api: azure or openai or anthropic or aws or ollama
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.7
@@ -365,13 +365,17 @@ Check examples [Pokemon overview](macros/pokemon_overview.py) or [Topic overview
     4. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed.
 
 ---
-*Note*:
-By default, the highest priority has Azure OpenAI LLM, next OpenAI next Anthropic and the last Amazon Bedrock.
-Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAI is selected.
----
-*Note*:
-Versioning and auto-updating of the `kraina.db` schema are not supported at this time.
-if you had already created `kraina.db`, update schema:
+> [!Note]
+> To use Ollama, install server first [Quick start](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) and leave `OLLAMA_ENDPOINT` env variable empty.
+> Set `OLLAMA_ENDPOINT=http://xx.xx.xx.xx:11434` if you have access to Ollama server remotely.
+
+> [!Note]
+> By default, the highest priority has Azure OpenAI LLM, next OpenAI next Anthropic and the last Amazon Bedrock.
+> Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAI is selected.
+
+> [!Note]
+> Versioning and auto-updating of the `kraina.db` schema are not supported at this time.
+> if you had already created `kraina.db`, update schema:
 ```sql
 create table messages_dg_tmp
 (
@@ -405,7 +409,6 @@ create index messages_message_id_index
 alter table conversations
     add priority integer default 0 not null;
 ```
----
 
 ### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
 
@@ -482,6 +485,10 @@ llm:
       B: anthropic.claude-3-5-haiku-20241022-v1:0
       C: anthropic.claude-3-haiku-20240307-v1:0
       embed: cohere.embed-multilingual-v3
+    ollama:
+     A: gemma:2b
+     B: gemma:2b
+     C: gemma:2b      
 chat:
    # Chat settings
    # Always start New Chat with selected assistant. If defaulted, last used will be used
