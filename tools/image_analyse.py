@@ -68,5 +68,5 @@ def init_image_analysis(tool_setting: Dict) -> BaseTool:
         name="image-analysis",
         description="Useful when you need to analyse the image or screenshot",
         args_schema=ImageAnalyseInput,
-        return_direct=True,
+        return_direct=False,
     )

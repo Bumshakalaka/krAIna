@@ -62,5 +62,5 @@ def init_audio_to_text(tool_setting: Dict) -> BaseTool:
         name="audio-to-text",
         description="A wrapper around audio-to-text API. Useful when you need to transcript audio files",
         args_schema=AudioToTextInput,
-        return_direct=True,
+        return_direct=False,
     )

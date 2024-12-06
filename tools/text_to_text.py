@@ -49,5 +49,5 @@ def init_text_to_text(tool_setting: Dict) -> BaseTool:
         name="text-to-text",
         description="Useful when you need to read text content (file or URL)",
         args_schema=TextToTextInput,
-        return_direct=True,
+        return_direct=False,
     )
