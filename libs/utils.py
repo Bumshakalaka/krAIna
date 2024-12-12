@@ -15,6 +15,7 @@ from types import ModuleType
 from typing import Any, List, Dict, Tuple
 
 import markdown2
+import yaml
 from PIL import Image
 
 # mermind prints `Warning: IPython is not installed. Mermaidjs magic function is not available.`
@@ -385,6 +386,16 @@ def kraina_db(new_db: str = None) -> str:
     :param new_db: Optional; The new database name to set in the environment variable.
     :return: The absolute path to the Kraina database file.
     """
+    if os.environ.get("KRAINA_DB", None) is None:
+        db_settings = {}
+        if (Path(__file__).parent / "../config.yaml").resolve().exists():
+            with open((Path(__file__).parent / "../config.yaml").resolve(), "r") as f:
+                data = yaml.load(f, Loader=yaml.SafeLoader)
+                db_settings = data.get("db", {})
+        if db_settings.get("database", None):
+            os.environ["KRAINA_DB"] = str((Path(__file__).parent / "../" / db_settings["database"]).resolve())
+        else:
+            os.environ["KRAINA_DB"] = str((Path(__file__).parent / "../" / "kraina.db").resolve())
     if new_db:
-        os.environ["KRAINA_DB"] = new_db
-    return str((Path(__file__).parent / ".." / os.environ.get("KRAINA_DB", "kraina.db")).resolve())
+        os.environ["KRAINA_DB"] = str((Path(__file__).parent / "../" / new_db).resolve())
+    return os.environ.get("KRAINA_DB")

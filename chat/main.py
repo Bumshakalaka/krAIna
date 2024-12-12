@@ -38,7 +38,14 @@ from libs.db.controller import Db
 from PIL import ImageTk, Image
 
 from libs.llm import read_model_settings
-from libs.utils import str_shortening, prepare_message, to_md, IMAGE_DATA_URL_MARKDOWN_RE, _convert_data_url_to_file_url
+from libs.utils import (
+    str_shortening,
+    prepare_message,
+    to_md,
+    IMAGE_DATA_URL_MARKDOWN_RE,
+    _convert_data_url_to_file_url,
+    kraina_db,
+)
 from snippets.base import Snippets
 from snippets.snippet import BaseSnippet
 
@@ -126,7 +133,7 @@ class App(TkinterDnD.Tk):
         style.configure("WORKING.TButton", foreground=self.get_theme_color("accent"))
         self.withdraw()
         self.images = chat_images.chat_images
-        os.environ["KRAINA_DB"] = chat_persistence.SETTINGS.database
+        kraina_db(chat_persistence.SETTINGS.database)
         self.ai_db = Db()
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
@@ -194,7 +201,7 @@ class App(TkinterDnD.Tk):
             self.post_event(
                 APP_EVENTS.GET_CHAT,
                 dict(
-                    conv_id=chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")],
+                    conv_id=chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name],
                     ev="LOAD_CHAT",
                 ),
             )
@@ -222,16 +229,16 @@ class App(TkinterDnD.Tk):
         :return: None
         :raises KeyError: If the environment variable 'KRAINA_DB' is not set.
         """
-        if os.environ["KRAINA_DB"] != database:
-            os.environ["KRAINA_DB"] = database
+        if Path(kraina_db()).name != database:
+            kraina_db(database)
             self.ai_db = Db()
 
             self.post_event(APP_EVENTS.RELOAD_AI, None)
             self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
-            conv_id = chat_persistence.SETTINGS.last_conv_id.get(os.environ.get("KRAINA_DB", "kraina.db"), None)
+            conv_id = chat_persistence.SETTINGS.last_conv_id.get(Path(kraina_db()).name, None)
             if conv_id is None:
-                chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")] = None
+                chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = None
                 # New chat
                 self.post_event(APP_EVENTS.NEW_CHAT, None)
                 self.post_event(
@@ -494,7 +501,7 @@ class App(TkinterDnD.Tk):
             self.conv_id = data["conv_id"]
             self.post_event(APP_EVENTS[data["ev"]], self.ai_db.get_conversation(data["conv_id"]))
             if data["ev"] == "LOAD_CHAT":
-                chat_persistence.SETTINGS.last_conv_id[os.environ.get("KRAINA_DB", "kraina.db")] = self.conv_id
+                chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = self.conv_id
         else:
             logger.error("conversation_id not know")
             if data["ev"] == "LOAD_CHAT":

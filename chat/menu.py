@@ -16,6 +16,7 @@ from assistants.assistant import AssistantResp
 from chat.base import APP_EVENTS
 from chat.macro_window import MacroWindow
 from libs.llm import overwrite_llm_settings, SUPPORTED_API_TYPE
+from libs.utils import kraina_db
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +160,7 @@ class DatabaseSelect(tk.Menu):
         self.parent = parent
         col = parent.get_theme_color("accent")
         self._var = tk.StringVar(self, None)
-        self._var.set(os.environ.get("KRAINA_DB", "kraina.db"))
+        self._var.set(Path(kraina_db()).name)
         self._var.trace("w", self.update_var)
         self.add_command(label="New...", command=self.create_new_db)
         for fn in (Path(__file__).parent / "..").glob("*.db"):

@@ -488,7 +488,9 @@ llm:
     ollama:
      A: gemma:2b
      B: gemma:2b
-     C: gemma:2b      
+     C: gemma:2b
+db:
+  database: kraina.db     
 chat:
    # Chat settings
    # Always start New Chat with selected assistant. If defaulted, last used will be used
@@ -666,7 +668,7 @@ from libs.utils import kraina_db
 load_dotenv(find_dotenv())
 assistants = Assistants()
 
-# get default db
+# get default db - read from config.yaml
 print(kraina_db())  # /home/user/krAIna/kraina.db
 # set new or switch to different db
 print(kraina_db("temp.db"))  # /home/user/krAIna/temp.db

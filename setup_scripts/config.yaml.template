@@ -28,6 +28,8 @@ llm:
       A: gemma:2b
       B: gemma:2b
       C: gemma:2b
+db:
+  database: kraina.db
 chat:
   default_assistant:
   visible_last_chats: 15

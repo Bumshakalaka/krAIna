@@ -7,10 +7,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Union, Tuple
 
+import yaml
 from sqlalchemy import create_engine, select, update, delete, and_, Engine, event
 from sqlalchemy.orm import Session
 
 from .model import Base, Conversations, Messages
+from ..utils import kraina_db
 
 
 class KrainaDbError(Exception):
@@ -61,9 +63,7 @@ class Db:
 
         Database is created, if not exists.
         """
-        self.engine = create_engine(
-            "sqlite:///" + str(Path(__file__).parent / "../.." / os.environ.get("KRAINA_DB", "kraina.db"))
-        )
+        self.engine = create_engine("sqlite:///" + kraina_db())
         Base.metadata.create_all(self.engine)
 
         """handle current conversation_id"""
