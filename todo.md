@@ -12,6 +12,11 @@
 - Implement memory and vector search capabilities.
 - Develop way to pass text file as input
 - Do _run_ocr_assistant to BaseAssistant to not use overwrite.
+- common code base for snippets and assistants
+- remove use_db, instead drive the behaviour via conv_id
+- use f-string type of HumanMessage so the variable works
+- context and prompt shall be connected at run method or assistant/snippet initialization
+- structural output to Pydantic BaseModel
 
 ## Chat Features
 - Enable streaming responses.
@@ -66,3 +71,48 @@
 - token calculation for images
 - token calculation for audio
 - should user message be f-string like system message? BaseAssistant property maybe? This not the case for chat app 
+
+## RAG for documents:
+
+### Document convert, split and chunk
+
+#### Convert
+
+1. (LLM) generate abstract/description of whole document
+2. Convert always to markdown (pdf -> use unstructured?)
+2. Find all URLs, save them in metadata and replace with placeholders
+3. (LLM) Find all images. Based on context around generate JSON {uri, size, context, preview (describe only picture or do OCR), description (preview + context} and save to metadata. Replace with description
+4. get all headers and save to metadata
+
+#### Split and chunk
+
+1. RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150, length_function=len) or
+2. RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=100, length_function=tiktokenizer)
+3. for each chunk:
+   4. (LLM) Generate description/overview taking into account additional context (whole document or +- 2 chunks)
+   5. (LLM) Generate keywords
+   5. Get proper metadata from convert
+   6. generate additional metadata lie start/stop char, page number
+
+#### Embedding + store
+
+1. embed description + chunk
+2. pickle.dump
+
+or
+
+Use qdrant
+
+### Search
+
+1. (LLM) Refine query into 1 or more queries
+2. (LLM) generate keywords for each query
+for q in queries:
+   3. Reduce vector search by matching keywords
+   4. vector search with k=??
+5. (LLM) re-rank:
+   6. vector search results + keywords
+
+### Result
+
+1. (LLM) Generate output taking into account abstract

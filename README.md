@@ -172,11 +172,15 @@ The assistants can use tools. To do this:
 1. Assign [Tools](#tools) by listing them in the assistant `config.yaml` key
    ```yaml
    tools:
-     - brave_web
-     - file_search
-     - text-to-image
-     - vector-search
-     - joplin-search
+    - brave_web
+    - file_mgmt
+    - wolfram_alpha
+    - text-to-image
+    - vector-search
+    - joplin-search
+    - audio-to-text
+    - text-to-text
+    - image-analysis
    ```
 2. Use models capable of doing Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
 
@@ -302,7 +306,7 @@ Transcribes audio files into text.
 It works with OpenAI and AzureOpenAI.
 This tool generates images based on a textual description.
 Parameters:
-- **file_path**: Path to the local audio file to transcribe.
+- **file_path**: URL or local audio file to transcribe.
 
 By default, `whisper-1` model is used, but it can be change in `config.yaml`:
 ``` yaml
