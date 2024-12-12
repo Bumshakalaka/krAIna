@@ -269,6 +269,7 @@ class App(TkinterDnD.Tk):
             load_dotenv(find_dotenv(), override=True)
             self._settings_read()
             read_model_settings()
+            self.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "")
             self.post_event(APP_EVENTS.RELOAD_AI, None)
             self.after_idle(self.post_event, APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
         elif what == "macros":

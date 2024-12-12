@@ -20,6 +20,8 @@ if [ ! -f .env ]; then
 fi
 if [ ! -f config.yaml ]; then
   cp setup_scripts/config.yaml.template config.yaml
+else
+  python3 setup_scripts/merge_yaml.py config.yaml setup_scripts/config.yaml.template --overwrite "tools.vector-search.model,tools.joplin-search.model"
 fi
 
 echo "*************************************************"
