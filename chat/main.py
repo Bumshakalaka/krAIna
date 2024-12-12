@@ -206,7 +206,7 @@ class App(TkinterDnD.Tk):
                 ),
             )
         else:
-            chat_persistence.SETTINGS.last_conv_id = {os.environ.get("KRAINA_DB", "kraina.db"): None}
+            chat_persistence.SETTINGS.last_conv_id = {Path(kraina_db()).name: None}
         if chat_persistence.SETTINGS.last_assistant:
             self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
         self.setvar(
