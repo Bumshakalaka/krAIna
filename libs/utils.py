@@ -1,13 +1,16 @@
 """Set of utils functions and classes."""
 
+import hashlib
 import importlib.util
 import io
+import logging
 import re
 import shutil
 import subprocess
 import sys
 import os
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from functools import lru_cache
 from pathlib import Path
@@ -15,8 +18,9 @@ from types import ModuleType
 from typing import Any, List, Dict, Tuple
 
 import markdown2
+import requests
 import yaml
-from PIL import Image
+from PIL import Image, ImageColor
 
 # mermind prints `Warning: IPython is not installed. Mermaidjs magic function is not available.`
 # and we don't want to see this
@@ -30,9 +34,16 @@ sys.stdout = original_stdout
 
 import chat.chat_images as chat_images
 
+logger = logging.getLogger(__name__)
+
+
 IMAGE_DATA_URL_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>img-[^]]+)\]\((?P<img_data>data:image/[^\)]+)\)")
 IMAGE_MARKDOWN_RE = re.compile(r"!\[(?P<img_name>[^]]+)]\((?P<img_url>(https|file)://[^\)]+)\)")
 MERMAID_RE = re.compile(r"```\s?(?:mermaid|mmd)\n(?P<graph>[\s\S]*?)```")
+LATEX_RE = re.compile(
+    r"\\\[(?P<latex>.*?)\\\]|\\\((?P<latex2>.*?)\\\)",
+    re.DOTALL,  # Enable multiline matching with dot matching newlines
+)
 
 
 def import_module(path: Path) -> ModuleType:
@@ -68,6 +79,83 @@ def str_shortening(data: Any, limit=256) -> str:
     return data
 
 
+def replace_latex(text: str) -> Tuple[str, Dict[str, str]]:
+    """
+    Replace LaTeX expressions in a text with placeholders.
+
+    This function scans the input text for LaTeX expressions and replaces them
+    with unique placeholders, storing the original LaTeX expressions in a dictionary.
+
+    :param text: The input string potentially containing LaTeX expressions.
+    :return: A tuple containing the modified text with placeholders and a dictionary
+             mapping placeholders to original LaTeX expressions.
+    """
+    # Store original code blocks
+    code_map = {}
+    counter = 0
+
+    def _replace(m):
+        nonlocal counter
+        latex = m.group("latex") or m.group("latex2")
+        placeholder = f"__\xd7_latex_{counter}__"
+        code_map[placeholder] = latex
+        counter += 1
+        return placeholder
+
+    text = LATEX_RE.sub(_replace, text)
+
+    return text, code_map
+
+
+def replace_text(text: str, patterns: list[str]) -> Tuple[str, Dict[str, str]]:
+    """
+    Replace code blocks in a text with placeholders.
+
+    This function searches for code blocks in the input text using the provided patterns,
+    replaces them with unique placeholders, and stores the original code blocks in a map.
+
+    :param text: The input text containing code blocks to be replaced.
+    :param patterns: A list of regex patterns to identify code blocks.
+    :return: A tuple containing the modified text with placeholders and a dictionary
+             mapping placeholders to original code blocks.
+    """
+    # Store original code blocks
+    code_map = {}
+    counter = 0
+
+    def _replace(m):
+        nonlocal counter
+        placeholder = f"__\xd7_{counter}__"
+        code_map[placeholder] = m.group(0)
+        counter += 1
+        return placeholder
+
+    for pattern in patterns:
+        text = re.sub(pattern, _replace, text)
+
+    return text, code_map
+
+
+def restore_text(modified_text: str, code_map: Dict[str, str]) -> str:
+    """
+    Restore original code blocks from placeholders.
+
+    Args:
+        modified_text (str): Text with placeholders
+        code_map (Dict[str, str]): Mapping of placeholders to original code
+
+    Returns:
+        str: Original text with code blocks restored
+    """
+    restored_text = modified_text
+
+    # Sort placeholders by length (longest first) to avoid partial replacements
+    for placeholder in sorted(code_map.keys(), key=len, reverse=True):
+        restored_text = restored_text.replace(placeholder, code_map[placeholder])
+
+    return restored_text
+
+
 @lru_cache(maxsize=256)
 def to_md(text: str, col: str = None) -> str:
     """
@@ -92,21 +180,65 @@ def to_md(text: str, col: str = None) -> str:
         return f'<img src="{m.group("img_url")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
 
     def insert_mermaid(m: re.Match) -> str:
-        graph = Graph("first-graph", m.group("graph"))
-        temp = md.Mermaid(graph)
-        if temp.img_response.status_code == 200:
-            name = chat_images.chat_images.create_from_url(temp.img_response.url)
+        name = hashlib.md5(m.group("graph")[0:124].encode()).hexdigest()
+        if chat_images.chat_images.get(name):
             width, height = chat_images.chat_images.get_resize_xy(name, 600)
             return (
                 f'<img src="{chat_images.chat_images.get_url(name)}" alt="Mermaid" width="{width}" height="{height}"/>'
             )
         else:
-            return m.group()
+            graph = Graph("first-graph", m.group("graph"))
+            temp = md.Mermaid(graph)
+            if temp.img_response.status_code == 200:
+                name = chat_images.chat_images.create_from_url(temp.img_response.url, name, False)
+                width, height = chat_images.chat_images.get_resize_xy(name, 600)
+                return f'<img src="{chat_images.chat_images.get_url(name)}" alt="Mermaid" width="{width}" height="{height}"/>'
+            else:
+                return m.group()
+
+    def insert_latex(latex_, idx_, inverted) -> Tuple[str, str]:
+        name = hashlib.md5(latex_[0:124].encode()).hexdigest()
+        if chat_images.chat_images.get(name) and chat_images.chat_images.get(name) != "broken":
+            return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="latex"/>', idx_
+        elif chat_images.chat_images.get(name) != "broken":
+            ret = latex_to_image(latex_)
+            if ret.get("imageUrl"):
+                # ImageTk must be False, as ImageTk.PhotoImage is not thread-safely
+                name = chat_images.chat_images.create_from_url(ret.get("imageUrl"), name, False)
+                return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="latex"/>', idx_
+            else:
+                # mark the image as broken, so it will not be process next time
+                chat_images.chat_images[name] = "broken"
+                return latex_, idx_
+        else:
+            return latex_, idx_
+
+    text_no_code, code_map = replace_text(MERMAID_RE.sub(insert_mermaid, text), [r"```[\s\S]*?```", r"`[^`]+`"])
+
+    text_no_latex, latex_map = replace_latex(text_no_code)
+    if latex_map:
+        inverted = False if ImageColor.getcolor(col, "L") < 127 else True  # noqa
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for idx, latex in {k: v for k, v in latex_map.items()}.items():
+                futures.append(executor.submit(insert_latex, latex, idx, inverted))
+            for future in as_completed(futures):
+                try:
+                    ret = future.result()
+                    latex_map[ret[1]] = ret[0]
+                except Exception as e:
+                    raise e
+
+    text = restore_text(
+        IMAGE_MARKDOWN_RE.sub(
+            insert_img_wh,
+            IMAGE_DATA_URL_MARKDOWN_RE.sub(insert_img, restore_text(text_no_latex, latex_map)),
+        ),
+        code_map,
+    )
 
     html = markdown2.markdown(
-        IMAGE_MARKDOWN_RE.sub(
-            insert_img_wh, IMAGE_DATA_URL_MARKDOWN_RE.sub(insert_img, MERMAID_RE.sub(insert_mermaid, text))
-        ),
+        text,
         extras=["tables", "fenced-code-blocks", "cuddled-lists", "code-friendly"],
     )
     return f'<span style="color:{col}">{html}</span>' if col else html
@@ -301,7 +433,7 @@ def grabclipboard():
             raise NotImplementedError(msg)
         try:
             p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-            stdout, stderr = p.communicate(timeout=1.0)
+            stdout, stderr = p.communicate(timeout=0.5)
         except subprocess.TimeoutExpired:
             stderr = b"cannot convert "
         if stderr:
@@ -399,3 +531,49 @@ def kraina_db(new_db: str = None) -> str:
     if new_db:
         os.environ["KRAINA_DB"] = str((Path(__file__).parent / "../" / new_db).resolve())
     return os.environ.get("KRAINA_DB")
+
+
+def latex_to_image(latex_input=None, output_format="PNG", output_scale="100%"):
+    """
+    Convert LaTeX input to an image in the specified format and scale.
+
+    This function sends a POST request to an API that converts LaTeX code to an image.
+    It prepares the LaTeX input, constructs the payload, and handles the response.
+
+    :param latex_input: The LaTeX code to be converted to an image.
+    :param output_format: The desired image format (default is "PNG").
+    :param output_scale: The desired scale of the output image (default is "100%").
+    :return: A dictionary containing the API response or an error message.
+    :raises requests.exceptions.RequestException: If the HTTP request fails.
+    """
+    # endpoint URL
+    url = "https://e1kf0882p7.execute-api.us-east-1.amazonaws.com/default/latex2image"
+    out = []
+    for line in latex_input.split("\n"):
+        if not line.strip():
+            continue
+        out.append(line.strip())
+    out = "\n".join(out)
+    # Prepare the payload
+    payload = {
+        "latexInput": f"\\begin{{align*}}\n{out}\n\\end{{align*}}\n",
+        "outputFormat": output_format,
+        "outputScale": output_scale,
+    }
+
+    # Headers
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        # Make the POST request
+        response = requests.post(url, headers=headers, json=payload)
+
+        # Raise an exception for bad status codes
+        response.raise_for_status()
+
+        # Return the JSON response
+        ret = response.json()
+
+    except requests.exceptions.RequestException as e:
+        ret = {"error": f"Request failed: {str(e)}"}
+    return ret

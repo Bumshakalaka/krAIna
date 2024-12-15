@@ -33,7 +33,7 @@ features:
 * Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
   * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
   * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
-* Markdown/HTML support
+* Markdown/HTML support (render images, Mermaid graphs and Latex expressions \[..\] or \(..\))
 * Debug Window (right-bottom corner) with the application logs
 * Copy last AI response automatically to system clipboard
 * Macro management window

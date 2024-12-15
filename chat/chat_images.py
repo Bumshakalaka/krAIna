@@ -1,24 +1,28 @@
 import hashlib
 import logging
 import tempfile
+import threading
 from pathlib import Path
 from typing import Dict, Union, Tuple
 
 import requests
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageChops
 import base64
 from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
 
-class ChatImages(Dict[str, ImageTk.PhotoImage]):
+class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
     """
     A dictionary-like class to manage images in a chat application.
 
     This class extends a dictionary to store images with unique keys generated from file paths
     or URLs. It also maintains a separate dictionary of PIL images.
     """
+
+    _lock: threading.Lock = threading.Lock()
+    _cv: threading.Condition = threading.Condition(_lock)
 
     def __init__(self):
         """
@@ -41,27 +45,29 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
         :return: Unique identifier for the stored image.
         :raises ValueError: If the file cannot be opened or read.
         """
-        if not name:
-            if isinstance(fn, Path):
-                with open(fn, "rb") as fd:
-                    hash = hashlib.md5(fd.read(1024)).hexdigest()
+        with self._cv:
+            if not name:
+                if isinstance(fn, Path):
+                    with open(fn, "rb") as fd:
+                        hash = hashlib.md5(fd.read(1024)).hexdigest()
+                else:
+                    hash = hashlib.md5(fn.read(1024)).hexdigest()
+                    fn.seek(0)
+                img = f"img-{hash}"
             else:
-                hash = hashlib.md5(fn.read(1024)).hexdigest()
-                fn.seek(0)
-            img = f"img-{hash}"
-        else:
-            img = name
-        if self.get(img):
-            logger.debug(f"Img get: {img}")
-            return img
-        self.pil_image[img] = Image.open(fn)
-        if image_tk:
-            self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
-        else:
+                img = name
+            if self.get(img):
+                logger.debug(f"Img get: {img}")
+                return img
+            self.pil_image[img] = Image.open(fn)
             self.pil_image[img].load()
-            self[img] = None
-        logger.debug(f"Img Created: {img}")
-        return img
+            if image_tk:
+                # This is not thread-safety
+                self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+            else:
+                self[img] = "Image exists"
+            logger.debug(f"Img Created: {img}")
+            return img
 
     def get_resize_xy(self, name: str, max_height=150) -> Tuple[int, int]:
         """
@@ -106,16 +112,48 @@ class ChatImages(Dict[str, ImageTk.PhotoImage]):
             buffer.seek(0)
             return self.create_from_file(buffer, name, image_tk)
 
-    def get_url(self, name: str) -> str:
+    def _invert_rgba_image_chops(self, img):
+        """
+        Invert the colors of an RGBA image while preserving the alpha channel.
+
+        This function creates a white image of the same size as the input image,
+        splits the input image into its RGB and alpha components, inverts the RGB
+        colors using ImageChops, and then merges the inverted RGB with the original
+        alpha channel to produce the final image.
+
+        :param img: The input image in RGBA format to be inverted.
+        :return: An RGBA image with inverted colors and original alpha channel.
+        """
+        # Create a white image of the same size
+        white = Image.new("RGB", img.size, (255, 255, 255))
+
+        # Split alpha channel
+        r, g, b, a = img.split()
+        rgb = Image.merge("RGB", (r, g, b))
+
+        # Invert using ImageChops
+        inverted_rgb = ImageChops.difference(white, rgb)
+
+        # Merge back with original alpha
+        inverted_img = Image.merge("RGBA", (*inverted_rgb.split(), a))
+
+        return inverted_img
+
+    def get_url(self, name: str, inverted=False) -> str:
         """
         Get a base64-encoded URL for a stored image.
 
         :param name: Unique identifier for the stored image.
+        :param inverted: invert background color
         :return: Base64-encoded URL representing the image.
         :raises KeyError: If the image with the given name does not exist.
         """
         with BytesIO() as buffer:
-            self.pil_image[name].save(buffer, format="PNG")
+            if inverted:
+                temp_ = self._invert_rgba_image_chops(self.pil_image[name])
+                temp_.save(buffer, format="PNG")
+            else:
+                self.pil_image[name].save(buffer, format="PNG")
             return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def dump_to_tempfile(self, name: str, resize=True):

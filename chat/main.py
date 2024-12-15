@@ -417,15 +417,17 @@ class App(TkinterDnD.Tk):
             self.ai_snippets["nameit"].force_api = self.current_assistant.force_api
             for _ in range(2):
                 try:
-                    ret = json.loads(
+                    out = (
                         self.ai_snippets["nameit"]
                         .run(query)
                         .removesuffix("```")
                         .removeprefix("```")
                         .removeprefix("json")
                     )
+                    ret = json.loads(out)
                     self.ai_db.update_conversation(self.conv_id, **ret)
                 except (Exception, JSONDecodeError) as e:
+                    logger.error(out)
                     logger.exception(e)
                     continue
                 else:
