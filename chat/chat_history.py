@@ -4,7 +4,6 @@ import base64
 import functools
 import logging
 import sys
-import tempfile
 import tkinter as tk
 import webbrowser
 from io import BytesIO
@@ -298,11 +297,7 @@ class UserQuery(ttk.Frame):
         for el in self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                pic_obj = self.root.images.pil_image[el[1]]
-                with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
-                    pic_obj.save(fd, pic_obj.format)
-                    fd.seek(0)
-                    webbrowser.open(fd.name, new=2, autoraise=True)
+                webbrowser.open(self.root.images.get_file(el[1]), new=2, autoraise=True)
 
     def _dnd_drop(self, e):
         if e.data and Path(e.data).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:

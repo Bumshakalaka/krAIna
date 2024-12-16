@@ -184,7 +184,7 @@ def to_md(text: str, col: str = None) -> str:
         if chat_images.chat_images.get(name):
             width, height = chat_images.chat_images.get_resize_xy(name, 600)
             return (
-                f'<img src="{chat_images.chat_images.get_url(name)}" alt="Mermaid" width="{width}" height="{height}"/>'
+                f'<img src="{chat_images.chat_images.get_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
             )
         else:
             graph = Graph("first-graph", m.group("graph"))
@@ -192,20 +192,20 @@ def to_md(text: str, col: str = None) -> str:
             if temp.img_response.status_code == 200:
                 name = chat_images.chat_images.create_from_url(temp.img_response.url, name, False)
                 width, height = chat_images.chat_images.get_resize_xy(name, 600)
-                return f'<img src="{chat_images.chat_images.get_url(name)}" alt="Mermaid" width="{width}" height="{height}"/>'
+                return f'<img src="{chat_images.chat_images.get_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
             else:
                 return m.group()
 
     def insert_latex(latex_, idx_, inverted) -> Tuple[str, str]:
         name = hashlib.md5(latex_[0:124].encode()).hexdigest()
         if chat_images.chat_images.get(name) and chat_images.chat_images.get(name) != "broken":
-            return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="latex"/>', idx_
+            return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="{name}"/>', idx_
         elif chat_images.chat_images.get(name) != "broken":
             ret = latex_to_image(latex_)
             if ret.get("imageUrl"):
                 # ImageTk must be False, as ImageTk.PhotoImage is not thread-safely
                 name = chat_images.chat_images.create_from_url(ret.get("imageUrl"), name, False)
-                return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="latex"/>', idx_
+                return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="{name}"/>', idx_
             else:
                 # mark the image as broken, so it will not be process next time
                 chat_images.chat_images[name] = "broken"
@@ -476,8 +476,7 @@ def _convert_data_url_to_file_url(m: re.Match) -> str:
     :return: A Markdown image reference pointing to the created file.
     """
     name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
-    temp_file = chat_images.chat_images.dump_to_tempfile(name, True)
-    return f'![{m.group("img_name")}](file://{temp_file})'
+    return f'![{m.group("img_name")}](file://{chat_images.chat_images.get_file(name)})'
 
 
 def convert_llm_response(msg: str):
@@ -494,8 +493,7 @@ def convert_llm_response(msg: str):
 
     def _convert(m):
         name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
-        temp_file = chat_images.chat_images.dump_to_tempfile(name, False)
-        return f'![{m.group("img_name")}](file://{temp_file})'
+        return f'![{m.group("img_name")}](file://{chat_images.chat_images.get_file(name)})'
 
     return IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert, msg)
 

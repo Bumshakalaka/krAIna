@@ -249,5 +249,8 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             # Image not found in memory or storage
             return None
 
+    def get_file(self, img: str) -> str:
+        return str(STORE_PATH / f"{img}.png")
+
 
 chat_images = ChatImages()

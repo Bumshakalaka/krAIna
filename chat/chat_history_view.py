@@ -1,8 +1,7 @@
 """Chat window."""
+
 import abc
-import base64
 import logging
-import tempfile
 import tkinter as tk
 from tkinter import ttk
 import webbrowser
@@ -115,11 +114,7 @@ class TextChatView(ScrolledText, ChatView):
         for el in self.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                pic_obj = self.root.images.pil_image[el[1]]
-                with tempfile.NamedTemporaryFile(delete=False, suffix="." + pic_obj.format.lower()) as fd:
-                    pic_obj.save(fd, pic_obj.format)
-                    fd.seek(0)
-                    webbrowser.open(fd.name, new=2, autoraise=True)
+                webbrowser.open(self.root.images.get_file(el[1]), new=2, autoraise=True)
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
@@ -249,14 +244,10 @@ class HtmlChatView(HtmlFrame, ChatView):
             if url := self.get_currently_hovered_node_attribute("src"):
                 if url.startswith("https://"):
                     self._open_webbrowser(url)
-                else:
-                    # url = data:image/jpeg;base64,/9j
-                    header, data = url.split(";")
-                    suffix = "." + header.split("/")[-1]
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as fd:
-                        fd.write(base64.b64decode(data.split(",")[-1]))
-                        fd.seek(0)
-                        self._open_webbrowser(fd.name)
+                    return
+            if alt := self.get_currently_hovered_node_attribute("alt"):
+                self._open_webbrowser(self.root.images.get_file(alt))
+                return
 
     @staticmethod
     def _open_webbrowser(url):
