@@ -576,4 +576,5 @@ def latex_to_image(latex_input=None, output_format="PNG", output_scale="100%"):
 
     except requests.exceptions.RequestException as e:
         ret = {"error": f"Request failed: {str(e)}"}
+    logger.debug(f"latex_to_image: {ret}")
     return ret

@@ -12,6 +12,9 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
+STORE_PATH = Path(__file__).parent / "../.store_files/images"
+STORE_PATH.mkdir(parents=True, exist_ok=True)
+
 
 class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
     """
@@ -33,6 +36,39 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         super().__init__()
         self.pil_image: Dict[str, Image.Image] = {}
 
+    def _save_to_store(self, img: str) -> None:
+        """
+        Save the PIL image to the store directory.
+
+        :param img: The image identifier
+        """
+        store_path = STORE_PATH / f"{img}.png"
+        if self.pil_image[img].mode == "RGBA":
+            self.pil_image[img].save(store_path, format="PNG")
+        else:
+            self.pil_image[img].convert("RGB").save(store_path, format="PNG")
+
+    def _load_from_store(self, img: str) -> bool:
+        """
+        Try to load an image from the store directory.
+
+        :param img: The image identifier
+        :return: True if image was successfully loaded, False otherwise
+        """
+        store_path = STORE_PATH / f"{img}.png"
+        if store_path.exists():
+            try:
+                self[img] = "Image exists"
+                self.pil_image[img] = Image.open(store_path)
+                self.pil_image[img].load()
+                return True
+            except Exception as e:
+                del self[img]
+                del self.pil_image[img]
+                logger.error(f"Failed to load stored image {img}: {e}")
+                return False
+        return False
+
     def create_from_file(self, fn: Union[Path, BytesIO], name: str = None, image_tk=True) -> str:
         """
         Create an image from a file and store it in the dictionary.
@@ -45,20 +81,30 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         :return: Unique identifier for the stored image.
         :raises ValueError: If the file cannot be opened or read.
         """
-        with self._cv:
-            if not name:
-                if isinstance(fn, Path):
-                    with open(fn, "rb") as fd:
-                        hash = hashlib.md5(fd.read(1024)).hexdigest()
-                else:
-                    hash = hashlib.md5(fn.read(1024)).hexdigest()
-                    fn.seek(0)
-                img = f"img-{hash}"
+        if not name:
+            if isinstance(fn, Path):
+                with open(fn, "rb") as fd:
+                    hash = hashlib.md5(fd.read(1024)).hexdigest()
             else:
-                img = name
-            if self.get(img):
-                logger.debug(f"Img get: {img}")
-                return img
+                hash = hashlib.md5(fn.read(1024)).hexdigest()
+                fn.seek(0)
+            img = f"img-{hash}"
+        else:
+            img = name
+
+        # Check if image exists in memory or can be loaded from store
+        if self.get(img):
+            if image_tk:
+                with self._cv:
+                    # This is not thread-safety
+                    self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+            else:
+                with self._cv:
+                    self[img] = "Image exists"
+            return img
+
+        with self._cv:
+            # If image doesn't exist, create it
             self.pil_image[img] = Image.open(fn)
             self.pil_image[img].load()
             if image_tk:
@@ -66,8 +112,12 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
                 self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
             else:
                 self[img] = "Image exists"
-            logger.debug(f"Img Created: {img}")
-            return img
+
+        # Save to store
+        self._save_to_store(img)
+
+        logger.info(f"Img Created: {img}")
+        return img
 
     def get_resize_xy(self, name: str, max_height=150) -> Tuple[int, int]:
         """
@@ -99,7 +149,11 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         :raises ValueError: If the URL scheme is not recognized.
         """
         if name and self.get(name):
-            logger.debug(f"Img get: {name}")
+            if image_tk:
+                # This is not thread-safety
+                self[name] = ImageTk.PhotoImage(self.pil_image[name].resize(self.get_resize_xy(name)))
+            else:
+                self[name] = "Image exists"
             return name
         with BytesIO() as buffer:
             if url.startswith("https://"):
@@ -174,6 +228,26 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
                 self.pil_image[name].save(fd, format="PNG")
             fd.seek(0)
             return fd.name
+
+    def get(self, img: str) -> Union[ImageTk.PhotoImage, str, None]:
+        """
+        Get an image from the dictionary, checking storage if not in memory.
+
+        :param img: The image identifier
+        :return: The image if found, None if not found
+        """
+        # First check if image exists in memory
+        with self._cv:
+            result = super().get(img)
+            if result:
+                return result
+
+            # If not in memory, try to load from store
+            if self._load_from_store(img):
+                return self[img]
+
+            # Image not found in memory or storage
+            return None
 
 
 chat_images = ChatImages()
