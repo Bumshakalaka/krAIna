@@ -1,4 +1,5 @@
 """Left Sidebar window."""
+
 import functools
 import logging
 import subprocess
@@ -260,6 +261,7 @@ class LeftSidebar(ttk.Frame):
         active = event.widget.conversation.active
         w.add_command(label=f"Chat: {conv_id}", state="disabled")
         w.add_command(label=f"Copy", command=functools.partial(self.copy_chat, conv_id))
+        w.add_command(label=f"Export...", command=functools.partial(self.export_chat, conv_id))
         w.add_command(
             label=f"{'Pin' if pinned == 0 else 'Unpin'}",
             command=functools.partial(self.pin_unpin_chat, event.widget),
@@ -354,3 +356,6 @@ class LeftSidebar(ttk.Frame):
         :return:
         """
         self.root.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=conv_id, ev="COPY_TO_CLIPBOARD_CHAT"))
+
+    def export_chat(self, conv_id: int):
+        self.root.post_event(APP_EVENTS.GET_CHAT, dict(conv_id=conv_id, ev="EXPORT_CHAT"))

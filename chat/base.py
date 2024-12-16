@@ -71,6 +71,7 @@ class APP_EVENTS(enum.Enum):
     CREATE_MACRO_WIN = "<<CreateMacroWindow>>"
     MACRO_RUNNING = "<<MacroRunning>>"
     CHANGE_DATABASE = "<<ChangeDatabase>>"
+    EXPORT_CHAT = "<<ExportChat>>"
 
 
 def app_interface() -> Dict:

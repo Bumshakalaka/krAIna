@@ -1,6 +1,7 @@
 """Chat window."""
 
 import base64
+import copy
 import functools
 import logging
 import sys
@@ -9,7 +10,7 @@ import webbrowser
 from io import BytesIO
 from pathlib import Path
 from tkinter import ttk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Dict, Union
 
 import klembord
@@ -21,7 +22,7 @@ from tktooltip import ToolTip
 import chat.chat_persistence as chat_persistence
 import chat.chat_settings as chat_settings
 from assistants.assistant import AssistantResp, ADDITIONAL_TOKENS_PER_MSG
-from chat.base import APP_EVENTS
+from chat.base import APP_EVENTS, LIGHTTHEME, HIGHLIGHTER_CSS
 from chat.chat_history_view import ChatView, TextChatView, HtmlChatView
 from chat.scroll_text import ScrolledText
 from libs.db.controller import LlmMessageType
@@ -86,6 +87,7 @@ class ChatHistory(FixedNotebook):
         self.root.bind_on_event(APP_EVENTS.UPDATE_THEME, self.update_tags)
         self.root.bind_on_event(APP_EVENTS.UPDATE_CHAT_TITLE, self.update_title)
         self.root.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD_CHAT, self.copy_chat)
+        self.root.bind_on_event(APP_EVENTS.EXPORT_CHAT, self.export_to_file)
         self.raw_messages = []
 
     @staticmethod
@@ -175,7 +177,7 @@ class ChatHistory(FixedNotebook):
                 to_clip_text += IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, message.message) + "\n\n"
             to_clip_html += to_md(
                 *prepare_message(
-                    IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, message.message),
+                    message.message,
                     LlmMessageType(message.type).name,
                     str(cols[LlmMessageType(message.type).name]),
                 )
@@ -187,6 +189,58 @@ class ChatHistory(FixedNotebook):
             )
         else:
             klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
+
+    def export_to_file(self, conversation: Conversations):
+        fn = asksaveasfilename(
+            parent=self,
+            initialdir=Path(__file__).parent / "..",
+            filetypes=(("supported files files", ["*.pdf", "*.html", "*.txt"]),),
+        )
+        if not fn:
+            return
+        # Always use colors from Light Theme
+        cols = {
+            "HUMAN": self.root.get_theme_color("accent", "sun-valley-light"),
+            "TOOL": "#DCBF85",
+            "AI": self.root.get_theme_color("fg", "sun-valley-light"),
+        }
+        to_clip_text = ""
+        to_clip_html = (
+            '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><style>'
+            + LIGHTTHEME
+            + HIGHLIGHTER_CSS
+            + "</style></head><body>"
+        )
+        for message in conversation.messages:
+            if LlmMessageType(message.type).name == "TOOL":
+                to_clip_text += str_shortening(message.message) + "\n\n"
+            else:
+                to_clip_text += IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert_data_url_to_file_url, message.message) + "\n\n"
+            to_clip_html += to_md(
+                *prepare_message(
+                    message.message,
+                    LlmMessageType(message.type).name,
+                    str(cols[LlmMessageType(message.type).name]),
+                )
+            )
+            to_clip_html += "</body></html>"
+        if Path(fn).suffix.lower() in [".txt"]:
+            Path(fn).write_text(to_clip_text, encoding="utf-8")
+        elif Path(fn).suffix.lower() == ".html":
+            Path(fn).write_text(to_clip_html, encoding="utf-8")
+        elif Path(fn).suffix.lower() == ".pdf":
+            html = Path(fn).with_suffix(".html")
+            html.write_text(to_clip_html, encoding="utf-8")
+            b = copy.deepcopy(webbrowser.get("google-chrome"))
+            b.remote_args = [
+                "--headless",
+                "--disable-gpu",
+                "--no-pdf-header-footer",
+                f"--print-to-pdf={fn}",
+                "%action",
+                "%s",
+            ]
+            b.open(str(html))
 
     def ai_observation(self, message: str):
         """Call view methods."""
