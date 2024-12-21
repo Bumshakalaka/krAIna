@@ -446,7 +446,7 @@ class UserQuery(ttk.Frame):
                 if el[0] == "text":
                     query += el[1]
                 elif el[0] == "image":
-                    query += f"![{el[1]}]({self.root.images.get_url(el[1])})"
+                    query += f"![{el[1]}]({self.root.images.get_base64_url(el[1])})"
             self.text.delete("1.0", tk.END)
             self.root.post_event(
                 APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,

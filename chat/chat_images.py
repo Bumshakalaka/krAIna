@@ -2,6 +2,7 @@ import hashlib
 import logging
 import tempfile
 import threading
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Union, Tuple
 
@@ -34,7 +35,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         Sets up the internal dictionary for PIL images.
         """
         super().__init__()
-        self.pil_image: Dict[str, Image.Image] = {}
+        self.pil_image: Dict[str, Dict[str, Image.Image]] = defaultdict(dict)
 
     def _save_to_store(self, img: str) -> None:
         """
@@ -42,11 +43,11 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
 
         :param img: The image identifier
         """
-        store_path = STORE_PATH / f"{img}.png"
-        if self.pil_image[img].mode == "RGBA":
-            self.pil_image[img].save(store_path, format="PNG")
-        else:
-            self.pil_image[img].convert("RGB").save(store_path, format="PNG")
+        store_path = STORE_PATH / img
+        store_path.mkdir(parents=True, exist_ok=True)
+
+        for mode in ["org", "resized-150", "resized-600", "inverted"]:
+            self.pil_image[img][mode].save(store_path / f"{mode}.png", format="PNG")
 
     def _load_from_store(self, img: str) -> bool:
         """
@@ -55,12 +56,13 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         :param img: The image identifier
         :return: True if image was successfully loaded, False otherwise
         """
-        store_path = STORE_PATH / f"{img}.png"
+        store_path = STORE_PATH / img
         if store_path.exists():
             try:
                 self[img] = "Image exists"
-                self.pil_image[img] = Image.open(store_path)
-                self.pil_image[img].load()
+                for mode in ["org", "resized-150", "resized-600", "inverted"]:
+                    self.pil_image[img][mode] = Image.open(store_path / f"{mode}.png")
+                    self.pil_image[img][mode].load()
                 return True
             except Exception as e:
                 del self[img]
@@ -69,19 +71,19 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
                 return False
         return False
 
-    def create_from_file(self, fn: Union[Path, BytesIO], name: str = None, image_tk=True) -> str:
+    def create_from_file(self, fn: Union[Path, BytesIO], img: str = None, image_tk=True) -> str:
         """
         Create an image from a file and store it in the dictionary.
 
         If the image already exists, it returns the existing key.
 
         :param fn: File path or BytesIO object containing the image data.
-        :param name: Name of the image, None if we'd like to create new one
+        :param img: Name of the image, None if we'd like to create new one
         :param image_tk: Generate ImageTk.PhotoImage (tkinter and GUI required) or not
         :return: Unique identifier for the stored image.
         :raises ValueError: If the file cannot be opened or read.
         """
-        if not name:
+        if not img:
             if isinstance(fn, Path):
                 with open(fn, "rb") as fd:
                     hash = hashlib.md5(fd.read(1024)).hexdigest()
@@ -89,15 +91,13 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
                 hash = hashlib.md5(fn.read(1024)).hexdigest()
                 fn.seek(0)
             img = f"img-{hash}"
-        else:
-            img = name
 
         # Check if image exists in memory or can be loaded from store
         if self.get(img):
             if image_tk:
                 with self._cv:
                     # This is not thread-safety
-                    self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+                    self[img] = ImageTk.PhotoImage(self.pil_image[img]["resized-150"])
             else:
                 with self._cv:
                     self[img] = "Image exists"
@@ -105,11 +105,15 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
 
         with self._cv:
             # If image doesn't exist, create it
-            self.pil_image[img] = Image.open(fn)
-            self.pil_image[img].load()
+            self.pil_image[img]["org"] = Image.open(fn)
+            self.pil_image[img]["org"].load()
+            self.pil_image[img]["resized-150"] = self.pil_image[img]["org"].resize(self.get_resize_xy(img, 150))
+            self.pil_image[img]["resized-600"] = self.pil_image[img]["org"].resize(self.get_resize_xy(img, 600))
+            self.pil_image[img]["inverted"] = self._invert_rgba_image_chops(self.pil_image[img]["org"])
+
             if image_tk:
                 # This is not thread-safety
-                self[img] = ImageTk.PhotoImage(self.pil_image[img].resize(self.get_resize_xy(img)))
+                self[img] = ImageTk.PhotoImage(self.pil_image[img]["resized-150"])
             else:
                 self[img] = "Image exists"
 
@@ -119,42 +123,42 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         logger.info(f"Img Created: {img}")
         return img
 
-    def get_resize_xy(self, name: str, max_height=150) -> Tuple[int, int]:
+    def get_resize_xy(self, img: str, max_height=150) -> Tuple[int, int]:
         """
         Get the resized dimensions for an image.
 
         This function calculates the new dimensions for an image to ensure that its height
         does not exceed 150 pixels, maintaining the aspect ratio.
 
-        :param name: The name of the image to resize.
+        :param img: The name of the image to resize.
         :param max_height:
         :return: A tuple containing the new width and height of the image.
         """
         div = 1
-        if self.pil_image[name].height > max_height:
-            div = max(self.pil_image[name].height, self.pil_image[name].width) // max_height
-        return self.pil_image[name].width // div, self.pil_image[name].height // div
+        if self.pil_image[img]["org"].height > max_height:
+            div = max(self.pil_image[img]["org"].height, self.pil_image[img]["org"].width) // max_height
+        return self.pil_image[img]["org"].width // div, self.pil_image[img]["org"].height // div
 
-    def create_from_url(self, url: str, name: str = None, image_tk=True) -> str:
+    def create_from_url(self, url: str, img: str = None, image_tk=True) -> str:
         """
         Create an image from a URL, file path, or base64 string.
 
         This function fetches image data from a given URL, file path, or base64 encoded string,
-        and creates an image object. If a name is provided and already exists, it returns the name.
+        and creates an image object. If an img is provided and already exists, it returns the img.
 
         :param url: The URL, file path, or base64 encoded string of the image.
-        :param name: Optional name for the image. If provided and exists, the existing name is returned.
+        :param img: Optional img for the image. If provided and exists, the existing img is returned.
         :param image_tk: Boolean flag to indicate if the image should be processed for Tkinter.
-        :return: The name of the created image.
+        :return: The img of the created image.
         :raises ValueError: If the URL scheme is not recognized.
         """
-        if name and self.get(name):
+        if img and self.get(img):
             if image_tk:
                 # This is not thread-safety
-                self[name] = ImageTk.PhotoImage(self.pil_image[name].resize(self.get_resize_xy(name)))
+                self[img] = ImageTk.PhotoImage(self.pil_image[img]["resized-150"])
             else:
-                self[name] = "Image exists"
-            return name
+                self[img] = "Image exists"
+            return img
         with BytesIO() as buffer:
             if url.startswith("https://"):
                 buffer.write(requests.get(url).content)
@@ -164,9 +168,9 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             else:
                 buffer.write(base64.b64decode(url.split(",")[-1]))
             buffer.seek(0)
-            return self.create_from_file(buffer, name, image_tk)
+            return self.create_from_file(buffer, img, image_tk)
 
-    def _invert_rgba_image_chops(self, img):
+    def _invert_rgba_image_chops(self, img_obj: Image) -> Image:
         """
         Invert the colors of an RGBA image while preserving the alpha channel.
 
@@ -178,11 +182,14 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         :param img: The input image in RGBA format to be inverted.
         :return: An RGBA image with inverted colors and original alpha channel.
         """
+        if img_obj.mode != "RGBA":
+            # TODO invert colors on RGB images
+            return img_obj
         # Create a white image of the same size
-        white = Image.new("RGB", img.size, (255, 255, 255))
+        white = Image.new("RGB", img_obj.size, (255, 255, 255))
 
         # Split alpha channel
-        r, g, b, a = img.split()
+        r, g, b, a = img_obj.split()
         rgb = Image.merge("RGB", (r, g, b))
 
         # Invert using ImageChops
@@ -193,39 +200,48 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
 
         return inverted_img
 
-    def get_url(self, name: str, inverted=False) -> str:
+    def get_base64_url(self, img: str, inverted=False) -> str:
         """
         Get a base64-encoded URL for a stored image.
 
-        :param name: Unique identifier for the stored image.
+        :param img: Unique identifier for the stored image.
         :param inverted: invert background color
         :return: Base64-encoded URL representing the image.
-        :raises KeyError: If the image with the given name does not exist.
+        :raises KeyError: If the image with the given img does not exist.
         """
-        with BytesIO() as buffer:
-            if inverted:
-                temp_ = self._invert_rgba_image_chops(self.pil_image[name])
-                temp_.save(buffer, format="PNG")
-            else:
-                self.pil_image[name].save(buffer, format="PNG")
-            return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+        store_path = STORE_PATH / img
+        fn = "org.png" if not inverted else "inverted.png"
+        return "data:image/png;base64," + base64.b64encode((store_path / fn).read_bytes()).decode("utf-8")
 
-    def dump_to_tempfile(self, name: str, resize=True):
+    def get_file_url(self, img: str, inverted=False) -> str:
+        """
+        Get a file URL for a stored image.
+
+        :param img: Unique identifier for the stored image.
+        :param inverted: invert background color
+        :return: file URL representing the image.
+        :raises KeyError: If the image with the given img does not exist.
+        """
+        store_path = STORE_PATH / img
+        fn = "org.png" if not inverted else "inverted.png"
+        return "file://" + str((store_path / fn).resolve())
+
+    def dump_to_tempfile(self, img: str, resize=True):
         """
         Save an image to a temporary file with optional resizing.
 
         This function saves an image from the `pil_image` attribute to a temporary file with a ".png" suffix.
         The image can be optionally resized before saving.
 
-        :param name: The key to the image in the `pil_image` attribute.
+        :param img: The key to the image in the `pil_image` attribute.
         :param resize: Boolean flag indicating whether the image should be resized. Defaults to True.
-        :return: The name of the temporary file where the image is saved.
+        :return: The img of the temporary file where the image is saved.
         """
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as fd:
             if resize:
-                self.pil_image[name].resize(self.get_resize_xy(name)).save(fd, format="PNG")
+                self.pil_image[img]["resized-150"].save(fd, format="PNG")
             else:
-                self.pil_image[name].save(fd, format="PNG")
+                self.pil_image[img]["org"].save(fd, format="PNG")
             fd.seek(0)
             return fd.name
 
@@ -250,7 +266,13 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             return None
 
     def get_file(self, img: str) -> str:
-        return str(STORE_PATH / f"{img}.png")
+        """
+        Get the file path for the original image.
+
+        :param img: The image identifier
+        :return: Path to the original image file
+        """
+        return str(STORE_PATH / img / "org.png")
 
 
 chat_images = ChatImages()

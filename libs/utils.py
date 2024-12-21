@@ -172,7 +172,7 @@ def to_md(text: str, col: str = None) -> str:
     def insert_img(m: re.Match) -> str:
         """Convert Markdown image line into HTML. If image don't exists, create it."""
         name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"))
-        width, height = chat_images.chat_images.get_resize_xy(name)
+        width, height = chat_images.chat_images.pil_image[name]["resized-150"].size
         return f'<img src="{m.group("img_data")}" alt="{m.group("img_name")}" width="{width}" height="{height}"/>'
 
     def insert_img_wh(m: re.Match) -> str:
@@ -182,30 +182,28 @@ def to_md(text: str, col: str = None) -> str:
     def insert_mermaid(m: re.Match) -> str:
         name = hashlib.md5(m.group("graph")[0:124].encode()).hexdigest()
         if chat_images.chat_images.get(name):
-            width, height = chat_images.chat_images.get_resize_xy(name, 600)
-            return (
-                f'<img src="{chat_images.chat_images.get_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
-            )
+            width, height = chat_images.chat_images.pil_image[name]["resized-600"].size
+            return f'<img src="{chat_images.chat_images.get_file_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
         else:
             graph = Graph("first-graph", m.group("graph"))
             temp = md.Mermaid(graph)
             if temp.img_response.status_code == 200:
                 name = chat_images.chat_images.create_from_url(temp.img_response.url, name, False)
-                width, height = chat_images.chat_images.get_resize_xy(name, 600)
-                return f'<img src="{chat_images.chat_images.get_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
+                width, height = chat_images.chat_images.pil_image[name]["resized-600"].size
+                return f'<img src="{chat_images.chat_images.get_file_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
             else:
                 return m.group()
 
     def insert_latex(latex_, idx_, inverted) -> Tuple[str, str]:
         name = hashlib.md5(latex_[0:124].encode()).hexdigest()
         if chat_images.chat_images.get(name) and chat_images.chat_images.get(name) != "broken":
-            return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="{name}"/>', idx_
+            return f'<img src="{chat_images.chat_images.get_file_url(name, inverted)}" alt="{name}"/>', idx_
         elif chat_images.chat_images.get(name) != "broken":
             ret = latex_to_image(latex_)
             if ret.get("imageUrl"):
                 # ImageTk must be False, as ImageTk.PhotoImage is not thread-safely
                 name = chat_images.chat_images.create_from_url(ret.get("imageUrl"), name, False)
-                return f'<img src="{chat_images.chat_images.get_url(name, inverted)}" alt="{name}"/>', idx_
+                return f'<img src="{chat_images.chat_images.get_file_url(name, inverted)}" alt="{name}"/>', idx_
             else:
                 # mark the image as broken, so it will not be process next time
                 chat_images.chat_images[name] = "broken"
@@ -501,7 +499,7 @@ def convert_llm_response(msg: str):
 def convert_user_query(msg: str):
     def _convert(m):
         name = chat_images.chat_images.create_from_url(m.group("img_url"), "img-" + m.group("img_name"), False)
-        return f'![{"img-" + m.group("img_name")}]({chat_images.chat_images.get_url(name)})'
+        return f'![{"img-" + m.group("img_name")}]({chat_images.chat_images.get_file_url(name)})'
 
     return IMAGE_MARKDOWN_RE.sub(_convert, msg)
 
