@@ -114,7 +114,7 @@ class TextChatView(ScrolledText, ChatView):
         for el in self.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                webbrowser.open(self.root.images.get_file(el[1]), new=2, autoraise=True)
+                webbrowser.open(self.root.images.get_file_uri(el[1]), new=2, autoraise=True)
 
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
@@ -246,7 +246,7 @@ class HtmlChatView(HtmlFrame, ChatView):
                     self._open_webbrowser(url)
                     return
             if alt := self.get_currently_hovered_node_attribute("alt"):
-                self._open_webbrowser(self.root.images.get_file(alt))
+                self._open_webbrowser(self.root.images.get_file_uri(alt))
                 return
 
     @staticmethod

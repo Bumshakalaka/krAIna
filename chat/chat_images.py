@@ -224,7 +224,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
         """
         store_path = STORE_PATH / img
         fn = "org.png" if not inverted else "inverted.png"
-        return "file://" + str((store_path / fn).resolve())
+        return (store_path / fn).resolve().as_uri()
 
     def dump_to_tempfile(self, img: str, resize=True):
         """
@@ -265,14 +265,14 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             # Image not found in memory or storage
             return None
 
-    def get_file(self, img: str) -> str:
+    def get_file_uri(self, img: str) -> str:
         """
         Get the file path for the original image.
 
         :param img: The image identifier
         :return: Path to the original image file
         """
-        return str(STORE_PATH / img / "org.png")
+        return (STORE_PATH / img / "org.png").resolve().as_uri()
 
 
 chat_images = ChatImages()

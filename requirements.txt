@@ -12,7 +12,7 @@ langchain>=0.3,<0.4
 markdown2~=2.5.0
 openai~=1.46.0
 pgi~=0.0.11.2; os_name == 'posix'
-pillow~=10.3.0
+pillow~=11.1.0
 pygobject~=3.48.2; os_name == 'posix'
 pygments~=2.18.0
 python-dotenv~=1.0.1
@@ -20,7 +20,7 @@ pywinstyles~=1.8; os_name != 'posix'
 requests~=2.31.0
 setuptools~=71.1.0  # required for Python 3.12 for klemboard package>
 sv-ttk~=2.6.0
-tiktoken~=0.7.0
+tiktoken~=0.8.0
 tkinter-tooltip~=3.1.0
 tkinterweb~=3.24.7
 windows-toasts~=1.2.0; os_name != 'posix'

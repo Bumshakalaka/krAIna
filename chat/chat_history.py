@@ -355,7 +355,7 @@ class UserQuery(ttk.Frame):
         for el in self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
             if el[0] == "tagon" and "img-" in el[1]:
-                webbrowser.open(self.root.images.get_file(el[1]), new=2, autoraise=True)
+                webbrowser.open(self.root.images.get_file_uri(el[1]), new=2, autoraise=True)
 
     def _dnd_drop(self, e):
         if e.data and Path(e.data).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:

@@ -474,7 +474,7 @@ def _convert_data_url_to_file_url(m: re.Match) -> str:
     :return: A Markdown image reference pointing to the created file.
     """
     name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
-    return f'![{m.group("img_name")}](file://{chat_images.chat_images.get_file(name)})'
+    return f'![{m.group("img_name")}]({chat_images.chat_images.get_file_uri(name)})'
 
 
 def convert_llm_response(msg: str):
@@ -491,7 +491,7 @@ def convert_llm_response(msg: str):
 
     def _convert(m):
         name = chat_images.chat_images.create_from_url(m.group("img_data"), m.group("img_name"), False)
-        return f'![{m.group("img_name")}](file://{chat_images.chat_images.get_file(name)})'
+        return f'![{m.group("img_name")}]({chat_images.chat_images.get_file_uri(name)})'
 
     return IMAGE_DATA_URL_MARKDOWN_RE.sub(_convert, msg)
 
