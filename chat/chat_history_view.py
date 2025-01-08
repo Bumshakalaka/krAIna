@@ -330,8 +330,18 @@ class HtmlChatView(HtmlFrame, ChatView):
         :param conversation: List of messages
         :return:
         """
+
+        def _to_md(text, tag):
+            return to_md(*prepare_message(text, tag, str(self.cols[tag])))
+
         self._clear()
+        self.add_html("<h2>Loading...</h2>")
+        self._see_end()
+        self.root.update_idletasks()
         if conversation.assistant:
             self.root.selected_assistant.set(conversation.assistant)
-        for message in conversation.messages:
-            self._insert_message(message.message, LlmMessageType(message.type).name)
+        self._clear()
+        self.add_html(
+            "".join([_to_md(message.message, LlmMessageType(message.type).name) for message in conversation.messages])
+        )
+        self._see_end()

@@ -147,8 +147,12 @@ class ChatHistory(FixedNotebook):
         self.raw_messages = []
         for message in conversation.messages:
             self.raw_messages.append([LlmMessageType(message.type).name, self._remove_img_data(message.message)])
-        for view in self.views.values():
+        if self.select() != self.views["html"]:
+            self.tab(self.views["html"], state=tk.DISABLED)
+        for view in reversed(self.views.values()):
             view.load_chat(conversation)
+        if self.select() != self.views["html"]:
+            self.tab(self.views["html"], state=tk.NORMAL)
         if len([x[0] for x in self.raw_messages if x[0] == "AI"]) >= 2:
             self._describe_chat()
         self.root.post_event(
