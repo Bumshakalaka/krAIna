@@ -42,6 +42,7 @@ features:
 * Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
 * support for json_object output as well as serialize to Pydantic BaseModel
 * Work with multiple application databases (selectable from Chat GUI)
+* Export chat to an HTML, PDF or txt file
 
 ### Snippets
 Snippets are actions that can be performed on selected text. 
