@@ -4,12 +4,13 @@ import base64
 import copy
 import functools
 import logging
+import subprocess
 import sys
 import tkinter as tk
 import webbrowser
 from io import BytesIO
 from pathlib import Path
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Dict, Union
 
@@ -235,16 +236,21 @@ class ChatHistory(FixedNotebook):
         elif Path(fn).suffix.lower() == ".pdf":
             html = Path(fn).with_suffix(".html")
             html.write_text(to_clip_html, encoding="utf-8")
-            b = copy.deepcopy(webbrowser.get("google-chrome"))
-            b.remote_args = [
-                "--headless",
+            app = "chrome" if sys.platform[:3] == "win" else "google-chrome"
+            cmdline = [
+                app,
+                "--headless=old",
                 "--disable-gpu",
                 "--no-pdf-header-footer",
-                f"--print-to-pdf={fn}",
-                "%action",
-                "%s",
+                f"--print-to-pdf={Path(fn).resolve()}",
+                html.as_uri(),
             ]
-            b.open(str(html))
+            try:
+                subprocess.run(cmdline, start_new_session=True)
+            except FileNotFoundError:
+                err_msg = f"'{app}' not found. Please install Chrome or Chromium browser and add it to PATH variable"
+                logger.error(err_msg)
+                self.after_idle(messagebox.showerror, "Export to PDF", err_msg)
 
     def ai_observation(self, message: str):
         """Call view methods."""

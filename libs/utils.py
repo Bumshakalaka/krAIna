@@ -215,7 +215,12 @@ def to_md(text: str, col: str = None) -> str:
 
     text_no_latex, latex_map = replace_latex(text_no_code)
     if latex_map:
-        inverted = False if ImageColor.getcolor(col, "L") < 127 else True  # noqa
+        try:
+            inverted = False if ImageColor.getcolor(col, "L") < 127 else True  # noqa
+        except ValueError:
+            # On Windows we've got SystemWindowText color which is not know by Pillow
+            # it hapens on build in light themes
+            inverted = False
         with ThreadPoolExecutor() as executor:
             futures = []
             for idx, latex in {k: v for k, v in latex_map.items()}.items():
