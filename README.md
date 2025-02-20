@@ -6,7 +6,7 @@
 
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
-Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic, Amazon Bedrock LLMs or [Ollama](https://ollama.com).
+Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic, Amazon Bedrock, Google Gemini LLMs or [Ollama](https://ollama.com).
 1. [Chat](#chat-gui-application) - Chat GUI application built using tkinter for Assistants and Snippets.
 2. [Snippets](#snippets) — the actions that can be performed on selected text.
 3. [Assistants](#assistants) — your own specialized assistants to talk with.
@@ -59,7 +59,7 @@ snipptes/
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws or ollama
+# Optional. Force api: azure or openai or anthropic or aws or ollama or google
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.5
@@ -109,7 +109,7 @@ The assistants have been designed similar to Snippets. Check the `assistants` fo
 config.yaml schema:
 ```yaml
 # Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws or ollama
+# Optional. Force api: azure or openai or anthropic or aws or ollama or google
 force_api: ""
 model: gpt-3.5-turbo
 temperature: 0.7
@@ -366,7 +366,8 @@ Check examples [Pokemon overview](macros/pokemon_overview.py) or [Topic overview
         2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
         3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
         4. `AWS_DEFAULT_REGION` + `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` - Amazon Bedrock keys if you'd like to use it
-        5. Tools providers API key
+        5. `GOOGLE_API_KEY` - Google Gemini API key if you'd like to use it
+        6. Tools providers API key
     4. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed.
 
 ---
@@ -491,9 +492,14 @@ llm:
       C: anthropic.claude-3-haiku-20240307-v1:0
       embed: cohere.embed-multilingual-v3
     ollama:
-     A: gemma:2b
-     B: gemma:2b
-     C: gemma:2b
+      A: gemma:2b
+      B: gemma:2b
+      C: gemma:2b
+    google:
+      A: gemini-2.0-flash
+      B: gemini-1.5-flash
+      C: gemini-1.5-flash
+      embed: models/text-embedding-004
 db:
   database: kraina.db     
 chat:

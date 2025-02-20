@@ -1,7 +1,6 @@
 """Base assistant class."""
 
 import enum
-import itertools
 import json
 import logging
 from collections import namedtuple
@@ -186,6 +185,9 @@ class BaseAssistant:
         :param msg: The input message string containing text and image markdown.
         :return: A list of dictionaries representing formatted message segments.
         """
+        # Handle empty messages
+        if not msg:
+            return [{"type": "text", "text": "."}]
         content = []
         start_idx = 0
         for m in IMAGE_DATA_URL_MARKDOWN_RE.finditer(msg):

@@ -4,7 +4,6 @@ import collections
 import functools
 import json
 import logging
-import os
 import queue
 import sys
 import threading
@@ -415,6 +414,7 @@ class App(TkinterDnD.Tk):
             # and avoid data disclosure
             temp = self.ai_snippets["nameit"].force_api
             self.ai_snippets["nameit"].force_api = self.current_assistant.force_api
+            out = ""
             for _ in range(2):
                 try:
                     out = (
@@ -539,7 +539,7 @@ class App(TkinterDnD.Tk):
                     chat_persistence.SETTINGS,
                     **{k: v for k, v in data.items() if k in chat_persistence.SETTINGS.keys()},
                 )
-            except TypeError as e:
+            except TypeError:
                 logger.error("Invalid .settings.yaml format")
 
     def _settings_read(self):
@@ -559,7 +559,7 @@ class App(TkinterDnD.Tk):
                     chat_settings.SETTINGS,
                     **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
                 )
-            except TypeError as e:
+            except TypeError:
                 logger.error("Invalid config.yaml format")
 
     def _update_geometry(self):
@@ -737,7 +737,7 @@ class App(TkinterDnD.Tk):
 
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv, find_dotenv
+    from dotenv import load_dotenv, find_dotenv  # noqa
 
     load_dotenv(find_dotenv())
     app = App()

@@ -10,7 +10,17 @@ import yaml
 from langchain_anthropic import ChatAnthropic
 from langchain_aws import ChatBedrock, BedrockEmbeddings
 from langchain_core.embeddings import Embeddings
-from langchain_openai import ChatOpenAI, AzureChatOpenAI, OpenAIEmbeddings, AzureOpenAIEmbeddings
+from langchain_openai import (
+    ChatOpenAI,
+    AzureChatOpenAI,
+    OpenAIEmbeddings,
+    AzureOpenAIEmbeddings,
+)
+from langchain_google_genai import (
+    ChatGoogleGenerativeAI,
+    GoogleGenerativeAIEmbeddings,
+    GoogleGenerativeAI,
+)
 from langfuse.openai import OpenAI, AzureOpenAI
 from langchain_voyageai import VoyageAIEmbeddings
 from langchain_ollama import ChatOllama
@@ -43,6 +53,7 @@ class SUPPORTED_API_TYPE(enum.Enum):
     ANTHROPIC = "anthropic"
     AWS = "aws"
     OLLAMA = "ollama"
+    GOOGLE = "google"
 
 
 # TODO: Add validation of model mapping dict
@@ -113,7 +124,8 @@ def get_llm_type(force_api_type: Union[SUPPORTED_API_TYPE, str] = None) -> SUPPO
         )
         os_env_openai_ok = bool(os.environ.get("OPENAI_API_KEY"))
         os_env_anthropic_ok = bool(os.environ.get("ANTHROPIC_API_KEY"))
-        os_env_aws_ok = bool(os.environ.get("BEDROCK_AWS_SECRET_ACCESS_KEY"))
+        # os_env_aws_ok = bool(os.environ.get("BEDROCK_AWS_SECRET_ACCESS_KEY"))
+        os_env_google_ok = bool(os.environ.get("GOOGLE_API_KEY"))
 
         if OVERWRITE_LLM_SETTINGS["api_type"]:
             ret = OVERWRITE_LLM_SETTINGS["api_type"]
@@ -125,6 +137,8 @@ def get_llm_type(force_api_type: Union[SUPPORTED_API_TYPE, str] = None) -> SUPPO
             ret = SUPPORTED_API_TYPE.OPENAI
         elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_anthropic_ok:
             ret = SUPPORTED_API_TYPE.ANTHROPIC
+        elif OVERWRITE_LLM_SETTINGS["api_type"] == "" and os_env_google_ok:
+            ret = SUPPORTED_API_TYPE.GOOGLE
         else:
             ret = SUPPORTED_API_TYPE.AWS
     return SUPPORTED_API_TYPE(ret) if isinstance(ret, str) else ret
@@ -153,11 +167,13 @@ def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
         SUPPORTED_API_TYPE.AWS: ChatBedrock,
         SUPPORTED_API_TYPE.OLLAMA: MyChatOllama,
+        SUPPORTED_API_TYPE.GOOGLE: ChatGoogleGenerativeAI,
     }
     if json_mode and get_llm_type(force) not in (
         SUPPORTED_API_TYPE.ANTHROPIC,
         SUPPORTED_API_TYPE.AWS,
         SUPPORTED_API_TYPE.OLLAMA,
+        SUPPORTED_API_TYPE.GOOGLE,
     ):
         return models[get_llm_type(force)](**kwargs).bind(response_format={"type": "json_object"})  # noqa
     else:
@@ -192,6 +208,7 @@ def embedding(**kwargs) -> Embeddings:
         SUPPORTED_API_TYPE.OPENAI: OpenAIEmbeddings,
         SUPPORTED_API_TYPE.ANTHROPIC: VoyageAIEmbeddings,
         SUPPORTED_API_TYPE.AWS: MyBedrockEmbeddings,
+        SUPPORTED_API_TYPE.GOOGLE: GoogleGenerativeAIEmbeddings,
     }
     return embeddings[get_llm_type(force)](**kwargs)
 
@@ -215,5 +232,6 @@ def llm_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:
     llm = {
         SUPPORTED_API_TYPE.AZURE: AzureOpenAI,
         SUPPORTED_API_TYPE.OPENAI: OpenAI,
+        SUPPORTED_API_TYPE.GOOGLE: GoogleGenerativeAI,
     }
     return llm[get_llm_type(force)]()
