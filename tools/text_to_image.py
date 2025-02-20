@@ -119,7 +119,8 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
             force_api=tool_setting["assistant"].force_api,
         ),
         name="text-to-image",
-        description="A wrapper around text-to-image API. Useful for when you need to generate images from a text description.",
+        description="A wrapper around text-to-image API. "
+        "Useful for when you need to generate images from a text description.",
         args_schema=TextToImageInput,
         return_direct=True,
     )

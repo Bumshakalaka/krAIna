@@ -18,7 +18,8 @@ class VectorSearchInput(BaseModel):
     query: str = Field(description="Query the file. The query must be short, well-structured for RAG")
     file_path: str = Field(description="local file to query")
     k: int = Field(
-        description="How many top similar results to return. The first one, is most valuable result. Depends on user need, MAX=15"
+        description="How many top similar results to return. "
+        "The first one, is most valuable result. Depends on user need, MAX=15"
     )
 
 
@@ -97,8 +98,10 @@ def init_vector_search(tool_setting: Dict) -> BaseTool:
             force_api=tool_setting["assistant"].force_api,
         ),
         name="vector-search",
-        description="Load and split document and upload to vector database and use semantic search to find answer on user query. "
-        "The result is JSON {'source': file_path, 'query_results': [dict(content, page, other_metadata), dict(content, page, other_metadata),...]} "
+        description="Load and split document and upload to vector database and "
+        "use semantic search to find answer on user query. "
+        "The result is JSON {'source': file_path, 'query_results': [dict(content, page, other_metadata), "
+        "dict(content, page, other_metadata),...]}"
         "which must be structure and rephrase",
         args_schema=VectorSearchInput,
         return_direct=False,

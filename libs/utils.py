@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import io
+import inspect
 import logging
 import re
 import shutil
@@ -26,13 +27,13 @@ from PIL import Image, ImageColor
 # and we don't want to see this
 original_stdout = sys.stdout
 sys.stdout = None
-import mermaid as md
-from mermaid.graph import Graph
+import mermaid as md  # noqa
+from mermaid.graph import Graph  # noqa
 
 sys.stdout = original_stdout
 
 
-import chat.chat_images as chat_images
+import chat.chat_images as chat_images  # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -303,9 +304,6 @@ def find_lands(type: str, build_in: Path) -> List[Path]:
         if enabler.exists() and (land / type).exists():
             set_.append(land / type)
     return set_
-
-
-import inspect
 
 
 def get_func_args(func) -> Dict:

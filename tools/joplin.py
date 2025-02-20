@@ -20,7 +20,9 @@ class JoplinSearchInput(BaseModel):
         description="Query the Joplin, a local note-taking app. The query must be short, well-structured for RAG"
     )
     k: int = Field(
-        description="How many top similar results to return. The first one, is most valuable result. Depends on user need, MAX=15"
+        description="How many top similar results to return. "
+        "The first one, is most valuable result. "
+        "Depends on user need, MAX=15"
     )
 
 
@@ -106,7 +108,8 @@ def init_joplin_search(tool_setting: Dict) -> BaseTool:
         name="joplin-search",
         description="Search Joplin, a local note-taking app. "
         "Use semantic search by utilize vector database to find answer on user query. "
-        "The result is JSON {'source': file_path, 'query_results': [dict(content, page, other_metadata), dict(content, page, other_metadata),...]} "
+        "The result is JSON {'source': file_path, 'query_results': [dict(content, page, other_metadata), "
+        "dict(content, page, other_metadata),...]}"
         "which must be structure and rephrase",
         args_schema=JoplinSearchInput,
         return_direct=False,

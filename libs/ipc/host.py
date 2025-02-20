@@ -1,4 +1,5 @@
 """App IPC host module."""
+
 import base64
 import json
 import queue
@@ -47,7 +48,7 @@ class AppHost(threading.Thread):
         :return:
         """
         while True:
-            logger.debug(f"waiting for connection")
+            logger.debug("waiting for connection")
             client = self._host.wait_for_client()  # blocking
             if client.poll(None):  # blocking
                 q = queue.Queue(maxsize=1)
@@ -63,7 +64,7 @@ class AppHost(threading.Thread):
                     # Disconnect client
                     try:
                         client.close()
-                    except KeyError as e:
+                    except KeyError:
                         # client already disconnected
                         pass
 

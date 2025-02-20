@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union, List, Type
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, AzureChatOpenAI

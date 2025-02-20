@@ -1,4 +1,5 @@
 """KrAIna chat."""
+
 import argparse
 import subprocess
 import sys

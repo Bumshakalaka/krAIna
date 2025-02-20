@@ -7,7 +7,7 @@ import gi
 from libs.notification.MyNotifyInterface import NotifierInterface
 
 gi.require_version("Notify", "0.7")
-from gi.repository import Notify
+from gi.repository import Notify  # noqa
 
 
 class LinuxNotify(threading.Thread, NotifierInterface):
