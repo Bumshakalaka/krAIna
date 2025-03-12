@@ -1,7 +1,6 @@
 """Chat window."""
 
 import base64
-import copy
 import functools
 import logging
 import subprocess
@@ -306,7 +305,8 @@ class UserQuery(ttk.Frame):
         self.root.bind_on_event(APP_EVENTS.RESP_FROM_SNIPPET, self.skill_message)
         self.root.bind_on_event(APP_EVENTS.UNBLOCK_USER, self.unblock)
         self.text = ScrolledText(self, height=5, selectbackground="lightblue", undo=True)
-        self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
+        self.text.bind("<Return>", self._handle_return)
+        self.text.bind("<KP_Enter>", self._handle_return)
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
         self.text.bind("<KeyRelease>", self._show_tokens)
         self.text.bind("<<Paste>>", self._on_paste)
@@ -328,7 +328,7 @@ class UserQuery(ttk.Frame):
         self.pb = ttk.Progressbar(f, orient="horizontal", mode="indeterminate")
 
         self.send_btn = ttk.Button(f, text="SEND", width=12, command=functools.partial(self.invoke, "assistant"))
-        ToolTip(self.send_btn, msg="<Ctrl+Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
+        ToolTip(self.send_btn, msg="<Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
         self.send_btn.pack(side=tk.RIGHT, padx=2, pady=2)
 
         self.add_file_btn = ttk.Button(f, text="ADD FILE...", width=12, command=self.add_file)
@@ -501,7 +501,8 @@ class UserQuery(ttk.Frame):
             self.pb.stop()
             self.pb.forget()
             self.send_btn.configure(state=tk.NORMAL)
-            self.text.bind("<Control-Return>", functools.partial(self.invoke, "assistant"))
+            self.text.bind("<Return>", self._handle_return)
+            self.text.bind("<KP_Enter>", self._handle_return)
 
     def block(self, data=None):
         self.block_events += 1
@@ -509,7 +510,21 @@ class UserQuery(ttk.Frame):
             self.pb.pack(side=tk.LEFT, fill=tk.X, expand=True)
             self.pb.start(interval=20)
             self.send_btn.configure(state=tk.DISABLED)
-            self.text.unbind("<Control-Return>")
+            self.text.unbind("<Return>")
+            self.text.unbind("<KP_Enter>")
+
+    def _handle_return(self, event):
+        """
+        Handle Return and KP_Enter key presses.
+        If Shift is pressed, insert a newline, otherwise invoke the assistant.
+
+        :param event: The key event
+        :return: 'break' to prevent default handling or None to allow it
+        """
+        if event.state & 0x1:  # Check if Shift is pressed (0x1 is the mask for Shift)
+            return None  # Allow default behavior (insert newline)
+        else:
+            return self.invoke("assistant", event)
 
 
 class ChatFrame(tk.PanedWindow):
