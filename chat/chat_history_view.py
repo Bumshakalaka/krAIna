@@ -220,32 +220,34 @@ class HtmlChatView(HtmlFrame, ChatView):
         super().__init__(
             parent, messages_enabled=False, horizontal_scrollbar=True, height=15, borderwidth=1, relief=tk.SUNKEN
         )
-        self.enable_forms(False)
-        self.enable_objects(False)
-        self.on_link_click(self._open_webbrowser)
-        self.on_done_loading(self._see_end)
+        self.configure(forms_enabled=False)
+        self.configure(objects_enabled=False)
+        self.configure(on_link_click=self._open_webbrowser)
+        self.bind("<<DoneLoading>>", lambda e: self._see_end())
         self.bind("<Button-1>", self.left_click, True)
 
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
         if "dark" in theme:
-            self.enable_dark_theme(True, invert_images=False)
-            self.html.update_default_style(LIGHTTHEME + DARKTHEME)
+            self.html.default_style = LIGHTTHEME + DARKTHEME
+            self.html.update_default_style()
         else:
-            self.enable_dark_theme(False, invert_images=False)
-            self.html.update_default_style(LIGHTTHEME)
+            self.html.default_style = LIGHTTHEME
+            self.html.update_default_style()
 
         self.cols = parent.cols
 
         self._clear()
 
     def left_click(self, event):
-        if self.get_currently_hovered_node_tag() == "img":
-            if url := self.get_currently_hovered_node_attribute("src"):
-                if url.startswith("https://"):
-                    self._open_webbrowser(url)
-                    return
-            if alt := self.get_currently_hovered_node_attribute("alt"):
+        hovered = self.get_currently_hovered_element()
+        if hovered and getattr(hovered, "tagName", None) == "img":
+            url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None
+            if url and url.startswith("https://"):
+                self._open_webbrowser(url)
+                return
+            alt = hovered.attributes.get("alt") if hasattr(hovered, "attributes") else None
+            if alt:
                 self._open_webbrowser(self.root.images.get_file_uri(alt))
                 return
 
@@ -264,11 +266,11 @@ class HtmlChatView(HtmlFrame, ChatView):
     def update_tags(self, theme: str):
         """Update text tags when theme changed."""
         if "dark" in theme:
-            self.enable_dark_theme(True, invert_images=False)
-            self.html.update_default_style(LIGHTTHEME + DARKTHEME)
+            self.html.default_style = LIGHTTHEME + DARKTHEME
+            self.html.update_default_style()
         else:
-            self.enable_dark_theme(False, invert_images=False)
-            self.html.update_default_style(LIGHTTHEME)
+            self.html.default_style = LIGHTTHEME
+            self.html.update_default_style()
         self.cols = {
             "HUMAN": self.root.get_theme_color("accent"),
             "TOOL": "#DCBF85",

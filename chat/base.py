@@ -250,12 +250,12 @@ HR {
 /* Basic table tag rules. */
 TABLE { 
   display: table;
-  border-spacing: 6px;
+  border-spacing: 0px;
   border-bottom-color: grey25;
   border-right-color: grey25;
   border-top-color: grey60;
   border-left-color: grey60;
-  text-align: center;
+  text-align: left;
 }
 TR              { display: table-row }
 THEAD           { display: table-header-group }
@@ -284,7 +284,7 @@ BLOCKQUOTE      { margin-left: 40px; margin-right: 40px }
 I, CITE, EM,
 VAR, ADDRESS    { font-style: italic }
 PRE, TT, CODE,
-KBD, SAMP       { font-family: courier }
+KBD, SAMP       { font-family: monospace }
 BIG             { font-size: 1.17em }
 SMALL, SUB, SUP { font-size: .83em }
 SUB             { vertical-align: sub }
@@ -300,7 +300,7 @@ PRE, PLAINTEXT, XMP {
   display: block;
   white-space: pre;
   margin: 1em 0;
-  font-family: courier;
+  font-family: monospace;
 }
 /* Formatting for <mark> */
 MARK {
@@ -325,7 +325,7 @@ BR {
  */
 INPUT[type="hidden"] { display: none }
 INPUT, TEXTAREA, SELECT, BUTTON { 
-  border: 1px solid black;
+  border: 1px solid #828282;
   background-color: white;
   line-height: normal;
   vertical-align: middle;
@@ -333,6 +333,7 @@ INPUT, TEXTAREA, SELECT, BUTTON {
 INPUT[type="image"][src] {
   -tkhtml-replacement-image: attr(src);
   cursor: pointer;
+  border-width: 0;
 }
 INPUT[type="checkbox"], INPUT[type="radio"], input[type="file"], input[type="range"], input[type="color"] {
   background-color: transparent;
@@ -355,6 +356,11 @@ INPUT[type="submit"],INPUT[type="button"], INPUT[type="reset"], BUTTON {
   background-color: #d9d9d9;
   color: #000000;
   color: tcl(::tkhtml::if_disabled #666666 #000000);
+}
+INPUT[type="color"] {
+  cursor: pointer;
+  padding: 5px;
+  background-color: #ccc;
 }
 INPUT[disabled], BUTTON[disabled] {
     cursor: auto;
@@ -390,7 +396,7 @@ FRAMESET {
 IFRAME {
   width: 300px;
   height: 200px;
-  border: 1px solid black;
+  border: 1px solid #828282;
 }
 /*
  *************************************************************************
@@ -408,7 +414,6 @@ body a[href]:visited { color: attr(vlink x body) }
 [height]           { height:           attr(height l) }
 basefont[size]     { font-size:        attr(size) }
 font[size]         { font-size:        tcl(::tkhtml::size_to_fontsize) }
-[bgcolor]          { background-color: attr(bgcolor) }
 BR[clear]          { clear: attr(clear) }
 BR[clear="all"]    { clear: both; }
 /* Standard html <img> tags - replace the node with the image at url $src */
@@ -456,6 +461,7 @@ TR[valign]>TD, TR[valign]>TH {vertical-align: attr(valign x tr)}
 TR>TD[valign], TR>TH[valign] {vertical-align: attr(valign)}
 /* Support the "text" attribute on the <body> tag */
 body[text]       {color: attr(text)}
+body[bgcolor]    { background-color: attr(bgcolor) }
 /* Allow background images to be specified using the "background" attribute.
  * According to HTML 4.01 this is only allowed for <body> elements, but
  * many websites use it arbitrarily.
@@ -465,11 +471,11 @@ body[text]       {color: attr(text)}
  * <IMG>, <OBJECT> and <APPLET> only. Note that this attribute is
  * deprecated in HTML 4.01.
  */
-IMG[vspace], OBJECT[vspace], APPLET[vspace] {
+IMG[vspace], OBJECT[vspace], IFRAME[vspace], APPLET[vspace] {
     margin-top: attr(vspace l);
     margin-bottom: attr(vspace l);
 }
-IMG[hspace], OBJECT[hspace], APPLET[hspace] {
+IMG[hspace], OBJECT[hspace], IFRAME[hspace], APPLET[hspace] {
     margin-left: attr(hspace l);
     margin-right: attr(hspace l);
 }
@@ -485,20 +491,9 @@ BODY[marginwidth] {
 SPAN[spancontent]:after {
   content: attr(spancontent);
 }
-BODY {
-  background-color: #fafafa;
-  color: #1c1c1c;
+IFRAME[frameborder]{
+  border-width: attr(frameborder l);
 }
-/* Display properties for form items. */
-INPUT, TEXTAREA, SELECT, BUTTON { 
-  background-color: #fafafa;
-  color: #1c1c1c;
-}
-INPUT[type="submit"],INPUT[type="button"], INPUT[type="reset"], BUTTON {
-  background-color: #fafafa;
-  color: #1c1c1c;
-  color: tcl(::tkhtml::if_disabled #a0a0a0 #1c1c1c);
-}        
 """
 
 DARKTHEME = """
@@ -513,7 +508,7 @@ BODY {
 :visited { color: #5245a8; }
 
 /* Display properties for form items. */
-INPUT, TEXTAREA, SELECT, BUTTON { 
+INPUT, TEXTAREA, SELECT, BUTTON {
   background-color: #1c1c1c;
   color: #fafafa;
 }
