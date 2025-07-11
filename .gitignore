@@ -1,5 +1,6 @@
 **/.pytest_cache
 __pycache__/
+/.mypy_cache/
 *.py[cod]
 *$py.class
 /.vscode/
@@ -7,8 +8,13 @@ __pycache__/
 .venv
 .env
 /chat/settings.json
-/kraina.db
+/*.db
 /*.log
 /.settings.yaml
 /kraina-*/
 /.store_files/
+/out/**
+/temp
+/config.yaml
+kraina_*
+kraina-*
