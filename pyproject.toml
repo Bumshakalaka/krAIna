@@ -1,2 +1,84 @@
-[tool.black]
+[project]
+name = "kraina"
+version = "0.1.0"
+description = "Kraina is a set of AI-powered tools for everyday use."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aenum==3.1.16",
+    "anthropic==0.57.1",
+    "firecrawl>=2.15.0",
+    "ipyc==1.1.1",
+    "klembord==0.3.0",
+    "langchain==0.3.26",
+    "langchain-anthropic==0.3.17",
+    "langchain-aws==0.2.28",
+    "langchain-community==0.3.27",
+    "langchain-core==0.3.68",
+    "langchain-google-genai==2.1.7",
+    "langchain-ollama==0.3.4",
+    "langchain-openai==0.3.27",
+    "langchain-voyageai==0.1.6",
+    "langfuse==3.1.3",
+    "markdown2==2.5.3",
+    "mermaid-py==0.8.0",
+    "openai==1.95.0",
+    "pgi==0.0.11.2 ; os_name == 'posix'",
+    "pillow==11.3.0",
+    "pydantic==2.11.7",
+    "pygments==2.19.2",
+    "pygobject==3.46.0 ; os_name == 'posix'",
+    "pypdf[full]==5.7.0",
+    "python-dotenv==1.1.1",
+    "pywinstyles==1.8 ; os_name != 'posix'",
+    "pyyaml==6.0.2",
+    "requests==2.32.4",
+    "setuptools==80.9.0",
+    "sqlalchemy==2.0.41",
+    "sv-ttk==2.6.1",
+    "tiktoken==0.9.0",
+    "tk>=0.1.0",
+    "tkinter-tooltip==3.1.2",
+    "tkinterdnd2==0.4.3",
+    "tkinterweb==4.3.1",
+    "voyageai==0.3.3",
+    "watchfiles==1.1.0",
+    "windows-toasts==1.2.0; os_name != 'posix'",
+    "wolframalpha==5.1.3",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+
+[tool.ruff]
+# Ruff will check the following rule groups:
+# E   - pycodestyle (PEP 8) errors
+# D   - pydocstyle (docstring conventions)
+# W   - pycodestyle (PEP 8) warnings
+# ARG - flake8-unused-arguments (unused function arguments)
+# TC  - flake8-type-checking (type-checking imports)
+# RSE - flake8-raise (raise statement issues)
+# Q   - flake8-quotes (quote style issues)
+# PT  - flake8-pytest-style (pytest best practices)
+# F   - pyflakes (unused imports, unused variables, syntax errors)
+lint.select = ["E","W","D","ARG","TC","RSE","Q","PT","I","F"]
+lint.ignore = []
 line-length = 120
+target-version = "py312"
+
+[tool.pyright]
+exclude = ["**/__pycache__",
+    "**/.pytest_cache",
+    "**/.ruff_cache",
+    "**/.vscode",
+    "**/.venv",
+    "**/temp"
+    ]

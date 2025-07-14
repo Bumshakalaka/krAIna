@@ -1,0 +1,97 @@
+llm:
+  map_model:
+    azure:
+      A: gpt-4o
+      B: gpt-4o-mini
+      C: gpt-35-turbo
+      gpt-4-turbo: gpt-4-turbo-128k
+      gpt-3.5-turbo: gpt-35-turbo
+      dall-e-2: Dalle2
+      dall-e-3: Dalle3
+      embed: text-embedding-ada-002
+    openai:
+      A: gpt-4o
+      B: gpt-4o-mini
+      C: gpt-3.5-turbo
+      embed: text-embedding-ada-002
+    anthropic:
+      A: claude-3-5-sonnet-latest
+      B: claude-3-5-haiku-20241022
+      C: claude-3-haiku-20240307
+      embed: voyage-3
+    aws:
+      A: anthropic.claude-3-5-sonnet-20240620-v1:0
+      B: anthropic.claude-3-5-haiku-20241022-v1:0
+      C: anthropic.claude-3-haiku-20240307-v1:0
+      embed: cohere.embed-multilingual-v3
+    ollama:
+      A: gemma:2b
+      B: gemma:2b
+      C: gemma:2b
+    google:
+      A: gemini-2.0-flash
+      B: gemini-2.0-flash
+      C: gemini-1.5-flash
+      embed: models/text-embedding-004
+db:
+  database: kraina.db
+chat:
+  default_assistant: none
+  visible_last_chats: 30
+  editor: subl
+tools:
+  file_mgmt:
+    working_dir: /home/totyz/Documents/Sidewalk
+  brave_web:
+    count: 3
+  text-to-image:
+    model: dall-e-3
+  vector-search:
+    model: embed
+  jenkins:
+    # DB path relative to this config or absolute path
+    sqlite: /home/totyz/repos/kraina-nordic/jenkins.db
+    projects:
+      sidewalk:
+        artifact_re_filters:
+          - ^/[^/]+\.txt
+          - ^/[^/]+\.zip
+          - ^/test_details\.html
+          - ^/test_cert.+\.xlsx
+        plans:
+          - plan: KRKNG/Sidewalk/test-sdk-sidewalk
+            job: master
+          - plan: latest/sub/test-sdk-sidewalk
+            job: master
+          - plan: latest/night/test-sdk-sidewalk
+            job: master
+          - plan: latest/week/test-sdk-sidewalk
+            job: master
+      dfu:
+        artifact_re_filters:
+          - ^/[^/]+\.7z
+          - ^/outcomes/logs/.+\.log
+          - ^/test_details\.html
+          - ^/test_cert.+\.xlsx
+        plans:
+          - plan: latest/night/test-sdk-dfu
+            job: master
+          - plan: latest/sub/test-sdk-dfu
+            job: master
+      rs:
+        artifact_re_filters:
+          - ^/[^/]+\.7z
+          - ^/[^/]+\.html
+        plans:
+          - plan: latest/night/test-fw-nrfconnect-rs
+            job: main
+          - plan: latest/sub/test-fw-nrfconnect-rs
+            job: main
+      nrf:
+        artifact_re_filters:
+          - ^/twister-build
+        plans:
+          - plan: latest/night/sdk-nrf
+            job: main
+          - plan: latest/sdk-nrf
+            job: main
