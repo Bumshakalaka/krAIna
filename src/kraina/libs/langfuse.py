@@ -11,12 +11,10 @@ import os
 import subprocess
 import uuid
 
-from dotenv import find_dotenv, load_dotenv
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
 logger = logging.getLogger(__name__)
-load_dotenv(find_dotenv(), override=True)
 
 if os.environ.get("LANGFUSE_HOST"):
     try:

@@ -12,7 +12,4 @@ tools:
   - image-analysis
 #  - wolfram_alpha
 #  - brave_web
-
-contexts:
-  string: We are located in Poland
-  file: ./../../about_me.txt
+__buildin__: true

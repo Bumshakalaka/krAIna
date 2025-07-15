@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, Union
 
 import sv_ttk
 import yaml
-from dotenv import find_dotenv, load_dotenv
+from dotenv import load_dotenv
 from PIL import Image, ImageTk
 from tkinterdnd2 import TkinterDnD
 
@@ -28,6 +28,7 @@ from kraina.assistants.assistant import AssistantResp, AssistantType
 from kraina.assistants.base import Assistants
 from kraina.libs.db.controller import Db
 from kraina.libs.llm import read_model_settings
+from kraina.libs.paths import ENV_FILE
 from kraina.libs.utils import (
     CONFIG_FILE,
     IMAGE_DATA_URL_MARKDOWN_RE,
@@ -273,7 +274,7 @@ class App(TkinterDnD.Tk):
             read_model_settings()
             self.post_event(APP_EVENTS.RELOAD_AI, None)
         elif what == "main":
-            load_dotenv(find_dotenv(), override=True)
+            load_dotenv(ENV_FILE, override=True)
             self._settings_read()
             read_model_settings()
             self.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "")
@@ -545,9 +546,6 @@ class App(TkinterDnD.Tk):
 
         :return:
         """
-        if not CONFIG_FILE.exists():
-            return
-
         with open(CONFIG_FILE, "r") as fd:
             try:
                 data = yaml.load(fd, Loader=yaml.SafeLoader)["chat"]
@@ -725,12 +723,3 @@ class App(TkinterDnD.Tk):
         ret = result.get()
         del result
         return ret
-
-
-if __name__ == "__main__":
-    from dotenv import find_dotenv, load_dotenv  # noqa
-
-    load_dotenv(find_dotenv())
-    app = App()
-    app.deiconify()
-    app.mainloop()

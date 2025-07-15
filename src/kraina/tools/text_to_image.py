@@ -1,14 +1,11 @@
 from typing import Dict, Literal
 
 from aenum import Enum
-from dotenv import find_dotenv, load_dotenv
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field
 
 import kraina.libs.images as images
 from kraina.libs.llm import llm_client, map_model
-
-load_dotenv(find_dotenv())
 
 
 class ImageSize(Enum):

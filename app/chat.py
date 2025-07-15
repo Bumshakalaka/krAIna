@@ -1,6 +1,7 @@
 """KrAIna chat."""
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -56,7 +57,21 @@ if __name__ == "__main__":
     _, args = parser.parse_known_args()
     if not args:
         # no arguments, spawn a new process with chat application
-        subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            # PyInstaller frozen app - sys.executable is set to frozen app, e.g. chat
+            # spawning new process with PYINSTALLER_RESET_ENVIRONMENT=1 is required with onefile build.
+            # ref: https://pyinstaller.org/en/stable/advanced-topics.html#envvar-PYINSTALLER_RESET_ENVIRONMENT
+            # The pyinstaller bootloader spawn process of app by default and here
+            # we'd like to spawn our own process.
+            # Without this env, we end with No such file or directory: '/tmp/_MEIWXhYiT/...' error
+            subprocess.Popen(
+                [sys.executable, "_RUN_"],
+                start_new_session=True,
+                env={**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"},
+            )
+        else:
+            # script mode - sys.executable is set to python interpreter
+            subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
     elif args[0] == "_RUN_":
         # run application in this process
         run_app()
@@ -72,8 +87,16 @@ if __name__ == "__main__":
                 # TODO: windows
                 # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
                 # proc_exe.send_signal(subprocess.signal.SIGTERM)
-                subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
-
+                if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+                    print("FROZEN_2")
+                    subprocess.Popen(
+                        [sys.executable, "_RUN_"],
+                        start_new_session=True,
+                        env={**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"},
+                    )
+                else:
+                    subprocess.Popen([sys.executable, __file__, "_RUN_"], start_new_session=True)
+                print("SUBPROCESS started 2")
                 # Try to connect to just started application to use IPC
                 start = time.time()
                 while time.time() <= start + 15.0:

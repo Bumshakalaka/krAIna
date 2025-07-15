@@ -2,11 +2,8 @@ from pathlib import Path
 from typing import Dict
 
 import requests
-from dotenv import find_dotenv, load_dotenv
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field
-
-load_dotenv(find_dotenv())
 
 
 class TextToTextInput(BaseModel):

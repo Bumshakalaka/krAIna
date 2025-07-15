@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import markdown2
 import requests
@@ -508,7 +508,7 @@ def convert_user_query(msg: str):
     return IMAGE_MARKDOWN_RE.sub(_convert, msg)
 
 
-def kraina_db(new_db: str = None) -> str:
+def kraina_db(new_db: Optional[str] = None) -> str:
     """Get or set the path to the Kraina database.
 
     If a new database name is provided, it sets the environment variable "KRAINA_DB"
@@ -519,17 +519,16 @@ def kraina_db(new_db: str = None) -> str:
     """
     if os.environ.get("KRAINA_DB", None) is None:
         db_settings = {}
-        if CONFIG_FILE.exists():
-            with open(CONFIG_FILE, "r") as f:
-                data = yaml.load(f, Loader=yaml.SafeLoader)
-                db_settings = data.get("db", {})
+        with open(CONFIG_FILE, "r") as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+            db_settings = data.get("db", {})
         if db_settings.get("database", None):
             os.environ["KRAINA_DB"] = str((CONFIG_FILE.parent / db_settings["database"]).resolve())
         else:
             os.environ["KRAINA_DB"] = str((CONFIG_FILE.parent / "kraina.db").resolve())
     if new_db:
         os.environ["KRAINA_DB"] = str((CONFIG_FILE.parent / new_db).resolve())
-    return os.environ.get("KRAINA_DB")
+    return os.environ["KRAINA_DB"]
 
 
 def latex_to_image(latex_input=None, output_format="PNG", output_scale="100%"):

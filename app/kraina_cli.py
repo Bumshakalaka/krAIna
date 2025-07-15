@@ -1,82 +1,70 @@
-"""Main module."""
+"""KrAIna chat."""
 
 import argparse
-import logging
+import subprocess
 import sys
+import time
 from pathlib import Path
 
-from dotenv import find_dotenv, load_dotenv
-
+from kraina.libs.ipc.client import AppClient
 from kraina.libs.notification.MyNotify import notifier_factory
-from kraina.snippets.base import Snippets
+from kraina_chat.base import app_interface
 
-load_dotenv(find_dotenv())
+
+def run_cmd(args):
+    with AppClient() as client:
+        ret = client.send(*args)
+        if ret:
+            if ret.startswith("FAIL:") or ret.startswith("TIMEOUT"):
+                print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"), flush=True, file=sys.stderr)
+            else:
+                print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"), flush=True, file=sys.stdout)
+
+
+def run_app_and_cmd(args=None):
+    if not args:
+        args = ["SHOW_APP"]
+    try:
+        run_cmd(args)
+    except ConnectionRefusedError:
+        # Application not started, run in the separate process
+        # TODO: windows
+        # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
+        # proc_exe.send_signal(subprocess.signal.SIGTERM)
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            kraina_app_path = Path(sys.argv[0]).parent.resolve() / "kraina_app"
+            if not kraina_app_path.exists():
+                raise FileNotFoundError(f"Kraina app not found at {kraina_app_path}")
+            subprocess.Popen([str(kraina_app_path)], start_new_session=True)
+        else:
+            subprocess.Popen([sys.executable, Path(__file__).parent / "kraina_app.py"], start_new_session=True)
+        # Try to connect to just started application to use IPC
+        start = time.time()
+        while time.time() <= start + 15.0:
+            try:
+                run_cmd(args)
+            except ConnectionRefusedError:
+                time.sleep(0.2)
+                continue
+            else:
+                break
+
 
 if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
-    loggerFormatter = logging.Formatter(loggerFormat)
-    loggerLevel = logging.DEBUG
-    file_handler = logging.FileHandler("kraina.log", encoding="utf-8")
-    console_handler = logging.StreamHandler(sys.stderr)
-    logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[file_handler, console_handler])
-    console_handler.setLevel(logging.ERROR)
-
+    descr = "KraIna chat application.\nCommands:\n"
+    for cmd, cmd_descr in app_interface().items():
+        descr += f"\t{cmd} - {cmd_descr}\n"
+    descr += "\tNo argument - run GUI app. If app is already run, show it"
     parser = argparse.ArgumentParser(
-        description="Transform text using snippet.\n"
-        "To transform long text like source code or some long paragraph on Windows "
-        "the best option is --file parameter as passing the text via command line parameter is problematic.\n"
-        "File provided to --file parameter must include name of snippet in first line.\n"
-        "The rest of file is treat as text to transform."
+        prog="chat.sh",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=descr,
+        usage="chat.sh command",
     )
-
-    snippets = Snippets()
-    parser.add_argument(
-        "--snippet",
-        type=str,
-        required=False,
-        choices=list(snippets.keys()) + [""],
-        default="",
-        help="Snippet to use",
-    )
-    parser.add_argument("--text", type=str, required=False, default="", help="Text to transform")
-    parser.add_argument(
-        "--file",
-        type=str,
-        required=False,
-        default="",
-        help="Read and parse snippet and text from file.\nFile format: snippet\\ntext, snippet must be in first line.\n"
-        "Rest file is treat as text.\nUse instead of --snippet + --text to pass complicated text to transform",
-    )
-
-    args = parser.parse_args()
-    # Custom validation logic
-    if args.file:
-        if args.snippet or args.text:
-            parser.error("--file cannot be used with --snippet or --text")
-
-    if args.text == "" and args.snippet == "" and args.file == "":
-        print(",".join(snippets.keys()))
+    _, args = parser.parse_known_args()
+    if not args:
+        run_app_and_cmd()
     else:
-        desktop_notify = notifier_factory()(f"KrAina: {args.snippet}")
-        desktop_notify.start()
-        try:
-            if args.file:
-                if not (p := Path(args.file)).exists():
-                    logger.error(f"'{args.file} dos not exist")
-                    exit(1)
-                with open(p, "r") as fd:
-                    data = fd.read().split("\n")
-                    snippet = data[0].strip()
-                    query = "\n".join(data[1:])
-            else:
-                snippet = args.snippet
-                query = args.text
-            ret = snippets[snippet].run(query)
-            # workaround for Windows exception: 'charmap' codec can't encode character
-            print(ret.encode("utf-8").decode(sys.stdout.encoding, errors="ignore"))
-        except Exception as e:
-            logger.exception(e)
-            exit(1)
-        finally:
-            desktop_notify.join()
+        # call IPC command to be executed by Chat application
+        with notifier_factory()(f"KrAIna: {args[0]}"):
+            run_app_and_cmd(args)

@@ -1,13 +1,10 @@
 from pathlib import Path
 from typing import Dict
 
-from dotenv import find_dotenv, load_dotenv
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, Field
 
 from kraina.libs.utils import convert_user_query
-
-load_dotenv(find_dotenv())
 
 
 class ImageAnalyseInput(BaseModel):

@@ -2,11 +2,9 @@
 
 import logging
 from pathlib import Path
-from pprint import pprint
 from typing import Dict
 
 import yaml
-from dotenv import find_dotenv, load_dotenv
 
 from kraina.libs.utils import find_assets, import_module
 from kraina.snippets.snippet import BaseSnippet
@@ -82,11 +80,3 @@ class Snippets(Dict[str, BaseSnippet]):
                 else:
                     logger.debug(f"{snippet.name} does not use config.yaml, default will be used.")
                 self[snippet.name] = snippet_cls(name=snippet.name, prompt=prompt, path=snippet, **settings)
-
-
-if __name__ == "__main__":
-    load_dotenv(find_dotenv())
-    snippets = Snippets()
-    pprint(snippets)
-    action = snippets["fix"]
-    print(action.run("cos ciekawego"))

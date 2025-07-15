@@ -2,11 +2,9 @@
 
 import logging
 from pathlib import Path
-from pprint import pprint
 from typing import Dict, TypeAlias
 
 import yaml
-from dotenv import find_dotenv, load_dotenv
 
 from kraina.assistants.assistant import AssistantType, BaseAssistant
 from kraina.libs.utils import find_assets, import_module
@@ -34,8 +32,7 @@ class Assistants(Dict[str, BaseAssistant]):
         for assistant_set in assistant_sets:
             for assistant in sorted(assistant_set.glob("*")):
                 if self.get(assistant.name) is not None:
-                    logger.error(f"'{assistant.name}` assistant already exist")
-                    continue
+                    logger.warning(f"'{assistant.name}` assistant already exist, override it")
                 if not (assistant.is_dir() and (assistant / "prompt.md").exists()):
                     logger.debug(f"This is not assistant folder:{assistant}")
                     continue
@@ -95,10 +92,3 @@ class Assistants(Dict[str, BaseAssistant]):
 
 
 Assistant: TypeAlias = BaseAssistant
-
-if __name__ == "__main__":
-    load_dotenv(find_dotenv())
-    assistants = Assistants()
-    pprint(assistants)
-    action = assistants["echo"]
-    print(action.run("Napisz coś ciekawego"))

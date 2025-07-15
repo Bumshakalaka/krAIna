@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "llm": {
+      "type": "object",
+      "properties": {
+        "map_model": {
+          "type": "object",
+          "properties": {
+            "azure": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": { "type": "string", "optional": true }
+              },
+              "additionalProperties": { "type": "string" }
+            },
+            "openai": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": { "type": "string", "optional": true }
+              },
+              "additionalProperties": { "type": "string" }
+            },
+            "anthropic": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": { "type": "string", "optional": true }
+              },
+              "additionalProperties": { "type": "string" }
+            },
+            "aws": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": { "type": "string", "optional": true }
+              },
+              "additionalProperties": { "type": "string" }
+            },
+            "ollama": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": {
+                  "type": "string",
+                  "optional": true
+                }
+              },
+              "additionalProperties": { "type": "string" }
+            },
+            "google": {
+              "type": "object",
+              "properties": {
+                "A": { "type": "string" },
+                "B": { "type": "string" },
+                "C": { "type": "string" },
+                "embed": {
+                  "type": "string",
+                  "optional": true
+                }
+              },
+              "additionalProperties": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "db": {
+      "type": "object",
+      "properties": {
+        "database": { "type": "string" }
+      },
+      "required": ["database"],
+      "additionalProperties": false
+    },
+    "chat": {
+      "type": "object",
+      "properties": {
+        "default_assistant": { "type": ["string", "null"] },
+        "visible_last_chats": { "type": ["integer", "null"] },
+        "editor": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "assistants": {
+      "oneOf": [
+        { "type": "object", "properties": {}, "additionalProperties": true },
+        { "type": "null" }
+      ]
+    },
+    "snippets": {
+      "oneOf": [
+        { "type": "object", "properties": {}, "additionalProperties": true },
+        { "type": "null" }
+      ]
+    },
+    "tools": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "file_mgmt": {
+              "type": "object",
+              "properties": {
+                "working_dir": { "type": "string" }
+              },
+              "required": ["working_dir"],
+              "additionalProperties": false
+            },
+            "brave_web": {
+              "type": "object",
+              "properties": {
+                "count": { "type": "integer" }
+              },
+              "required": ["count"],
+              "additionalProperties": false
+            },
+            "text-to-image": {
+              "type": "object",
+              "properties": {
+                "model": { "type": "string" }
+              },
+              "required": ["model"],
+              "additionalProperties": false
+            },
+            "vector-search": {
+              "type": "object",
+              "properties": {
+                "model": { "type": "string" }
+              },
+              "required": ["model"],
+              "additionalProperties": false
+            },
+            "joplin-search": {
+              "type": "object",
+              "properties": {
+                "model": { "type": "string" }
+              },
+              "required": ["model"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": true
+        },
+        { "type": "null" }
+      ]
+    }
+  },
+  "required": ["llm", "db", "chat"],
+  "additionalProperties": false
+}

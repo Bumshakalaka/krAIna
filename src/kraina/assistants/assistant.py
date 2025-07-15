@@ -86,6 +86,8 @@ class BaseAssistant:
     """Force LLM to output in json_object format"""
     pydantic_output: Type[BaseModel] = None
     """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
+    __buildin__: bool = False
+    """If True, assistant is built-in and cannot be removed"""
 
     def __init_subclass__(cls, **kwargs):
         """Automatically add all subclasses of this class to `SPECIALIZED_ASSISTANT` dict.

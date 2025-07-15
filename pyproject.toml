@@ -45,6 +45,7 @@ dependencies = [
     "watchfiles==1.1.0",
     "windows-toasts==1.2.0; os_name != 'posix'",
     "wolframalpha==5.1.3",
+    "jsonschema==4.24.0",
 ]
 
 [build-system]

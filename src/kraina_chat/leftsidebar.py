@@ -175,10 +175,12 @@ class LeftSidebar(ttk.Frame):
         :param event: The event triggering the menu, typically a right-click.
         :return: None
         """
+        name = event.widget.configure("text")[-1].split("(")[0]
+        if self.root.ai_assistants[name].__buildin__:
+            return
         w = tk.Menu(self, tearoff=False)
         w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
 
-        name = event.widget.configure("text")[-1].split("(")[0]
         for f in self.root.ai_assistants[name].path.glob("*"):  # type: Path
             if not f.is_dir():
                 w.add_command(label=f"{f.name}", command=functools.partial(self.edit_assistant, f))

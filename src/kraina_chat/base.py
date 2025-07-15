@@ -4,11 +4,14 @@ import enum
 import queue
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict
 
-from kraina.libs.paths import APP_DIR
-
-SETTINGS_FILE = (APP_DIR / ".settings.yaml").resolve()
+# Do not use APP_DIR from kraina.libs.paths because it
+# do file validation and add jsonschema libs to frozen app
+# which makes the application two times bigger.
+# we don't need the validation in kraina_cli
+SETTINGS_FILE = (Path(sys.argv[0]).parent / ".settings.yaml").resolve()
 
 
 def get_windows_version() -> int:

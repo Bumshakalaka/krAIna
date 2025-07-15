@@ -62,9 +62,8 @@ def read_model_settings():
     :return: None
     :raises FileNotFoundError: If the 'config.yaml' file does not exist.
     """
-    if CONFIG_FILE.exists():
-        with open(CONFIG_FILE) as fd:
-            settings = yaml.safe_load(fd.read())
+    with open(CONFIG_FILE) as fd:
+        settings = yaml.safe_load(fd.read())
         if settings.get("llm") and settings["llm"].get("map_model"):
             MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
     logger.debug(MAP_MODELS)
