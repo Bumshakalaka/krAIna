@@ -704,6 +704,8 @@ class App(TkinterDnD.Tk):
             # desktop_notify = NotifyWorking(f"ai:{snippet}")
             # desktop_notify.start()
             try:
+                if Path(query).is_file():
+                    query = Path(query).read_text(encoding="utf-8")
                 ret = self.ai_snippets[snippet].run(query)
             except Exception as e:
                 logger.exception(e)

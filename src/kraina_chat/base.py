@@ -86,7 +86,7 @@ def app_interface() -> Dict:
         APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
         APP_EVENTS.HIDE_APP.name: "Trigger to minimize the application",
         APP_EVENTS.GET_LIST_OF_SNIPPETS.name: "Get list of snippets",
-        APP_EVENTS.RUN_SNIPPET.name: "Run snippet 'name' with 'text'",
+        APP_EVENTS.RUN_SNIPPET.name: "Run snippet 'name' with 'text' or 'file'",
         APP_EVENTS.RELOAD_CHAT_LIST.name: "Reload chat list",
         APP_EVENTS.SELECT_CHAT.name: "Select conv_id chat",
         APP_EVENTS.DEL_CHAT.name: "Delete conv_id chat",
