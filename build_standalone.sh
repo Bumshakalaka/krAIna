@@ -56,7 +56,8 @@ pyinstaller \
     --hidden-import=tiktoken_ext \
     --hidden-import=PIL._tkinter_finder \
     --hidden-import=aenum \
-    --icon=img/logo.ico
+    --icon=img/logo.ico \
+    --splash=img/kraina_banner_loading.png
 
 pyinstaller \
     --onefile \
