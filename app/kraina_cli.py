@@ -12,7 +12,7 @@ from kraina_chat.base import app_interface
 
 
 def run_cmd(args):
-    if isinstance(args, list) and args[0] == "RUN_SNIPPET" and len(args) == 3 and Path(args[2]).is_file():
+    if isinstance(args, list) and args[0] == "RUN_SNIPPET_WITH_FILE" and len(args) == 3 and Path(args[2]).is_file():
         # resolve last argument to file path if it is a file
         args[2] = str(Path(args[2]).resolve())
     with AppClient() as client:
