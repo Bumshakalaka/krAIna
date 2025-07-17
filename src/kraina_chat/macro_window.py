@@ -241,6 +241,8 @@ class MacroWindow(tk.Toplevel):
         del self.macros
         self.macros = Macros()
         cur_idx = self.macro_list.curselection()
+        if cur_idx == ():
+            cur_idx = (0,)
         cur_macro = self.macro_list.get(cur_idx)
         self.macro_list.selection_clear(0, tk.END)
 
@@ -298,7 +300,8 @@ class MacroWindow(tk.Toplevel):
             )
 
         self.text.delete("1.0", tk.END)
-        self.text.insert(tk.END, str(self.macros[self.current_macro_name].method.__doc__) + "\n")
+        if self.macros.get(self.current_macro_name):
+            self.text.insert(tk.END, str(self.macros[self.current_macro_name].method.__doc__) + "\n")
 
     def macro_params_save(self, param_name, to_save):
         self.current_macro_params[self.current_macro_name].update({param_name: to_save})
