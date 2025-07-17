@@ -1,7 +1,6 @@
-#force_api: openai
 model: A
 temperature: 0.5
-max_tokens: 2048
+max_tokens: 16384
 specialisation:
   file: PostprocessCode.py
   class: PostprocessCode

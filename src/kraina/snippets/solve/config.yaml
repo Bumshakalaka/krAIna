@@ -1,2 +1,2 @@
-model: o1-preview
-max_tokens: 1024
+model: o3-mini
+max_tokens: 16384

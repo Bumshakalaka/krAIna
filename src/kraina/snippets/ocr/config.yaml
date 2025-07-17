@@ -1,5 +1,5 @@
 model: A
-temperature: 0.7
+temperature: 0.5
 specialisation:
   file: overwrite.py
   class: Response
