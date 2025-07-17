@@ -1,6 +1,10 @@
 ---
 llm:
   # LLM settings
+  force_api_for_snippets:
+  # force api: azure, openai, aws, anthropic, ollama to be used by snippets
+  # when empty or null or not exists, kraina_app api_type is used
+  # priority of usage: force_api (from snippet) -> force_api_for_snippets -> kraina_app api_type
   map_model:
     # map model names from snippet/assistant yaml files into models per API type
     # Using alias like `A` or `B`, you can quickly change API providers

@@ -50,6 +50,7 @@ class SUPPORTED_API_TYPE(enum.Enum):
 
 # TODO: Add validation of model mapping dict
 MAP_MODELS = {model: {} for model in SUPPORTED_API_TYPE}
+FORCE_API_FOR_SNIPPETS = {}
 
 
 def read_model_settings():
@@ -66,7 +67,8 @@ def read_model_settings():
         settings = yaml.safe_load(fd.read())
         if settings.get("llm") and settings["llm"].get("map_model"):
             MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
-    logger.debug(MAP_MODELS)
+        if settings.get("llm") and settings["llm"].get("force_api_for_snippets"):
+            FORCE_API_FOR_SNIPPETS.update({"api_type": settings["llm"]["force_api_for_snippets"]})
 
 
 read_model_settings()
@@ -83,7 +85,7 @@ def overwrite_llm_settings(**new_settings):
             OVERWRITE_LLM_SETTINGS[k] = v
 
 
-def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str] = None) -> str:
+def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str, None] = None) -> str:
     """Map OpenAI model names to AzureAI
 
     :param model: openAI model name

@@ -12,7 +12,7 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel
 
 from kraina.libs.langfuse import langfuse_handler
-from kraina.libs.llm import chat_llm, map_model
+from kraina.libs.llm import FORCE_API_FOR_SNIPPETS, chat_llm, map_model
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class BaseSnippet:
 
     @property
     def model(self) -> str:
-        return map_model(self._model, self.force_api)
+        return map_model(self._model, self.force_api or FORCE_API_FOR_SNIPPETS.get("api_type"))
 
     @model.setter
     def model(self, value: str):
@@ -120,13 +120,18 @@ class BaseSnippet:
         :return: The content of the language model's response.
         """
         logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
-        llm_kwargs = dict(force_api_type=self.force_api, model=self.model, json_mode=self.json_mode)
+        llm_kwargs = dict(
+            force_api_type=self.force_api or FORCE_API_FOR_SNIPPETS.get("api_type"),
+            model=self.model,
+            json_mode=self.json_mode,
+        )
         if self.model.startswith("o1"):  # reasoning models
             llm_kwargs.update(dict(max_completion_tokens=self.max_tokens, temperature=1))
             system_role = "human"
         else:
             llm_kwargs.update(dict(temperature=self.temperature, max_tokens=self.max_tokens))
             system_role = "system"
+        logger.info(f"{self.name}: llm_kwargs={llm_kwargs}, {self.force_api=} {FORCE_API_FOR_SNIPPETS=}")
         chat = chat_llm(**llm_kwargs)
         prompt = ChatPromptTemplate.from_messages(
             [

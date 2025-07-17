@@ -5,6 +5,7 @@
     "llm": {
       "type": "object",
       "properties": {
+        "force_api_for_snippets": { "type": ["string", "null"], "optional": true },
         "map_model": {
           "type": "object",
           "properties": {
