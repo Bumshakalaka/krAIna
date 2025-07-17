@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, Union
 import sv_ttk
 import yaml
 from dotenv import load_dotenv
+from jsonschema import ValidationError
 from PIL import Image, ImageTk
 from tkinterdnd2 import TkinterDnD
 
@@ -29,7 +30,7 @@ from kraina.assistants.assistant import AssistantResp, AssistantType
 from kraina.assistants.base import Assistants
 from kraina.libs.db.controller import Db
 from kraina.libs.llm import read_model_settings
-from kraina.libs.paths import ENV_FILE
+from kraina.libs.paths import ENV_FILE, config_file_validation
 from kraina.libs.utils import (
     CONFIG_FILE,
     IMAGE_DATA_URL_MARKDOWN_RE,
@@ -260,15 +261,17 @@ class App(TkinterDnD.Tk):
         :raises KeyError: If the `what` parameter is not one of the expected values.
         """
         if what in ["assistants", "snippets"]:
-            read_model_settings()
-            self.post_event(APP_EVENTS.RELOAD_AI, None)
+            if read_model_settings():
+                self.post_event(APP_EVENTS.RELOAD_AI, None)
         elif what == "main":
             load_dotenv(ENV_FILE, override=True)
-            self._settings_read()
-            read_model_settings()
-            self.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "")
-            self.post_event(APP_EVENTS.RELOAD_AI, None)
-            self.after_idle(self.post_event, APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+            if self._settings_read():
+                read_model_settings()
+                self.post_event(APP_EVENTS.UPDATE_STATUS_BAR_API_TYPE, "")
+                self.post_event(APP_EVENTS.RELOAD_AI, None)
+                self.after_idle(
+                    self.post_event, APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats()
+                )
         elif what == "macros":
             if self.macro_window:
                 self.macro_window.macros_reload()
@@ -530,20 +533,24 @@ class App(TkinterDnD.Tk):
             except TypeError:
                 logger.error("Invalid .settings.yaml format")
 
-    def _settings_read(self):
+    def _settings_read(self) -> bool:
         """Get settings from config.yaml file.
 
-        :return:
+        :return: True if config.yaml is valid, False otherwise
         """
-        with open(CONFIG_FILE, "r") as fd:
-            try:
+        try:
+            config_file_validation()
+        except ValidationError as e:
+            logger.exception(e)
+            return False
+        else:
+            with open(CONFIG_FILE, "r") as fd:
                 data = yaml.load(fd, Loader=yaml.SafeLoader)["chat"]
                 chat_settings.SETTINGS = replace(
                     chat_settings.SETTINGS,
                     **{k: v for k, v in data.items() if k in chat_settings.SETTINGS.keys()},
                 )
-            except TypeError:
-                logger.error("Invalid config.yaml format")
+            return True
 
     def _update_geometry(self):
         if chat_persistence.SETTINGS.geometry == "zoomed":

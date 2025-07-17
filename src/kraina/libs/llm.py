@@ -6,6 +6,7 @@ import os
 from typing import Union
 
 import yaml
+from jsonschema import ValidationError
 from langchain_anthropic import ChatAnthropic
 from langchain_aws import BedrockEmbeddings, ChatBedrock
 from langchain_core.embeddings import Embeddings
@@ -15,7 +16,7 @@ from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings, ChatOpenAI,
 from langchain_voyageai import VoyageAIEmbeddings
 from langfuse.openai import AzureOpenAI, OpenAI
 
-from kraina.libs.paths import CONFIG_FILE
+from kraina.libs.paths import CONFIG_FILE, config_file_validation
 
 logger = logging.getLogger(__name__)
 
@@ -53,22 +54,29 @@ MAP_MODELS = {model: {} for model in SUPPORTED_API_TYPE}
 FORCE_API_FOR_SNIPPETS = {}
 
 
-def read_model_settings():
+def read_model_settings() -> bool:
     """Read and update model settings from a configuration file.
 
     This function reads the 'config.yaml' file located in the parent directory
     and updates the `MAP_MODELS` dictionary with the model mapping specified
     in the configuration file.
 
-    :return: None
+    :return: True if config.yaml is valid and read, False otherwise
     :raises FileNotFoundError: If the 'config.yaml' file does not exist.
     """
-    with open(CONFIG_FILE) as fd:
-        settings = yaml.safe_load(fd.read())
-        if settings.get("llm") and settings["llm"].get("map_model"):
-            MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
-        if settings.get("llm") and settings["llm"].get("force_api_for_snippets"):
-            FORCE_API_FOR_SNIPPETS.update({"api_type": settings["llm"]["force_api_for_snippets"]})
+    try:
+        config_file_validation()
+    except ValidationError as e:
+        logger.exception(e)
+        return False
+    else:
+        with open(CONFIG_FILE) as fd:
+            settings = yaml.safe_load(fd.read())
+            if settings.get("llm") and settings["llm"].get("map_model"):
+                MAP_MODELS.update({SUPPORTED_API_TYPE(k): v for k, v in settings["llm"]["map_model"].items()})
+            if settings.get("llm") and settings["llm"].get("force_api_for_snippets"):
+                FORCE_API_FOR_SNIPPETS.update({"api_type": settings["llm"]["force_api_for_snippets"]})
+        return True
 
 
 read_model_settings()
