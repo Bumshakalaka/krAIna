@@ -9,7 +9,6 @@ dependencies = [
     "anthropic==0.57.1",
     "firecrawl>=2.15.0",
     "ipyc==1.1.1",
-    "klembord==0.3.0",
     "langchain==0.3.26",
     "langchain-anthropic==0.3.17",
     "langchain-aws==0.2.28",
@@ -33,7 +32,6 @@ dependencies = [
     "pywinstyles==1.8 ; os_name != 'posix'",
     "pyyaml==6.0.2",
     "requests==2.32.4",
-    "setuptools==80.9.0",
     "sqlalchemy==2.0.41",
     "sv-ttk==2.6.1",
     "tiktoken==0.9.0",
@@ -46,6 +44,7 @@ dependencies = [
     "windows-toasts==1.2.0; os_name != 'posix'",
     "wolframalpha==5.1.3",
     "jsonschema==4.24.0",
+    "stopit2==1.1.2",
 ]
 
 [build-system]

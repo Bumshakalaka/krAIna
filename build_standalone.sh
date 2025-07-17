@@ -56,6 +56,7 @@ pyinstaller \
     --hidden-import=tiktoken_ext \
     --hidden-import=PIL._tkinter_finder \
     --hidden-import=aenum \
+    --exclude-module pkg_resources \
     --icon=img/logo.ico \
     --splash=img/kraina_banner_loading.png
 
@@ -63,6 +64,7 @@ pyinstaller \
     --onefile \
     app/kraina_cli.py \
     --add-data "src/kraina/templates:kraina/templates" \
+    --exclude-module pkg_resources \
     --icon=img/logo.ico
 
 # Check if build was successful

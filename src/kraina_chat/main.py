@@ -22,6 +22,7 @@ from PIL import Image, ImageTk
 from tkinterdnd2 import TkinterDnD
 
 import kraina.libs.images as images
+import kraina.libs.klembord as klembord
 import kraina_chat.chat_persistence as chat_persistence
 import kraina_chat.chat_settings as chat_settings
 from kraina.assistants.assistant import AssistantResp, AssistantType
@@ -46,19 +47,6 @@ from kraina_chat.leftsidebar import LeftSidebar
 from kraina_chat.menu import Menu
 from kraina_chat.status_bar import StatusBar
 from kraina_chat.watch_files import watch_exit_event, watch_my_files
-
-# klembord imports stopit which prints:
-# UserWarning: pkg_resources is deprecated as an API.
-# See https://setuptools.pypa.io/en/latest/pkg_resources.html.
-# The pkg_resources package is slated for removal as early as 2025-11-30.
-# Refrain from using this package or pin to Setuptools<81.
-#   import pkg_resources
-# and we don't want to see this
-original_stderr = sys.stderr
-sys.stderr = None
-import klembord  # noqa
-
-sys.stderr = original_stderr
 
 # Configure global logger
 loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"

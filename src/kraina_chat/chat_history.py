@@ -19,6 +19,7 @@ from tkinterdnd2 import DND_FILES, REFUSE_DROP
 from tkinterweb import Notebook
 from tktooltip import ToolTip
 
+import kraina.libs.klembord as klembord
 import kraina_chat.chat_persistence as chat_persistence
 import kraina_chat.chat_settings as chat_settings
 from kraina.assistants.assistant import ADDITIONAL_TOKENS_PER_MSG, AssistantResp
@@ -35,19 +36,6 @@ from kraina.libs.utils import (
 from kraina_chat.base import APP_EVENTS, HIGHLIGHTER_CSS, LIGHTTHEME
 from kraina_chat.chat_history_view import ChatView, HtmlChatView, TextChatView
 from kraina_chat.scroll_text import ScrolledText
-
-# klembord imports stopit which prints:
-# UserWarning: pkg_resources is deprecated as an API.
-# See https://setuptools.pypa.io/en/latest/pkg_resources.html.
-# The pkg_resources package is slated for removal as early as 2025-11-30.
-# Refrain from using this package or pin to Setuptools<81.
-#   import pkg_resources
-# and we don't want to see this
-original_stderr = sys.stderr
-sys.stderr = None
-import klembord  # noqa
-
-sys.stderr = original_stderr
 
 
 class FixedNotebook(Notebook):
