@@ -82,6 +82,16 @@ def read_model_settings() -> bool:
 read_model_settings()
 
 
+def get_only_aliases() -> list[str]:
+    """Return all one-letter model aliases from MAP_MODELS for all SUPPORTED_API_TYPE."""
+    aliases = set()
+    for _, models in MAP_MODELS.items():
+        for k in models:
+            if isinstance(k, str) and len(k) == 1 and k.isalpha():
+                aliases.add(k)
+    return sorted(aliases)
+
+
 def overwrite_llm_settings(**new_settings):
     """Overwrite LLM chat settings.
 
@@ -94,7 +104,7 @@ def overwrite_llm_settings(**new_settings):
 
 
 def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str, None] = None) -> str:
-    """Map OpenAI model names to AzureAI
+    """Map OpenAI model names to AzureAI.
 
     :param model: openAI model name
     :param api_force:

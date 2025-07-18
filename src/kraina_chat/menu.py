@@ -12,7 +12,7 @@ from tkinter.simpledialog import askstring
 import kraina_chat.chat_persistence as chat_persistence
 import kraina_chat.chat_settings as chat_settings
 from kraina.assistants.assistant import AssistantResp
-from kraina.libs.llm import SUPPORTED_API_TYPE, overwrite_llm_settings
+from kraina.libs.llm import SUPPORTED_API_TYPE, get_only_aliases, overwrite_llm_settings
 from kraina.libs.paths import CONFIG_FILE, ENV_FILE
 from kraina.libs.utils import kraina_db
 from kraina_chat.base import APP_EVENTS
@@ -29,10 +29,8 @@ class LlmModel(tk.Menu):
         self._var = tk.StringVar(self, None)
         self._var.trace("w", self.update_var)
         self.add_radiobutton(label="Default", variable=self._var, value="-", selectcolor=col)
-        self.add_radiobutton(label="GPT-3.5-turbo", variable=self._var, value="gpt-3.5-turbo", selectcolor=col)
-        self.add_radiobutton(label="GPT-4-turbo", variable=self._var, value="gpt-4-turbo", selectcolor=col)
-        self.add_radiobutton(label="GPT-4", variable=self._var, value="gpt-4", selectcolor=col)
-        self.add_radiobutton(label="GPT-4o", variable=self._var, value="gpt-4o", selectcolor=col)
+        for model in get_only_aliases():
+            self.add_radiobutton(label=model, variable=self._var, value=model, selectcolor=col)
         self._var.set("-")
 
     def update_var(self, *args):
