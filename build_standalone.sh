@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # KrAIna Chat Standalone Build Script
-# This script builds a standalone executable from the chat.py application
+# This script builds a standalone executable from the kraina_app application
 
 set -e  # Exit on any error
 
@@ -10,8 +10,8 @@ echo "Building KrAIna Chat Standalone Application"
 echo "=========================================="
 
 # Ensure we're in the correct directory
-if [ ! -f "app/chat.py" ]; then
-    echo "Error: app/chat.py not found. Please run this script from the project root."
+if [ ! -f "app/kraina_app.py" ]; then
+    echo "Error: app/kraina_app.py not found. Please run this script from the project root."
     exit 1
 fi
 
@@ -57,6 +57,13 @@ pyinstaller \
     --hidden-import=PIL._tkinter_finder \
     --hidden-import=aenum \
     --exclude-module pkg_resources \
+    --exclude-module gi \
+    --exclude-module gi.repository.Rsvg \
+    --exclude-module gi.repository.GdkPixbuf \
+    --exclude-module gi.repository.cairo \
+    --exclude-module gi.repository.Gio \
+    --exclude-module gi.repository.GLib \
+    --exclude-module gi.repository.GObject \
     --icon=img/logo.ico \
     --splash=img/kraina_banner_loading.png
 
@@ -65,6 +72,13 @@ pyinstaller \
     app/kraina_cli.py \
     --add-data "src/kraina/templates:kraina/templates" \
     --exclude-module pkg_resources \
+    --exclude-module gi.repository.Rsvg \
+    --exclude-module gi.repository.GdkPixbuf \
+    --exclude-module gi.repository.cairo \
+    --exclude-module gi.repository.Gio \
+    --exclude-module gi.repository.GLib \
+    --exclude-module gi.repository.GObject \
+    --strip \
     --icon=img/logo.ico
 
 # Check if build was successful
