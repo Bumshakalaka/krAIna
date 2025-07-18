@@ -112,7 +112,7 @@ class BaseSnippet:
         This function processes the query using a language model,
         applying different settings based on the model type.
 
-        If o1-* reasoning model is used, the system prompt becomes user prompt and temperature is always 1.
+        If o-* reasoning model is used, temperature is always 1.
         https://platform.openai.com/docs/guides/reasoning/quickstart
 
         :param query: Text passed as Human text to LLM chat.
@@ -125,17 +125,15 @@ class BaseSnippet:
             model=self.model,
             json_mode=self.json_mode,
         )
-        if self.model.startswith("o1"):  # reasoning models
-            llm_kwargs.update(dict(max_completion_tokens=self.max_tokens, temperature=1))
-            system_role = "human"
+        if self.model.startswith("o"):  # reasoning models
+            llm_kwargs.update(dict(model_kwargs=dict(max_completion_tokens=self.max_tokens), temperature=1))
         else:
             llm_kwargs.update(dict(temperature=self.temperature, max_tokens=self.max_tokens))
-            system_role = "system"
         logger.info(f"{self.name}: llm_kwargs={llm_kwargs}, {self.force_api=} {FORCE_API_FOR_SNIPPETS=}")
         chat = chat_llm(**llm_kwargs)
         prompt = ChatPromptTemplate.from_messages(
             [
-                (system_role, self.prompt),
+                ("system", self.prompt),
                 ("human", "{text}"),
             ]
         )
