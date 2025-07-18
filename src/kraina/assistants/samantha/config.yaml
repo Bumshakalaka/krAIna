@@ -9,7 +9,9 @@ tools:
   - vector-search
   - audio-to-text
   - text-to-text
-  - image-analysis
-#  - wolfram_alpha
-#  - brave_web
+  # - image-analysis - not working correctly
+  # - wolfram_alpha - not working correctly
+  - brave_web
+  - joplin-search
+  - file_mgmt
 __buildin__: true

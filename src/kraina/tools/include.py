@@ -16,6 +16,7 @@ not when it is initialized.
 """
 
 import os
+from pathlib import Path
 from typing import Dict, List
 
 from langchain_community.agent_toolkits import FileManagementToolkit
@@ -70,8 +71,9 @@ def init_file_mgmt(tool_setting: Dict) -> List[BaseTool]:
                          The dict includes only entries from tools.brave_web
     :return:
     """
+    root_dir = Path(os.path.expanduser(tool_setting["working_dir"])).resolve()
     toolkit = FileManagementToolkit(
-        root_dir=str(tool_setting["working_dir"]),
+        root_dir=str(root_dir),
         selected_tools=["file_search", "list_directory"],
     )  # If you don't provide a root_dir, operations will default to the current working directory
     return toolkit.get_tools()

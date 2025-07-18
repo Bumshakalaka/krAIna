@@ -5,6 +5,7 @@ from typing import List
 import yaml
 from langchain_core.tools import BaseTool
 
+from kraina.libs.paths import CONFIG_FILE
 from kraina.libs.utils import find_assets, import_module
 
 logger = logging.getLogger(__name__)
@@ -27,14 +28,8 @@ def get_and_init_tools(tools: List[str], assistant=None) -> List[BaseTool]:
     :return: list of tool objects
     """
     # TODO: What will happen when snippets instead of assistants will use tools
-    if (Path(__name__).parent / "config.yaml").resolve().exists():
-        with open((Path(__name__).parent / "config.yaml").resolve(), "r") as f:
-            data = yaml.load(f, Loader=yaml.SafeLoader)
-    else:
-        logger.warning(
-            f"{(Path(__name__).parent / 'config.yaml').resolve()} does not exist. No tools settings available"
-        )
-        data = {}
+    with open(CONFIG_FILE, "r") as f:
+        data = yaml.load(f, Loader=yaml.SafeLoader)
     tools_settings = data.get("tools", {})
     init_tools = []
     for tool_name, init_cmd in _AVAILABLE_TOOLS.items():
@@ -42,7 +37,7 @@ def get_and_init_tools(tools: List[str], assistant=None) -> List[BaseTool]:
             ret = init_cmd(
                 dict(
                     tools_settings.get(tool_name, {}),
-                    config_dir=str((Path(__name__).parent / "config.yaml").resolve().parent),
+                    config_dir=str(CONFIG_FILE.parent),
                     assistant=assistant,
                 )
             )
