@@ -22,6 +22,16 @@ from jsonschema import ValidationError
 from PIL import Image, ImageTk
 from tkinterdnd2 import TkinterDnD
 
+# Configure global logger
+loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
+loggerFormatter = logging.Formatter(loggerFormat)
+loggerLevel = logging.DEBUG
+# create stderr logger to have only ERRORs there
+console_handler = logging.StreamHandler(sys.stderr)
+logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[console_handler])
+console_handler.setLevel(logging.ERROR)
+
+
 import kraina.libs.images as images
 import kraina.libs.klembord as klembord
 import kraina_chat.chat_persistence as chat_persistence
@@ -48,15 +58,6 @@ from kraina_chat.leftsidebar import LeftSidebar
 from kraina_chat.menu import Menu
 from kraina_chat.status_bar import StatusBar
 from kraina_chat.watch_files import watch_exit_event, watch_my_files
-
-# Configure global logger
-loggerFormat = "%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"
-loggerFormatter = logging.Formatter(loggerFormat)
-loggerLevel = logging.DEBUG
-# create stderr logger to have only ERRORs there
-console_handler = logging.StreamHandler(sys.stderr)
-logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[console_handler])
-console_handler.setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAI, G
 from langchain_ollama import ChatOllama
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings, ChatOpenAI, OpenAIEmbeddings
 from langchain_voyageai import VoyageAIEmbeddings
-from langfuse.openai import AzureOpenAI, OpenAI
+from openai import AzureOpenAI, OpenAI
 
 from kraina.libs.paths import CONFIG_FILE, config_file_validation
 

@@ -11,10 +11,14 @@ import os
 import subprocess
 import uuid
 
+from dotenv import load_dotenv
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
+from kraina.libs.paths import ENV_FILE
+
 logger = logging.getLogger(__name__)
+load_dotenv(ENV_FILE, override=True)
 
 if os.environ.get("LANGFUSE_HOST"):
     try:
@@ -38,7 +42,6 @@ if os.environ.get("LANGFUSE_HOST"):
         flush_at=2,
         release=app_sha,
     )
-
     logger.info("langfuse active")
 else:
     Langfuse(
@@ -48,5 +51,4 @@ else:
 
 langfuse_session_id = str(uuid.uuid4())
 langfuse_user_id = os.environ.get("USER", "unknown")
-
 langfuse_handler = CallbackHandler()
