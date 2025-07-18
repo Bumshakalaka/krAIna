@@ -59,10 +59,10 @@ if __name__ == "__main__":
         descr += f"\t{cmd} - {cmd_descr}\n"
     descr += "\tNo argument - run GUI app. If app is already run, show it"
     parser = argparse.ArgumentParser(
-        prog="chat.sh",
+        prog="kraina_cli",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=descr,
-        usage="chat.sh command",
+        usage="kraina_cli command",
     )
     _, args = parser.parse_known_args()
     if not args:
