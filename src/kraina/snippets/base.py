@@ -31,8 +31,7 @@ class Snippets(Dict[str, BaseSnippet]):
         for snippet_set in snippet_sets:
             for snippet in snippet_set.glob("*"):
                 if self.get(snippet.name) is not None:
-                    logger.error(f"'{snippet.name}` snippet already exist")
-                    continue
+                    logger.warning(f"'{snippet.name}` snippet already exist, override it")
                 if not (snippet.is_dir() and (snippet / "prompt.md").exists()):
                     logger.debug(f"This is not snippet folder:{snippet}")
                     continue
