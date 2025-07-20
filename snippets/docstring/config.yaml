@@ -1,6 +1,0 @@
-model: A
-temperature: 0.5
-max_tokens: 2048
-specialisation:
-  file: PostprocessDocstring.py
-  class: PostprocessDocstring

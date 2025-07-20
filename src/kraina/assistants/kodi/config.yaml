@@ -1,0 +1,7 @@
+model: A
+temperature: 0.5
+max_tokens: 16384
+description: |
+  Hi, I'm Kodi.
+  I will assists you in software development.
+__buildin__: true

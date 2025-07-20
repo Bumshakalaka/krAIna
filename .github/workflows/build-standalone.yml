@@ -1,0 +1,94 @@
+name: Build Standalone Executables
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [created]
+  workflow_dispatch:
+
+env:
+  APP_NAME: kraina
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt-get install -y \
+            python3.12 \
+            python3.12-venv \
+            python3.12-dev \
+            python3-pip \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            pkg-config \
+            python3-gi \
+            python3-gi-cairo \
+            python3.12-tk \
+            tk-dev \
+            gir1.2-gtk-3.0
+          sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+
+      - name: Create virtual environment
+        run: |
+          python -m venv .venv
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          # Pin contrib hooks to match local version for consistency
+          pip install pyinstaller-hooks-contrib==2025.5
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build standalone executables
+        run: |
+          chmod +x build_standalone.sh
+          ./build_standalone.sh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kraina-linux-x64
+          path: |
+            dist/kraina_app
+            dist/kraina_cli
+          retention-days: 30
+
+  release:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kraina-linux-x64
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          ls -la artifacts/
+          find artifacts/ -type f -exec ls -lh {} \;
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/kraina_app
+            artifacts/kraina_cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

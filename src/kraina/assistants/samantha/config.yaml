@@ -1,0 +1,17 @@
+model: A
+temperature: 0.7
+max_tokens: 16384
+description: |
+  Hi, I'm your casual assistant.
+  How can I help you today?
+tools:
+  - text-to-image
+  - vector-search
+  - audio-to-text
+  - text-to-text
+  # - image-analysis - not working correctly
+  # - wolfram_alpha - not working correctly
+  - brave_web
+  - joplin-search
+  - file_mgmt
+__buildin__: true

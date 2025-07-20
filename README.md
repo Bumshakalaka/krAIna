@@ -1,622 +1,40 @@
 ![logo](img/kraina_banner.png)
-## Overview
 
-![os](https://badgen.net/badge/Windows/supported/green)
+# KrAIna - AI-Powered Tools for Everyday Use
+
+![os](https://badgen.net/badge/Windows/planned/yellow)
 ![os](https://badgen.net/badge/Linux/supported/green)
-
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
-Set of AI-powered tools for everyday use with OpenAi, Azure OpenAI, Anthropic, Amazon Bedrock, Google Gemini LLMs or [Ollama](https://ollama.com).
-1. [Chat](#chat-gui-application) - Chat GUI application built using tkinter for Assistants and Snippets.
-2. [Snippets](#snippets) — the actions that can be performed on selected text.
-3. [Assistants](#assistants) — your own specialized assistants to talk with.
-4. [Tools](#tools) — your own specialized tools to use with Assistants.
-5. [Macros](#macros) - Python scripts to program Agent-like flow
+KrAIna provides standalone AI-powered tools for everyday use with OpenAI, Azure OpenAI, Anthropic, Amazon Bedrock, Google Gemini LLMs or [Ollama](https://ollama.com).
 
-### Chat GUI application
-Chat GUI application built using tkinter.
+## Standalone Applications
 
+KrAIna consists of two main standalone executables built with PyInstaller:
+
+### kraina_app - Chat GUI Application
 ![chat](img/kraina_chat.gif)
 
-features:
-* Chat with history (HTML and text tabs available)
-* Light/Dark and other build-in themes
-* Chats history which can be recalled. They are auto-named and describe
-* Chat history management (Pin/Unpin, make inactive, edit name, description, delete permanent, copy chat to clipboard)
-* Assistant selection
-* Support for snippets — right-click in the user query widget to apply transformation on a text
-* Overwrite Assistant settings
-* persistence storage on exit
-* progress bar to visualize that LLM is working
-* status bar with information about estimated token used for system prompt, history, tools, completions. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Live token estimation for a user query. OpenAI tiktoken is used. Thus, for Anthropic LLM, this can be less accurate
-* Inter-process communication. The chat app initiates an IPC host, enabling control, such as:
-  * `chat.sh SHOW_APP` or `chat.bat SHOW_APP` which run Chat application or show it. It can be assigned to a global shortcut in OS 
-  * run Chat application snippets `chat.sh RUN_SNIPPET translate "Co tam słychać?"` or `chat.bat RUN_SNIPPET translate "Co tam słychać?"`
-* Markdown/HTML support (render images, Mermaid graphs and Latex expressions \[..\] or \(..\))
-* Debug Window (right-bottom corner) with the application logs
-* Copy last AI response automatically to system clipboard
-* Macro management window
-* Right-click on assistant, snippet or macro allows editing it
-* Handling text-to-image generation (Images are stored as data URLs in app memory)
-* Handling image-to-text - Drag'n'Drop image or paste it to the user query filed
-* support for json_object output as well as serialize to Pydantic BaseModel
-* Work with multiple application databases (selectable from Chat GUI)
-* Export chat to an HTML, PDF or txt file
-
-### Snippets
-Snippets are actions that can be performed on selected text. 
-
-KrAIna can be easily equipped with new snippets. Check the `snippets` folder. The structure is as follows:
-```
-snipptes/
-├── fix
-│     ├── prompt.md - snippet system prompt, required
-│     ├── config.yaml - snippet and LLM settings, optional
-│     ├── py_module.py - overwrite default behavior of snippet, specialization - must be defined in model.yaml
-```
-
-config.yaml schema:
-```yaml
-# Defaults are listed here which are used when config is not defined (not available in snippet config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws or ollama or google
-force_api: ""
-model: gpt-3.5-turbo
-temperature: 0.5
-max_tokens: 512
-```
-
-You can add additional context to the Snippet (the same scheme as for Assistant) by adding:
-```yaml
-contexts:
-  string: Examples
-  file:
-    - ./example1.txt
-    - ./example2.txt
-```
-to `config.yaml` file. The fields are parsed and added to the system prompt:
-```
-... system prompt ...
-Take into consideration the context below while generating answers.
-# Context:
-## 0
-Examples
-## 1
-./example1.txt content with blocked template placeholders ({placeholder} -> {{placeholder}})
-## 2
-./example2.txt content with blocked template placeholders ({placeholder} -> {{placeholder}})
-## 3
-Current date: {date}
-```
-
-**Note**:
-This part is always added, regardless of the `contexts` key exists in `config.yaml`.
-This part is not added when the `config.yaml` file does not exist.
-
-```
-Take into consideration the context below while generating answers.
-# Context:
-## 0
-Current date: {date}
-```
-
-### Assistants
-Your personal AI assistant. It can be a casual assistant or prompt engineer or storyteller.
-Assistant can be run as one-shot, similar to snippets or can use its memory and remember the conversation.
-
-The assistants have been designed similar to Snippets. Check the `assistants` folder.
-
-config.yaml schema:
-```yaml
-# Defaults are listed here which are used when config is not defined (not available in assistant config.yaml)
-# Optional. Force api: azure or openai or anthropic or aws or ollama or google
-force_api: ""
-model: gpt-3.5-turbo
-temperature: 0.7
-max_tokens: 512
-tools:
-  - 
-description: 
-contexts:
-  # string: We are located in Haiti
-  # string: 
-  #   - We are located in Haiti
-  #   - We have sunny whether
-  # file: ./about_me.txt
-  # file:
-  #   - ./about_me.txt
-  #   - ./my_projects.txt 
-```
-
-You can add additional context to the Assistant by adding:
-```yaml
-contexts:
-  string_template: We are located in {place} # Note that this string will be added as `We are located in {place}` (place placeholder must be provided)
-  string: We are located in {place} # Note that this string will be added `as We are located in {{place}}` (with blocked template placeholder) 
-  # string: 
-  #   - We are located in Haiti
-  #   - We have sunny whether
-  file: ./about_me.txt
-  file_template: ./about_me.txt
-  # file:
-  #   - ./about_me.txt
-  #   - ./my_projects.txt 
-```
-to `config.yaml` file. The fields are parsed and added to the system prompt:
-```
-... system prompt ...
-Take into consideration the context below while generating answers.
-# Context:
-## 0
-We are located in {place}
-## 1
-We are located in {{place}}
-## 2
-./about_me.txt content
-## 3
-Current date: {date}
-```
-
-**Note**:
-This part is always added, regardless of whether the `contexts` key exists in `config.yaml`.
-This part is not added when the `config.yaml` file does not exist.
-
-```
-Take into consideration the context below while generating answers.
-# Context:
-## 0
-Current date: {date}
-```
-
-
-The assistants can use tools. To do this:
-1. Assign [Tools](#tools) by listing them in the assistant `config.yaml` key
-   ```yaml
-   tools:
-    - brave_web
-    - file_mgmt
-    - wolfram_alpha
-    - text-to-image
-    - vector-search
-    - joplin-search
-    - audio-to-text
-    - text-to-text
-    - image-analysis
-   ```
-2. Use models capable of doing Functional Calling like gpt-4o, gpt-3.5-turbo, gpt-4-turbo
-
-
-### Tools
-
-Set of tools available for Assistants in KrAIna.
-**To make it available for selected Assistant, edit Assistant `config.yaml` and add it under `tools`.**
-
-To make such a tool, you need to follow these steps:
-1. Find or develop a tool derived from BaseTool.
-   1. Check https://python.langchain.com/v0.2/docs/integrations/tools/ for built-in in langchain tools
-   2. Check https://python.langchain.com/v0.2/docs/integrations/toolkits/ for built-in in langchain tools
-   3. Check https://python.langchain.com/v0.2/docs/how_to/custom_tools/ how to create your own tool 
-2. Create an initialization function that:
-   1. Must accept one parameter, `tool_settings` (even if you don't have any settings).
-   2. Must return `BaseTool` or `List[BaseTool]`.
-3. Add your tool to the `SUPPORTED_TOOLS` dictionary in **tools/include.py**. The name of your tool is the key of the `SUPPORTED_TOOLS` dictionary.
-
-The initialization of the tool (calling the init function) occurs when an Assistant is called, not when it is initialized.
-
-The core tool function can be called separately as a regular Python function.
-It can be useful in scripting
-by combining tools to do more complex tasks like summarize article where the images and audio is included.
-
-In such a mode:
-1. LLM is chosen based on .env variables and `force_api` function parameter
-2. model can be passed via `model` function parameter
-
-#### Text-to-image
-
-![text-to-image](img/text-to-image.png)
-
-Text-to-image tool is a wrapper for Dall-e API.
-It works with OpenAI and AzureOpenAI.
-This tool generates images based on a textual description.
-Parameters:
-- **query (string):** A description of the image you want to generate. This is the main input that defines what the image will look like.
-- **size (optional, enum):** The size of the generated image. Options include:
-  - "SMALL_SQUARE"
-  - "MEDIUM_SQUARE"
-  - "LARGE_SQUARE"
-  - "LARGE_LANDSCAPE"
-  - "LARGE_PORTRAIT"
-- **no_of_images (optional, integer):** The number of images to generate. The default value is 1.
-
-By default, `Dall-e-3` model is used, but it can be change in `config.yaml`:
-``` yaml
-tools:
-  text-to-image:
-    # dall-e-2 or dall-e-3 are supported
-    model: dall-e-3
-```
-
-#### Vector-search
-
-This tool is used to perform semantic searches on documents.
-User uploads a document to an in-memory vector database and then query it with a specific question.
-The tool will return the top results that are most relevant to the query.
-Parameters:
-- **query**: A short, well-structured query string that you want to search for within the document. This query should clearly represent the information you are seeking.
-- **file_path**: The local file path of the document you want to upload and query in the vector database.
-- **k**: An integer specifying how many top similar results to return. Relevance ranks the results, with the first one being the most valuable. The maximum value for this parameter is 15.
-
-The tool uses LangChain document loaders and in-memory vector storage to process local files.
-The file is split and stored only once (embedding is done once),
-and the vector database is dumped to a local file (located in `.store_files`),
-so the next queries against the file do not require new file processing.
-
-Depends on the LLM used, whether it's OpenAI, Azure or Anthropic, the corresponding Alias 'embed' (see [Configuration](#configuration)) is used
-
-
-By default, `embed` model is used, but it can be change in `config.yaml`:
-``` yaml
-tools:
-  vector-search:
-    model: embed
-```
-
-Currently supported file formats:
-- *.pdf
-- *.txt
-- *.log
-- *.csv
-- *.md
-
-The file splitters are created by inherit `FileSplitter` class from [vector_store_file_splitter](tools/vector_store_file_splitter.py) file.
-Check this file to find how to add new file splitters.
-
-#### joplin-search
-
-This tool is used to perform semantic searches on data stored in [Joplin](https://joplinapp.org), local note-taking app.
-User uploads a document to an in-memory vector database and then query it with a specific question.
-The tool will return the top results that are most relevant to the query.
-Parameters:
-- **query**: A short, well-structured query string that you want to search for within the document. This query should clearly represent the information you are seeking.
-- **k**: An integer specifying how many top similar results to return. Relevance ranks the results, with the first one being the most valuable. The maximum value for this parameter is 15.
-
-The tool uses LangChain document loader and in-memory vector storage to process local files.
-The LangChain Joplin loader requires an API key:
-1. Open the Joplin app. The app must stay open while the documents are being loaded.
-2. Go to settings / options and select "Web Clipper".
-3. Make sure that the Web Clipper service is enabled.
-4. Under "Advanced Options", copy the authorization token.
-5. Write the `JOPLIN_API_KEY=<authorization token>` in .env file
-
-The data from Joplin is loaded and split using the Markdown splitter and stored only once (embedding is done once).
-The vector database is then dumped to a local file (located in `.store_files`),
-so the next queries against the file do not require new file processing unless the Joplin data updates.
-
-Depends on the LLM used, whether it's OpenAI or Azure; the corresponding embedding endpoint is used.
-
-By default, `embed` model is used, but it can be change in `config.yaml`:
-``` yaml
-tools:
-  joplin-search:
-    model: embed
-```
-
-#### Audio-to-text
-
-Transcribes audio files into text.
-It works with OpenAI and AzureOpenAI.
-This tool generates images based on a textual description.
-Parameters:
-- **file_path**: URL or local audio file to transcribe.
-
-By default, `whisper-1` model is used, but it can be change in `config.yaml`:
-``` yaml
-tools:
-  audio-to-text:
-    model: whisper-1
-```
-
-#### image-analysis
-
-Analyze images to extract information or interpret the visual content. This tool can be used for various applications such as object detection, scene understanding, or content tagging.
-It works with the current assistant which calls the tool, So the tool must be used with models which interpret images.
-Parameters:
-- **uri**: URL or local file path of the image to analyze.
-- **prompt**: Instructions on how to analyze the image.
-
-#### text-to-text
-
-Reads and processes text files, extracting and interpreting the content as needed.
-It works with the current assistant which calls the tool.
-Parameters:
-- **uri**: URL or local file to read.
-
-
-### Macros
-Your Agent-like Python scripts. You can program long HTML document generation on a selected topic or develop, review and correct code.
-
-The macro file is a regular Pytho script that can be run like a typical Python script,
-but it can also function as a macro within the Chat application.
-It must contain a `run()` function, which is the only requirement for it to be executable within the Chat application.
-When the macro file is loaded by the Chat application as a module, it inspects the `run()` function to get docstring and parameters + annotations.
-Subsequently, when the macro is called, the `run()` function is executed in a daemon thread.
-In this mode, the Chat application logger is used.
-
-The macros discover works similar to Assistants and Snippets. Search `macros` folder in KrAIna and kraina-lands to find
-all Python scripts with `run()` function inside.
-
-![Macro Window](img/chat_macros.gif)
-
-Check examples [Pokemon overview](macros/pokemon_overview.py) or [Topic overview](macros/topic_overview.py) for more details.
-
-
-## Requirements
-1. Python >= 3.10 + IDLE (Tk GUI)
-2. Python venv package
-3. Git
-
-## Install
-1. Clone the project.
-2. Run the `setup.sh` or `setup.bat` script from `setup_script`, which executes the commands below, or run the commands below by yourself.
-
-    1. Create a virtual environment: `python3 -m venv .venv`
-    2. Install the requirements from `requirements.txt`: `pip install -r requirements.txt`.
-    3. Create a `.env` file (`cp .env.template .env`) and add:
-        1. `OPENAI_API_KEY=sk-...` - OpenAI API key
-        2. `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` + `OPENAI_API_VERSION` - AzureAI API key if you'd like to use it
-        3. `ANTHROPIC_API_KEY` - Anthropic API key if you'd like to use it
-        4. `AWS_DEFAULT_REGION` + `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` - Amazon Bedrock keys if you'd like to use it
-        5. `GOOGLE_API_KEY` - Google Gemini API key if you'd like to use it
-        6. Tools providers API key
-    4. Create a `config.yaml` (`cp config.yaml.template config.yaml`) and modify if needed.
-
----
-> [!Note]
-> To use Ollama, install server first [Quick start](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) and leave `OLLAMA_ENDPOINT` env variable empty.
-> Set `OLLAMA_ENDPOINT=http://xx.xx.xx.xx:11434` if you have access to Ollama server remotely.
-
-> [!Note]
-> By default, the highest priority has Azure OpenAI LLM, next OpenAI next Anthropic and the last Amazon Bedrock.
-> Thus, if all API keys exist, Azure OpenAI is selected. If OpenAI and Anthropic, OpenAI is selected.
-
-> [!Note]
-> Versioning and auto-updating of the `kraina.db` schema are not supported at this time.
-> if you had already created `kraina.db`, update schema:
-```sql
-create table messages_dg_tmp
-(
-    message_id      INTEGER  not null
-        constraint pk_messages
-            primary key,
-    conversation_id INTEGER  not null
-        constraint fk_messages_conversation_id_conversations
-            references conversations
-            on delete cascade,
-    type            INTEGER  not null,
-    message         VARCHAR  not null,
-    create_at       DATETIME not null
-);
-
-insert into messages_dg_tmp(message_id, conversation_id, type, message, create_at)
-select message_id, conversation_id, type, message, create_at
-from messages;
-
-drop table messages;
-
-alter table messages_dg_tmp
-    rename to messages;
-
-create index ix_messages_conversation_id
-    on messages (conversation_id);
-
-create index messages_message_id_index
-    on messages (message_id);
-
-alter table conversations
-    add priority integer default 0 not null;
-```
-
-### [CopyQ](https://github.com/hluk/CopyQ/tree/master) Custom Action Installation
-
-AI-powered snippets are nothing without a good user interface to make it possible to use them in any tool. 
-One way to boost your work performance is by performing snippets on the clipboard context with a Clipboard manager using global hotkeys.
-
-Imagine that you are working with a text or code in your favorite editor, and you need to translate it or add docstring to Python method.
-Select the text, press `ALT+SHIFT+1`, choose desire transformation (translate, fix or docstring) press Enter and that's all.
-KrAIna will transform selected text.
-
-[CopyQ](https://github.com/hluk/CopyQ/tree/master) Clipboard monitor can help you with it on Windows and Linux!
-1. Install it (Use COpy! 7.1.0. The newer versions have some strange problems with the main window focus)
-2. Run it and adjust settings to your need. My settings:
-
-![CopyQ preferences general](img/copyQ_pref_general.png) ![CopyQ preferences notification](img/copyQ_pref_notif.png)
-
-3. Install Custom Action `copyQ/toggle.ini` to have working global hotkey `CTR+~` to show/hide CopyQ
-4. Install Custom Action `copyQ/kraina_run.ini` to have working global hotkey `ALT+SHITF+~` to show/hide KrAIna Chat
-5. Install Custom Action `copyQ/ai_select.ini` to have working global hotkey `ALT+SHITF+1` to show/hide CopyQ
-6. Check also other CopyQ Custom Actions in [copyQ](copyQ/README.md)
-
-How to install such action in CopyQ:
-1. Open CopyQ and go to `Command/Global shortcuts...` <F6>.
-2. Select `Load Commands...` and import the `copyQ/ai_select.ini` file.
-3. Edit snippet:
-   * Adjust the path to your needs:
-    ``` js
-   // Set KrAIna installation folder in your home folder 
-   var kraina_dir = '/repos_personal/krAIna/';
-   ```
-   * Change or remove shortcuts if needed (global hotkey ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
-4. Save and that's all.
-
-
----
-*Note*:
-1. Tested with CopyQ 7.1.0 (8.0.0 has some problem with the main window focus)
-2. To get popup notifications (usually on errors), disable `Use native notifications` in CopyQ Preferences...
-3. To have working a global hotkey to show/hide CopyQ main app (on Windows and Linux) load `copyQ/toggle.ini` custom action
----
-
-## Configuration
-
-The configuration is handled by `config.yaml` file.
-
-File Schema:
-```yaml
-llm:
-  # LLM settings
-  map_model:
-    # map model names from snippet/assistant yaml files into models per API type
-    # Using alias like `A` or `B`, you can quickly change API providers
-    azure:
-      A: gpt-4o
-      B: gpt-4o-mini
-      C: gpt-35-turbo
-      gpt-4-turbo: gpt-4-turbo-128k
-      gpt-3.5-turbo: gpt-35-turbo
-      dall-e-2: Dalle2
-      dall-e-3: Dalle3
-      embed: text-embedding-ada-002
-    openai:
-      A: gpt-4o
-      B: gpt-4o-mini
-      C: gpt-3.5-turbo
-      embed: text-embedding-ada-002
-    anthropic:
-      A: claude-3-5-sonnet-latest
-      B: claude-3-5-haiku-20241022
-      C: claude-3-haiku-20240307
-      embed: voyage-3
-    aws:
-      A: anthropic.claude-3-5-sonnet-20240620-v1:0
-      B: anthropic.claude-3-5-haiku-20241022-v1:0
-      C: anthropic.claude-3-haiku-20240307-v1:0
-      embed: cohere.embed-multilingual-v3
-    ollama:
-      A: gemma:2b
-      B: gemma:2b
-      C: gemma:2b
-    google:
-      A: gemini-2.0-flash
-      B: gemini-1.5-flash
-      C: gemini-1.5-flash
-      embed: models/text-embedding-004
-db:
-  database: kraina.db     
-chat:
-   # Chat settings
-   # Always start New Chat with selected assistant. If defaulted, last used will be used
-   default_assistant: samantha
-   # maximum last chats to display in the left sidebar
-   visible_last_chats: 10
-   # Default editor. It can be string or list. If nothing, default system is used
-   #   editor: subl
-   #   editor:
-   #     - subl
-   #     - -b
-   editor:
-assistants:
-   # assistants settings
-   # assistant name:
-   #    settings
-   # aren't implemented yet
-snippets:
-   # snippets settings
-   # snippet name:
-   #    settings
-   # aren't implemented yet
-tools:
-   # tools settings
-   # tool name:
-   #    settings
-  brave_web:
-    count: 3
-  text-to-image:
-    model: dall-e-3
-  vector-search:
-    model: embed
-  joplin-search:
-    model: embed
-```
-
-## LangFuse support
-
-[LangFuse](https://langfuse.com) is a platform for Traces, evals, prompt management and metrics to debug and improve your LLM application.
-
-The support here is done via LangChain integration. To use it fill env variable in `.env` file:
-
-```
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_HOST=
-```
-
-
-## Extensions
-
-KrAIna can be easily extended by personal, third-party sets of the above beings by creating a folder (or creating a symlink) in KrAIna.
-
-1. The folder must contain a file named `.kraina-land` - this is a tag file for KrAIna to scan the folder
-2. To extend KrAIna with new snippets, assistants, or tools, create the respective folder names
-3. Follow KrAIna structure of these new sets
-4. Example folder structure
-   ```
-    ├── kraina
-            ├──kraina-personal
-                   ├── .kraina-land
-                   ├── snippets
-                   │     ├── create_jira 
-                   │          ├── prompt.md
-                   │          ├── config.yaml
-                   ├── assistants
-                   │        ├── database 
-                   │            ├── prompt.md
-                   │            ├── config.yaml
-                   ├── tools
-                   │     ├── database 
-                   │          ├── __init__.py
-                   │          ├── ...
-                   │     ├── include.py
-   ```
-
-## Usage
-
-### CLI
-
-#### kraina.sh | kraina.bat
-
-Those are helper scripts that call Python kraina.py script inside venv.
-```
-usage: kraina.sh [-h]
-                 [--snippet {commit,summary,ocr,doit,translate,nameit,docstring,fix,ticket,toztest,kup,}]
-                 [--text TEXT] [--file FILE]
-
-Transform text using snippet. To transform long text like source code or some
-long paragraph on Windows the best option is --file parameter as passing the
-text via command line parameter is problematic. File provided to --file
-parameter must include name of snippet in first line. The rest of file is
-treat as text to transform.
-
-options:
-  -h                    show this help message and exit
-  --snippet {commit,summary,ocr,doit,translate,nameit,docstring,fix,ticket,toztest,kup,}
-                        Snippet to use
-  --text TEXT           Text to transform
-  --file FILE           Read and parse snippet and text from file. File
-                        format: snippet\ntext, snippet must be in first line.
-                        Rest file is treat as text. Use instead of --snippet +
-                        --text to pass complicated text to transform
-
-```
-
-1. Get all supported snippets: `./kraina.sh` or `./kraina.bat`
-2. Alternative you can use `list_skills.sh` or `list_skills.bat` - much faster scripts as they are not use python
-3. Translate: `./kraina.sh translate "Cześć, co słychać u Ciebie?"` or `./kraina.bat translate "Cześć, co słychać u Ciebie?"`
-4. Git commit: `./kraina.sh commit "$(git diff --staged --no-prefix -U10)"` or `echo commit > %TEMP%/diff & git diff --no-prefix -U10 >> %TEMP%/diff & kraina.bat --file %TEMP%/diff & del %TEMP%/diff`
-
-#### chat.sh | chat.bat
-
-```
-usage: chat.sh command
+A modern Chat GUI application built with tkinter featuring:
+- **Interactive Chat Interface** with HTML and text tabs
+- **Assistant Management** - Switch between different AI assistants  
+- **Snippet Integration** - Transform text with right-click context menu
+- **Macro Execution** - Run Python automation scripts
+- **Chat History** - Auto-named conversations with management features
+- **Multi-theme Support** - Light/Dark and other built-in themes
+- **Image Support** - Drag & drop images, text-to-image generation
+- **Markdown/HTML Rendering** - Supports Mermaid graphs and LaTeX expressions
+- **Token Estimation** - Live token usage tracking
+- **Export Features** - Save chats as HTML, PDF, or text files
+- **Debug Window** - Application logs and troubleshooting
+- **IPC** - Control application from Python scripts or from kraina_cli
+- **Drag & Drop** - Drag & drop files to chat
+- **Debuging** - Debugging window with logs and troubleshooting
+
+### kraina_cli - Command Line Interface
+A fast and small CLI tool for interactive with kraina_app via IPC:
+```bash
+usage: kraina_cli command
 
 KraIna chat application.
 Commands:
@@ -624,6 +42,7 @@ Commands:
         HIDE_APP - Trigger to minimize the application
         GET_LIST_OF_SNIPPETS - Get list of snippets
         RUN_SNIPPET - Run snippet 'name' with 'text'
+        RUN_SNIPPET_WITH_FILE - Run snippet 'name' with 'file'
         RELOAD_CHAT_LIST - Reload chat list
         SELECT_CHAT - Select conv_id chat
         DEL_CHAT - Delete conv_id chat
@@ -631,169 +50,469 @@ Commands:
 
 options:
   -h, --help  show this help message and exit
-
 ```
 
-1. Start the application by running `./chat.sh` or `./chat.bat`.
-2. You can also use `./chat.sh COMMAND` or `./chat.bat COMMAND` to control the application with the supported commands, e.g.:
-    ```text
-    SHOW_APP - Trigger to display the application
-    RUN_SNIPPET translate "Co słychać u Ciebie"
+## Installation & Usage
+
+### End User Installation (Recommended)
+
+1. **Download** the latest release containing `kraina_app` and `kraina_cli` executables
+2. **First Run** the `./kraina_app` will start with default settings and the `.env` and `config.yaml` files will be created.
+3. **Configure API Keys** - Edit the generated `.env` file:
+   ```bash
+   # OpenAI
+   OPENAI_API_KEY=sk-...
+   
+   # Azure OpenAI
+   AZURE_OPENAI_ENDPOINT=https://...
+   AZURE_OPENAI_API_KEY=...
+   OPENAI_API_VERSION=2024-02-01
+   
+   # Anthropic
+   ANTHROPIC_API_KEY=...
+   
+   # AWS Bedrock
+   AWS_DEFAULT_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=...
+   AWS_SECRET_ACCESS_KEY=...
+   
+   # Google Gemini
+   GOOGLE_API_KEY=...
+   
+   # Ollama (optional - leave empty for local server)
+   OLLAMA_ENDPOINT=http://server:11434
+   ```
+4. Edit `config.yaml` file to configure for you needs:
+    ```yaml
+    llm:
+      force_api_for_snippets:
+      # force api: azure, openai, aws, anthropic, ollama to be used by snippets
+      # when empty or null or not exists, kraina_app api_type is used
+      # priority of usage: force_api (from snippet) -> force_api_for_snippets -> kraina_app api_type
+      map_model:
+        # Map model aliases to actual models per provider
+        azure:
+          A: gpt-4o
+          B: gpt-4o-mini
+          embed: text-embedding-ada-002
+        openai:
+          A: gpt-4o
+          B: gpt-4o-mini
+          embed: text-embedding-ada-002
+        # ... other providers
+
+    chat:
+      default_assistant: samantha
+      visible_last_chats: 10
+      editor: subl  # External editor command
+
+    tools:
+      text-to-image:
+        model: dall-e-3
+      vector-search:
+        model: embed
     ```
-3. You can assign `./chat.sh SHOW_APP` or `./chat.bat SHOW_APP` to a system global shortcut to show KrAIna Chat quickly
 
-### CopyQ Usage
-To use the krAIna CopyQ Custom Action **ai:select**:
-1. Select text.
-2. Press ALT+SHIFT+1.
-3. Select the snippet you'd like to use and press ENTER.
-4. Once the action finishes, the selected text is replaced with the transformed one.
+The files are automaticly reloaded. No need to re-run the app.
 
+### User Extensibility
+
+Create your own components alongside the executables without modifying core code:
+
+```
+your_kraina_deployment/
+├── kraina_app          # Main GUI application
+├── kraina_cli          # CLI tool
+├── .env               # Your API keys
+├── config.yaml        # Configuration
+├── snippets/          # Your custom snippets
+│   └── my_snippet/
+│       ├── prompt.md
+│       └── config.yaml
+├── assistants/        # Your custom assistants
+│   └── my_assistant/
+│       ├── prompt.md
+│       └── config.yaml
+└── macros/            # Your custom macros
+    └── my_macro.py
+```
+
+The Assistants and Snippets will automaticly available in the chat interface.
+
+## Core Concepts
+
+### Snippets
+Actions that transform selected text using AI. Perfect for:
+- **Text Translation** - Translate between languages
+- **Code Documentation** - Generate docstrings
+- **Text Improvement** - Fix grammar and style
+- **Git Commits** - Generate commit messages
+
+#### Built-in Snippets
+
+KrAIna includes these ready-to-use snippets:
+
+- **`code`** - Write Python function of method
+- **`commit`** - Generate conventional commit messages from git diffs
+- **`docstring`** - Create Python docstrings in reStructuredText format
+- **`doit`** - Direct task execution without commentary or explanations
+- **`fix_text`** - Improve grammar, spelling, and readability using proven techniques
+- **`nameit`** - Generate concise names and descriptions for chat logs (JSON output)
+- **`ocr`** - Extract text from images and screenshots with markdown formatting
+- **`solve`** - Problem-solving with direct, focused answers
+- **`summary`** - Compress and summarize text content while preserving key facts
+- **`translate`** - Bidirectional Polish-English translation
+
+#### Custom Snippets
+
+**Snippet Structure:**
+```
+snippets/my_snippet/
+├── prompt.md          # System prompt (required)
+├── config.yaml        # LLM settings (optional)
+└── custom_logic.py    # Override behavior (optional)
+```
+
+**Configuration Example:**
+```yaml
+force_api: openai
+model: gpt-4o
+temperature: 0.5
+max_tokens: 512
+contexts:
+  string: "Always respond in professional tone"
+  file: 
+    - ./examples.txt
+    - ./context.md
+```
+
+### Assistants
+Specialized AI personas for different tasks:
+- **Conversational Memory** - Remember chat history
+- **Tool Integration** - Use built-in and custom tools
+- **Context Awareness** - Include custom knowledge
+- **Flexible Configuration** - Customize behavior per assistant
+
+#### Built-in Assistants
+
+KrAIna includes these specialized assistants:
+
+- **`samantha`** - General-purpose assistant with full tool access (text-to-image, vector-search, web search, audio transcription, file management, and more)
+- **`kodi`** - Professional software development specialist focused on coding best practices, debugging, and optimization
+- **`promcreat`** - Prompt engineering expert that helps create, modify, and enhance system prompts using proven techniques
+
+#### Custom Assistants
+
+**Assistant Structure:**
+```
+assistants/my_assistant/
+├── prompt.md          # System prompt
+└── config.yaml        # Configuration
+```
+
+**Configuration Example:**
+```yaml
+model: gpt-4o
+temperature: 0.7
+tools:
+  - text-to-image
+  - vector-search
+  - web-search
+contexts:
+  string: "You are a helpful coding assistant"
+  file: ./knowledge_base.md
+```
+
+### Macros
+Python scripts for complex AI-powered workflows:
+- **Agent-like Behavior** - Multi-step AI interactions
+- **Custom Logic** - Combine multiple tools and models
+- **GUI Integration** - Run from chat interface
+- **Automation Ready** - Perfect for repetitive tasks
+
+![macro](img/chat_macros.gif)
+
+**Macro Structure:**
+```python
+def run(topic: str, depth: str = "basic") -> str:
+    """Generate comprehensive overview of a topic.
+    
+    Args:
+        topic: Topic to research
+        depth: Detail level (basic/detailed/expert)
+    """
+    # Your implementation here
+    return result
+```
+
+## Built-in Tools
+
+Tools that can be used by Assistants to extend their capabilities:
+
+### Text-to-Image
+Generate images using DALL-E API.
+```yaml
+tools:
+  text-to-image:
+    model: dall-e-3  # dall-e-2 or dall-e-3
+```
+
+### Vector Search
+Semantic search through documents. User uploads a document to an in-memory vector database and then query it with a specific question.
+
+The tool uses LangChain document loaders and in-memory vector storage to process local files. The file is split and stored only once (embedding is done once), and the vector database is dumped to a local file (located in .store_files), so the next queries against the file do not require new file processing.
+
+```yaml
+tools:
+  vector-search:
+    model: embed
+```
+**Supported formats:** PDF, TXT, LOG, CSV, MD
+
+### Audio-to-Text
+Transcribe audio files using Whisper.
+```yaml
+tools:
+  audio-to-text:
+    model: whisper-1
+```
+
+### Image Analysis
+Analyze and interpret images.
+- **Object Detection**
+- **Scene Understanding** 
+- **Content Extraction**
+
+### Text-to-Text
+Process text files and web content.
+- **File Reading**
+- **Web Content Extraction**
+- **Format Conversion**
+
+### Joplin Search
+Search through Joplin notes (requires API key). The in-memory vector database is created from all notes in the Joplin database and then query it with a specific question.
+
+```yaml
+tools:
+  joplin-search:
+    model: embed
+```
+
+### Web Search (Brave)
+Search the web for current information.
+```yaml
+tools:
+  brave_web:
+    count: 3  # Number of results
+```
+
+## CopyQ Integration
+
+Boost productivity with clipboard-based AI transformations:
+
+### Setup
+1. Install [CopyQ](https://github.com/hluk/CopyQ) 7.1.0
+2. Import custom actions from `copyQ/` directory:
+   - `ai_select.ini` - Transform selected text (ALT+SHIFT+1)
+   - `kraina_run.ini` - Show/hide KrAIna (ALT+SHIFT+~)
+   - `toggle.ini` - Show/hide CopyQ (CTRL+~)
+
+More info in [copyQ/README.md](copyQ/README.md)
+
+### Usage
 ![KrAIna and CopyQ in action](img/kraina-in-action.gif)
 
-Alternatively:
-1. Select and copy text to the clipboard.
-2. Open CopyQ.
-3. Right-click on the copied text and select the **ai:select** Custom Action (or press ALT+RETURN).
-4. Once the action finishes, the selected text is replaced with the transformed one.
+1. **Select text** in any application
+2. **Press ALT+SHIFT+1**
+3. **Choose snippet** (translate, fix, docstring, etc.)
+4. **Press ENTER** - transformed text replaces selection
 
-### Code
+## Configuration
 
-#### Snippets
+Global settings in `config.yaml`:
+
+```yaml
+llm:
+  force_api_for_snippets:
+  # force api: azure, openai, aws, anthropic, ollama to be used by snippets
+  # when empty or null or not exists, kraina_app api_type is used
+  # priority of usage: force_api (from snippet) -> force_api_for_snippets -> kraina_app api_type
+  map_model:
+    # Map model aliases to actual models per provider
+    azure:
+      A: gpt-4o
+      B: gpt-4o-mini
+      embed: text-embedding-ada-002
+    openai:
+      A: gpt-4o
+      B: gpt-4o-mini
+      embed: text-embedding-ada-002
+    # ... other providers
+
+chat:
+  default_assistant: samantha
+  visible_last_chats: 10
+  editor: subl  # External editor command
+
+tools:
+  text-to-image:
+    model: dall-e-3
+  vector-search:
+    model: embed
+```
+
+## LangFuse Integration
+
+Monitor and analyze AI usage with [LangFuse](https://langfuse.com):
+
+```bash
+# Add to .env file
+LANGFUSE_PUBLIC_KEY=pk-...
+LANGFUSE_SECRET_KEY=sk-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+---
+
+## Developer Documentation
+
+### Development Installation
+
+**Requirements:**
+- Python >= 3.10 + IDLE (Tk GUI)
+- Python venv package  
+- Git
+
+**Setup:**
+```bash
+# Clone and setup
+git clone <repository>
+cd krAIna
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# Run from source
+python app/kraina_app.py
+python app/kraina_cli.py --help
+```
+
+### Building Standalone Executables
+
+```bash
+# Linux
+./build_standalone.sh
+```
+
+**Build Output:**
+- `dist/kraina_app` - GUI executable (~110MB)
+- `dist/kraina_cli` - CLI executable (~11MB)
+- Self-contained with all dependencies
+- No Python installation required on target systems
+
+### Project Structure
+
+```
+krAIna/
+├── app/                    # Standalone app entry points
+│   ├── kraina_app.py      # GUI application
+│   └── kraina_cli.py      # CLI tool
+├── src/kraina/            # Core library
+│   ├── assistants/        # Built-in assistants
+│   ├── snippets/          # Built-in snippets
+│   ├── tools/             # Built-in tools
+│   ├── macros/           # Macro system
+│   └── libs/             # Supporting libraries
+├── src/kraina_chat/       # GUI implementation
+└── dist/                  # Built executables
+```
+
+---
+
+## Scripting & API
+
+### Snippet Usage
 ```python
 from dotenv import load_dotenv, find_dotenv
-from snippets.base import Snippets
+from kraina.snippets.base import Snippets
 
 load_dotenv(find_dotenv())
 snippets = Snippets()
 action = snippets["fix"]
-print(action.run("I'd like to speak something interest"))
+result = action.run("I'd like to speak something interest")
+print(result)  # "I'd like to say something interesting"
 ```
 
-#### Assistants
+### Assistant Usage
 ```python
-from dotenv import load_dotenv, find_dotenv
-from assistants.base import Assistants
-from libs.utils import kraina_db
+from kraina.assistants.base import Assistants
 
-load_dotenv(find_dotenv())
 assistants = Assistants()
+action = assistants["samantha"]
 
-# get default db - read from config.yaml
-print(kraina_db())  # /home/user/krAIna/kraina.db
-# set new or switch to different db
-print(kraina_db("temp.db"))  # /home/user/krAIna/temp.db
+# One-shot (no memory)
+result = action.run("What is Python?", use_db=False)
 
-# one shot, do not use a database
-action = assistants["echo"]
-ret = action.run("2+2", use_db=False)
-print(ret)  # AssistantResp(conv_id=None, content='2 + 2 equals 4.', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 0, 'input': 6, 'total_input': 37, 'output': 11, 'total': 85}, error=None)
-# with history
-first = action.run("My name is Paul")  # First call without conv_id creates a new conversation
-print(first)  # AssistantResp(conv_id=192, content='Nice to meet you, Paul! How can I assist you today?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 7, 'input': 7, 'total_input': 45, 'output': 17, 'total': 107}, error=None)
-ret = action.run("What's my name?", conv_id=first.conv_id) # Second call with conv_id
-print(ret)  # AssistantResp(conv_id=192, content='Your name is Paul. How can I assist you today, Paul?', tokens={'api': {'model': 'gpt-3.5-turbo', 'max_tokens': 512, 'temp': 0.7}, 'prompt': 31, 'history': 24, 'input': 8, 'total_input': 63, 'output': 17, 'total': 143}, error=None)
-
+# With conversation memory
+first = action.run("My name is Paul")
+second = action.run("What's my name?", conv_id=first.conv_id)
 ```
 
+### Image Processing
 ```python
-from dotenv import load_dotenv, find_dotenv
-from assistants.base import Assistants
-from libs.utils import convert_llm_response, convert_user_query
+from kraina.libs.utils import convert_llm_response, convert_user_query
 
-load_dotenv(find_dotenv())
-assistants = Assistants()
+# Text-to-image
+llm = assistants["samantha"]  # Assistant with text-to-image tool
+result = llm.run("generate image of a cat", use_db=False)
+# Save base64 data URL to file
+print(convert_llm_response(result.content))
 
-# text-to-image
-llm = assistants["samantha"]  # Samantha assistant is equipped with text-to-image tool 
-ret = llm.run("generate me low size image of sheep with electronic head", use_db=False)
-print(ret.content[0:120])  # ![img-18b8c05e24224250cd16dcbe918e0d14](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAIAAADwf7zUAAEAAElEQVR4nE
-# convert_llm_response() function get base64 data URL and save it to temporary file
-print(convert_llm_response(ret.content))  # ![img-18b8c05e24224250cd16dcbe918e0d14](file:///tmp/tmplpa4ls70.png)  
-
-# image-to-text from URL
-# convert_user_query() gets Markdown image (with URL, local file or base64 data URL) and convert it to proper base64 data URL
-ret = llm.run(
-    convert_user_query(
-        "Do ocr of the file: ![screen](https://github.com/Bumshakalaka/krAIna/blob/main/img/chat_light_theme.png?raw=true)",
-    ),
-    use_db=False,
+# Image-to-text
+result = llm.run(
+    convert_user_query("Analyze this image: ![img](path/to/image.png)"),
+    use_db=False
 )
-print(ret)  # AssistantResp(conv_id=None, content="Here is the extracted text from the image:\n\n```\nKrAIna CHAT\n\nFile Llm Settings\n\nNEW CHAT\nLast chats\n   Micros...
-
-# image-to-text from local file
-ret = llm.run(
-    convert_user_query(
-        "Do ocr of the file: ![screen](file:///home/user/kraina/img/chat_light_theme.png)",
-    ),
-    use_db=False,
-)
-print(ret)  # AssistantResp(conv_id=None, content="Here is the extracted text from the image:\n\n```\nKrAIna CHAT\n\nFile Llm Settings\n\nNEW CHAT\nLast chats\n   Micros...
 ```
 
+### Tool Usage
 ```python
-from dotenv import load_dotenv, find_dotenv
-from libs.utils import convert_llm_response
-from tools.text_to_image import text_to_image
+from kraina.tools.text_to_image import text_to_image
+from kraina.libs.utils import convert_llm_response
 
-if __name__ == "__main__":
-    load_dotenv(find_dotenv())
-    ret = text_to_image("Red LEGO tiger", "SMALL_SQUARE")
-    print(convert_llm_response(ret))  # ![img-18b8c05e24224250cd16dcbe918e0d14](file:///tmp/tmplpa4ls70.png)
+result = text_to_image("Red LEGO tiger", "SMALL_SQUARE")
+print(convert_llm_response(result))  # Saves and returns file path
 ```
 
+### Pydantic Output
 ```python
-from dotenv import load_dotenv, find_dotenv
 from pydantic import BaseModel
-
-from snippets.base import Snippets
-
 
 class NameIt(BaseModel):
     name: str
     description: str
 
-if __name__ == "__main__":
-    load_dotenv(find_dotenv())
-    snippets = Snippets()
-    nameit = snippets["nameit"]
-    nameit.pydantic_output = NameIt
+snippets = Snippets()
+nameit = snippets["nameit"]
+nameit.pydantic_output = NameIt
 
-    ret = nameit.run(
-        """
-        User: write me simple class based on Thread.Timer which execute my function every XX s
-        AI: Certainly! You can create a simple class that utilizes `threading.Timer` to execute a function at regular intervals. Below is a Python class called `RepeatingTimer` that demonstrates how to achieve this:
-            ...
-        User: can I inherit from Thread.Timer here instead of do the complete implementation
-        AI: `threading.Timer` in Python is not designed to be directly subclassed for repeating functionality because it is a one-shot timer. Instead, ...
-            ...
-    """
-    )  # type: NameIt
-    print(type(ret))  # <class '__main__.NameIt'>
-    print(ret.name)  # Repeating Timer Class
-    print(ret.description)  # Discussion on subclassing Timer for repeated function execution in Python.
+result = nameit.run("Your conversation text here")  # Returns NameIt instance
+print(result.name)        # Extracted name
+print(result.description) # Extracted description
 ```
-#### Chat interface
 
-Like [chat.sh](#chatsh--chatbat) but from Python script. It is very useful for [macro](#macros) scripts
-
+### Chat Interface (IPC)
 ```python
-from chat.cli import ChatInterface
-from dotenv import load_dotenv, find_dotenv
-from assistants.base import Assistants
+from kraina_chat.cli import ChatInterface
 
-load_dotenv(find_dotenv())
-assistants = Assistants()
-
-action = assistants["echo"]
-# init communication with Chat app. silent=True means, do not raise exception if Chat app is not running.
 chat = ChatInterface(silent=True)
-
-ret = action.run("What are the Pokemons?")  # First call without conv_id creates a new conversation
-
-chat("SHOW_APP")  # Show Chat app
-chat("RELOAD_CHAT_LIST")  # Reload, find new chats in Chat app
-chat("SELECT_CHAT", ret.conv_id)  # Show our conversation
-action.run("What are the types?", conv_id=ret.conv_id)  # Continue conversation
-chat("SELECT_CHAT", ret.conv_id)  # Update our conversation
+chat("SHOW_APP")                    # Show application
+chat("RELOAD_CHAT_LIST")           # Refresh chat list
+chat("SELECT_CHAT", conv_id)       # Select conversation
 ```
+
+---
+
+## License
+
+MIT License - see LICENSE file for details.

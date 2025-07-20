@@ -1,0 +1,82 @@
+---
+llm:
+  # LLM settings
+  force_api_for_snippets:
+  # force api: azure, openai, aws, anthropic, ollama to be used by snippets
+  # when empty or null or not exists, kraina_app api_type is used
+  # priority of usage: force_api (from snippet) -> force_api_for_snippets -> kraina_app api_type
+  map_model:
+    # map model names from snippet/assistant yaml files into models per API type
+    # Using alias like `A` or `B`, you can quickly change API providers
+    azure:
+      A: gpt-4.1
+      B: gpt-4.1-mini
+      C: gpt-4.1-nano
+      gpt-4-turbo: gpt-4-turbo-128k
+      gpt-3.5-turbo: gpt-35-turbo
+      dall-e-2: Dalle2
+      dall-e-3: Dalle3
+      embed: text-embedding-ada-002
+    openai:
+      A: gpt-4.1
+      B: gpt-4.1-mini
+      C: gpt-4.1-nano
+      embed: text-embedding-ada-002
+    anthropic:
+      A: claude-4-0-sonnet-latest
+      B: claude-3-5-sonnet-latest
+      C: claude-3-5-haiku-latest
+      embed: voyage-3
+    aws:
+      A: aanthropic.claude-sonnet-4-20250514-v1:0
+      B: anthropic.claude-3-7-sonnet-20250219-v1:0
+      C: anthropic.claude-3-5-haiku-20241022-v1:0
+      embed: cohere.embed-multilingual-v3
+    ollama:
+      A: gemma:2b
+      B: gemma:2b
+      C: gemma:2b
+    google:
+      A: gemini-2.0-flash
+      B: gemini-1.5-flash
+      C: gemini-1.5-flash
+      embed: models/text-embedding-004
+db:
+  database: kraina.db
+chat:
+  # Chat settings
+  # Always start New Chat with selected assistant.
+  # If defaulted, last used will be used
+  default_assistant:
+  # maximum last chats to display in the left sidebar
+  visible_last_chats: 15
+  # Default editor. It can be string or list. If nothing, default system is used
+  #   editor: subl
+  #   editor:
+  #     - subl
+  #     - -b
+  editor:
+assistants:
+  # assistants settings
+  # assistant name:
+  #    settings
+  # aren't implemented yet
+snippets:
+  # snippets settings
+  # snippet name:
+  #    settings
+  # aren't implemented yet
+tools:
+  # tools settings
+  # tool name:
+  #    settings
+  file_mgmt:
+    working_dir: ~/Documents
+  brave_web:
+    count: 3
+  text-to-image:
+    model: dall-e-3
+  vector-search:
+    model: embed
+  joplin-search:
+    model: embed

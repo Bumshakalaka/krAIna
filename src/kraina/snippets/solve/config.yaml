@@ -1,0 +1,2 @@
+model: o3-mini
+max_tokens: 16384

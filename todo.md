@@ -7,6 +7,11 @@
   - kraina - core assistant/snippets/tools base (as whl)
   - kraina-chat
   - kraina-api
+- image handling:
+  - rewrite—its spagetti code now
+  - store in database/folder
+  - always use file:// link, not base64
+  - correct export to md and html
 
 ## Assistant Enhancements
 - Implement memory and vector search capabilities.
