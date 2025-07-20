@@ -32,7 +32,7 @@ A modern Chat GUI application built with tkinter featuring:
 - **Debuging** - Debugging window with logs and troubleshooting
 
 ### kraina_cli - Command Line Interface
-A CLI tool for interactove with kraina_app:
+A fast and small CLI tool for interactive with kraina_app via IPC:
 ```bash
 usage: kraina_cli command
 
@@ -56,10 +56,8 @@ options:
 
 ### End User Installation (Recommended)
 
-**Requirements**: None - standalone executables include everything needed
-
 1. **Download** the latest release containing `kraina_app` and `kraina_cli` executables
-2. **First Run** - Execute `./kraina_app` or `./kraina_cli` to create configuration files
+2. **First Run** the `./kraina_app` will start with default settings and the `.env` and `config.yaml` files will be created.
 3. **Configure API Keys** - Edit the generated `.env` file:
    ```bash
    # OpenAI
@@ -84,22 +82,38 @@ options:
    # Ollama (optional - leave empty for local server)
    OLLAMA_ENDPOINT=http://server:11434
    ```
-4. **Start Using** - Run `./kraina_app` for GUI or `./kraina_cli --help` for CLI usage
+4. Edit `config.yaml` file to configure for you needs:
+    ```yaml
+    llm:
+      force_api_for_snippets:
+      # force api: azure, openai, aws, anthropic, ollama to be used by snippets
+      # when empty or null or not exists, kraina_app api_type is used
+      # priority of usage: force_api (from snippet) -> force_api_for_snippets -> kraina_app api_type
+      map_model:
+        # Map model aliases to actual models per provider
+        azure:
+          A: gpt-4o
+          B: gpt-4o-mini
+          embed: text-embedding-ada-002
+        openai:
+          A: gpt-4o
+          B: gpt-4o-mini
+          embed: text-embedding-ada-002
+        # ... other providers
 
-### Basic Usage Examples
+    chat:
+      default_assistant: samantha
+      visible_last_chats: 10
+      editor: subl  # External editor command
 
-**GUI Application:**
-```bash
-./kraina_app                           # Start GUI
-./kraina_cli SHOW_APP                  # Show running app (assign to hotkey)
-./kraina_cli RUN_SNIPPET translate "Hello world"
-```
+    tools:
+      text-to-image:
+        model: dall-e-3
+      vector-search:
+        model: embed
+    ```
 
-**CLI Usage:**
-```bash
-./kraina_cli --snippet translate --text "Cześć, co słychać?"
-./kraina_cli --snippet commit --text "$(git diff --staged)"
-```
+The files are automaticly reloaded. No need to re-run the app.
 
 ### User Extensibility
 
@@ -123,6 +137,8 @@ your_kraina_deployment/
     └── my_macro.py
 ```
 
+The Assistants and Snippets will automaticly available in the chat interface.
+
 ## Core Concepts
 
 ### Snippets
@@ -131,6 +147,23 @@ Actions that transform selected text using AI. Perfect for:
 - **Code Documentation** - Generate docstrings
 - **Text Improvement** - Fix grammar and style
 - **Git Commits** - Generate commit messages
+
+#### Built-in Snippets
+
+KrAIna includes these ready-to-use snippets:
+
+- **`code`** - Write Python function of method
+- **`commit`** - Generate conventional commit messages from git diffs
+- **`docstring`** - Create Python docstrings in reStructuredText format
+- **`doit`** - Direct task execution without commentary or explanations
+- **`fix_text`** - Improve grammar, spelling, and readability using proven techniques
+- **`nameit`** - Generate concise names and descriptions for chat logs (JSON output)
+- **`ocr`** - Extract text from images and screenshots with markdown formatting
+- **`solve`** - Problem-solving with direct, focused answers
+- **`summary`** - Compress and summarize text content while preserving key facts
+- **`translate`** - Bidirectional Polish-English translation
+
+#### Custom Snippets
 
 **Snippet Structure:**
 ```
@@ -159,6 +192,16 @@ Specialized AI personas for different tasks:
 - **Tool Integration** - Use built-in and custom tools
 - **Context Awareness** - Include custom knowledge
 - **Flexible Configuration** - Customize behavior per assistant
+
+#### Built-in Assistants
+
+KrAIna includes these specialized assistants:
+
+- **`samantha`** - General-purpose assistant with full tool access (text-to-image, vector-search, web search, audio transcription, file management, and more)
+- **`kodi`** - Professional software development specialist focused on coding best practices, debugging, and optimization
+- **`promcreat`** - Prompt engineering expert that helps create, modify, and enhance system prompts using proven techniques
+
+#### Custom Assistants
 
 **Assistant Structure:**
 ```
@@ -274,7 +317,7 @@ Boost productivity with clipboard-based AI transformations:
    - `kraina_run.ini` - Show/hide KrAIna (ALT+SHIFT+~)
    - `toggle.ini` - Show/hide CopyQ (CTRL+~)
 
-More info in [readme](copyQ/README.md)
+More info in [copyQ/README.md](copyQ/README.md)
 
 ### Usage
 ![KrAIna and CopyQ in action](img/kraina-in-action.gif)
@@ -349,10 +392,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
-# Configure
-cp .env.template app/.env  # Add your API keys
-cp src/kraina/templates/config.yaml.template app/config.yaml
-
 # Run from source
 python app/kraina_app.py
 python app/kraina_cli.py --help
@@ -363,13 +402,10 @@ python app/kraina_cli.py --help
 ```bash
 # Linux
 ./build_standalone.sh
-
-# Windows (planned)
-build_standalone.bat
 ```
 
 **Build Output:**
-- `dist/kraina_app` - GUI executable (~120MB)
+- `dist/kraina_app` - GUI executable (~110MB)
 - `dist/kraina_cli` - CLI executable (~11MB)
 - Self-contained with all dependencies
 - No Python installation required on target systems
