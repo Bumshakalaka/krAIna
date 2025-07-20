@@ -71,6 +71,8 @@ jobs:
     needs: build-linux
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifacts
