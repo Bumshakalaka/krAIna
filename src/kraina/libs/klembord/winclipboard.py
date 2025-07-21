@@ -2,7 +2,8 @@
 
 from collections import OrderedDict
 from collections.abc import ByteString
-from ctypes import c_bool, c_byte, c_int, c_uint, c_void_p, c_wchar, create_unicode_buffer, memmove, windll
+from ctypes import windll  # type: ignore
+from ctypes import c_bool, c_byte, c_int, c_uint, c_void_p, c_wchar, create_unicode_buffer, memmove
 
 UNSUPPORTED = {
     "CF_BITMAP": 2,

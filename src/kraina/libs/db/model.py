@@ -1,8 +1,9 @@
 """KrAIna database model."""
+
 import datetime
 from typing import Any, List
 
-from sqlalchemy import JSON, MetaData, ForeignKey
+from sqlalchemy import JSON, ForeignKey, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -22,6 +23,7 @@ class Base(DeclarativeBase):
     )
 
     def __repr__(self):
+        """Represent the model as a string."""
         return (
             f"{self.__tablename__}("
             + ", ".join([f"{v}:{k}" for v, k in self.__dict__.items() if not v.startswith("_")])
@@ -45,7 +47,7 @@ class Conversations(Base):
 
 
 class Messages(Base):
-    """Messages table"""
+    """Messages table."""
 
     __tablename__ = "messages"
     message_id: Mapped[int] = mapped_column(primary_key=True, index=True)

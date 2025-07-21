@@ -1,3 +1,12 @@
+"""Path management and configuration utilities for the Kraina application.
+
+This module handles:
+- Application directory and file path definitions
+- Configuration file initialization and validation
+- Environment file setup
+- Store directory creation and management
+"""
+
 import json
 import logging
 import sys

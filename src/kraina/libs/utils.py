@@ -56,9 +56,12 @@ def import_module(path: Path) -> ModuleType:
     """
     module_name = path.parent.name
     spec = importlib.util.spec_from_file_location(module_name, str(path), submodule_search_locations=[str(path.parent)])
-    sys.modules[module_name] = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(sys.modules[module_name])
-    return sys.modules[module_name]
+    if spec:
+        sys.modules[module_name] = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sys.modules[module_name])  # type: ignore
+        return sys.modules[module_name]
+    else:
+        raise ImportError(f"Failed to import module {module_name} from {path}")
 
 
 @lru_cache(maxsize=1024)
@@ -155,7 +158,7 @@ def restore_text(modified_text: str, code_map: Dict[str, str]) -> str:
 
 
 @lru_cache(maxsize=256)
-def to_md(text: str, col: str = None) -> str:
+def to_md(text: str, col: Optional[str] = None) -> str:
     """Convert markdown text to HTML with optional color styling.
 
     This function uses markdown2 to convert the input markdown text to HTML. If a color is specified,
@@ -189,7 +192,10 @@ def to_md(text: str, col: str = None) -> str:
             if temp.img_response.status_code == 200:
                 name = images.chat_images.create_from_url(temp.img_response.url, name, False)
                 width, height = images.chat_images.pil_image[name]["resized-600"].size
-                return f'<img src="{images.chat_images.get_file_url(name)}" alt="{name}" width="{width}" height="{height}"/>'
+                return (
+                    f'<img src="{images.chat_images.get_file_url(name)}" '
+                    f'alt="{name}" width="{width}" height="{height}"/>'
+                )
             else:
                 return m.group()
 
@@ -201,7 +207,7 @@ def to_md(text: str, col: str = None) -> str:
             ret = latex_to_image(latex_)
             if ret.get("imageUrl"):
                 # ImageTk must be False, as ImageTk.PhotoImage is not thread-safely
-                name = images.chat_images.create_from_url(ret.get("imageUrl"), name, False)
+                name = images.chat_images.create_from_url(ret.get("imageUrl"), name, False)  # type: ignore
                 return f'<img src="{images.chat_images.get_file_url(name, inverted)}" alt="{name}"/>', idx_
             else:
                 # mark the image as broken, so it will not be process next time
@@ -215,7 +221,7 @@ def to_md(text: str, col: str = None) -> str:
     text_no_latex, latex_map = replace_latex(text_no_code)
     if latex_map:
         try:
-            inverted = False if ImageColor.getcolor(col, "L") < 127 else True  # noqa
+            inverted = False if ImageColor.getcolor(col, "L") < 127 else True  # type: ignore # noqa
         except ValueError:
             # On Windows we've got SystemWindowText color which is not know by Pillow
             # it hapens on build in light themes
@@ -371,7 +377,7 @@ def find_hyperlinks(text: str, no_hyper_tag: str = "") -> list:
 
 
 def grabclipboard():
-    """Fixed version of grabclipboard.
+    """Grab clipboard content as PIL.Image.Image or None.
 
     Official one with xclip hangs on Ubuntu.
 
@@ -501,6 +507,16 @@ def convert_llm_response(msg: str):
 
 
 def convert_user_query(msg: str):
+    """Convert image URLs in a message to markdown image links.
+
+    This function searches the input string for image URLs matching a pattern,
+    creates images from these URLs, and replaces them with markdown image links
+    referencing the created images.
+
+    :param msg: The input message containing image URLs.
+    :return: The message with image URLs replaced by markdown image links.
+    """
+
     def _convert(m):
         name = images.chat_images.create_from_url(m.group("img_url"), "img-" + m.group("img_name"), False)
         return f"![{'img-' + m.group('img_name')}]({images.chat_images.get_file_url(name)})"
@@ -531,7 +547,7 @@ def kraina_db(new_db: Optional[str] = None) -> str:
     return os.environ["KRAINA_DB"]
 
 
-def latex_to_image(latex_input=None, output_format="PNG", output_scale="100%"):
+def latex_to_image(latex_input: str, output_format: str = "PNG", output_scale: str = "100%"):
     """Convert LaTeX input to an image in the specified format and scale.
 
     This function sends a POST request to an API that converts LaTeX code to an image.

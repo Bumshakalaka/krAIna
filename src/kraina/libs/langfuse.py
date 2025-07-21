@@ -12,7 +12,7 @@ import subprocess
 import uuid
 
 from dotenv import load_dotenv
-from langfuse import Langfuse
+from langfuse import Langfuse  # type: ignore
 from langfuse.langchain import CallbackHandler
 
 from kraina.libs.paths import ENV_FILE

@@ -1,9 +1,22 @@
-"""LLM handling."""
+"""LLM handling module for Kraina.
+
+This module provides a unified interface for working with various Large Language Model (LLM) APIs
+including OpenAI, Azure OpenAI, Anthropic, AWS Bedrock, Ollama, and Google Generative AI.
+It handles model mapping, API type selection, and provides functions for creating chat models,
+embedding models, and direct LLM clients.
+
+The module supports:
+- Multiple API providers (OpenAI, Azure, Anthropic, AWS, Ollama, Google)
+- Model name mapping and aliases
+- Environment-based API type selection
+- Override settings for LLM parameters
+- JSON mode support for compatible APIs
+"""
 
 import enum
 import logging
 import os
-from typing import Union
+from typing import Optional, Union
 
 import yaml
 from jsonschema import ValidationError
@@ -22,12 +35,29 @@ logger = logging.getLogger(__name__)
 
 
 class MyBedrockEmbeddings(BedrockEmbeddings):
-    def __init__(self, model):
+    """Custom Bedrock embeddings class with simplified initialization."""
+
+    def __init__(self, model: str):
+        """Initialize Bedrock embeddings with model ID.
+
+        Args:
+            model: The model ID to use for embeddings
+
+        """
         super().__init__(model_id=model)
 
 
 class MyChatOllama(ChatOllama):
+    """Custom Ollama chat class with environment-based endpoint configuration."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize Ollama chat with optional base URL from environment.
+
+        Args:
+            *args: Positional arguments passed to parent class
+            **kwargs: Keyword arguments passed to parent class
+
+        """
         kwargs["base_url"] = os.environ.get("OLLAMA_ENDPOINT", None)
         super().__init__(*args, **kwargs)
 
@@ -41,6 +71,8 @@ OVERWRITE_LLM_SETTINGS = {
 
 
 class SUPPORTED_API_TYPE(enum.Enum):
+    """Enumeration of supported API types for LLM providers."""
+
     AZURE = "azure"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
@@ -61,8 +93,12 @@ def read_model_settings() -> bool:
     and updates the `MAP_MODELS` dictionary with the model mapping specified
     in the configuration file.
 
-    :return: True if config.yaml is valid and read, False otherwise
-    :raises FileNotFoundError: If the 'config.yaml' file does not exist.
+    Returns:
+        bool: True if config.yaml is valid and read successfully, False otherwise
+
+    Raises:
+        FileNotFoundError: If the 'config.yaml' file does not exist
+
     """
     try:
         config_file_validation()
@@ -83,7 +119,12 @@ read_model_settings()
 
 
 def get_only_aliases() -> list[str]:
-    """Return all one-letter model aliases from MAP_MODELS for all SUPPORTED_API_TYPE."""
+    """Return all one-letter model aliases from MAP_MODELS for all SUPPORTED_API_TYPE.
+
+    Returns:
+        list[str]: Sorted list of single-letter model aliases
+
+    """
     aliases = set()
     for _, models in MAP_MODELS.items():
         for k in models:
@@ -92,23 +133,31 @@ def get_only_aliases() -> list[str]:
     return sorted(aliases)
 
 
-def overwrite_llm_settings(**new_settings):
-    """Overwrite LLM chat settings.
+def overwrite_llm_settings(**new_settings) -> None:
+    """Overwrite LLM chat settings with new values.
 
-    :param new_settings: one of the key=value from OVERWRITE_LLM_SETTINGS
-    :return:
+    Args:
+        **new_settings: Key-value pairs from OVERWRITE_LLM_SETTINGS to update
+
     """
     for k, v in new_settings.items():
         if OVERWRITE_LLM_SETTINGS.get(k) is not None:
             OVERWRITE_LLM_SETTINGS[k] = v
 
 
-def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str, None] = None) -> str:
-    """Map OpenAI model names to AzureAI.
+def map_model(model: str, api_force: Optional[Union[SUPPORTED_API_TYPE, str]] = None) -> str:
+    """Map model names based on API type and configuration.
 
-    :param model: openAI model name
-    :param api_force:
-    :return: AzureAI model name
+    Maps OpenAI model names to their corresponding names in other APIs (e.g., Azure AI)
+    based on the configuration in MAP_MODELS.
+
+    Args:
+        model: The model name to map
+        api_force: Optional API type to force mapping for a specific provider
+
+    Returns:
+        str: The mapped model name, or original name if no mapping exists
+
     """
     if api_force and isinstance(api_force, str):
         api_force = SUPPORTED_API_TYPE(api_force)
@@ -116,12 +165,22 @@ def map_model(model: str, api_force: Union[SUPPORTED_API_TYPE, str, None] = None
 
 
 def get_llm_type(
-    force_api_type: Union[SUPPORTED_API_TYPE, str] = None,
+    force_api_type: Optional[Union[SUPPORTED_API_TYPE, str]] = None,
 ) -> SUPPORTED_API_TYPE:
     """Get API Type based on force_api_type flag, Chat application settings and env variables.
 
-    :param force_api_type: force openai or azure or anthropic. If None, check app global settings
-    :return:
+    Determines which API type to use based on:
+    1. Forced API type parameter
+    2. Application global settings
+    3. Environment variables
+    4. Default fallback to AWS
+
+    Args:
+        force_api_type: Optional API type to force (azure, openai, anthropic, etc.)
+
+    Returns:
+        SUPPORTED_API_TYPE: The determined API type to use
+
     """
     if force_api_type:
         ret = force_api_type
@@ -153,12 +212,30 @@ def get_llm_type(
     return SUPPORTED_API_TYPE(ret) if isinstance(ret, str) else ret
 
 
-def chat_llm(**kwargs) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic]:
-    """:param kwargs:
-             force_api_type: azure or openai or anthropic - force API type
-             json_mode: True if response_format=json_object, False if the text. Default is text
-             ... - pass to the chat object
-    :return:
+def chat_llm(
+    **kwargs,
+) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, ChatBedrock, MyChatOllama, ChatGoogleGenerativeAI]:
+    """Create a chat LLM instance based on configuration and parameters.
+
+    Creates and configures a chat model instance for the appropriate API provider.
+    Supports JSON mode for compatible APIs and applies global override settings.
+
+    Args:
+        **kwargs: Configuration parameters for the chat model
+            - force_api_type: Optional API type to force (azure, openai, anthropic, etc.)
+            - json_mode: If True, sets response_format=json_object (default: False)
+            - model: Required model name
+            - temperature: Optional temperature setting
+            - max_tokens: Optional maximum tokens setting
+            - Additional parameters passed to the chat model constructor
+
+    Returns:
+        Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, ChatBedrock, MyChatOllama, ChatGoogleGenerativeAI]:
+            Configured chat model instance
+
+    Raises:
+        KeyError: If 'model' is not provided in kwargs
+
     """
     force = kwargs.get("force_api_type", None)
     kwargs.pop("force_api_type", None)
@@ -193,11 +270,18 @@ def embedding(**kwargs) -> Embeddings:
     This function configures and returns an embedding object. It supports different API types
     and adjusts settings based on provided keyword arguments and predefined settings.
 
-    :param kwargs: Arbitrary keyword arguments for embedding configuration.
-                   - force_api_type: Optional; forces the use of a specific API type.
-                   - model: Required; specifies the model to be used for embeddings.
-    :return: An instance of the appropriate embedding class.
-    :raises KeyError: If 'model' is not provided in kwargs.
+    Args:
+        **kwargs: Configuration parameters for the embedding model
+            - force_api_type: Optional API type to force
+            - model: Required model name for embeddings
+            - Additional parameters passed to the embedding model constructor
+
+    Returns:
+        Embeddings: Configured embedding model instance
+
+    Raises:
+        KeyError: If 'model' is not provided in kwargs
+
     """
     # TODO: add support for fastembed
     force = kwargs.get("force_api_type", None)
@@ -219,13 +303,22 @@ def embedding(**kwargs) -> Embeddings:
     return embeddings[get_llm_type(force)](**kwargs)
 
 
-def llm_client(**kwargs) -> Union[OpenAI, AzureOpenAI]:
-    """:param kwargs:
-             force_api_type: azure or openai or anthropic - force API type
-             ... - pass to the chat object
-    :return:
+def llm_client(**kwargs) -> Union[OpenAI, AzureOpenAI, GoogleGenerativeAI]:
+    """Create a direct LLM client instance.
+
+    Creates a direct client for the appropriate API provider, bypassing LangChain.
+    Useful for direct API calls and fine-grained control.
+
+    Args:
+        **kwargs: Configuration parameters for the LLM client
+            - force_api_type: Optional API type to force
+            - Additional parameters passed to the client constructor
+
+    Returns:
+        Union[OpenAI, AzureOpenAI, GoogleGenerativeAI]: Configured LLM client instance
+
     """
-    force: Union[str, None] = kwargs.get("force_api_type", None)
+    force: Optional[Union[str, SUPPORTED_API_TYPE]] = kwargs.get("force_api_type", None)
     try:
         kwargs.pop("force_api_type")
     except KeyError:
