@@ -9,6 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class PostprocessDocstring(BaseSnippet):
+    """Specialized snippet for post-processing docstrings with proper indentation.
+
+    This class extends BaseSnippet to provide docstring-specific processing that
+    maintains proper indentation levels when generating or correcting docstrings.
+    """
+
     def calculate_indent(self, code: str) -> int:
         """Calculate the indentation level of the first non-empty line in the given code.
 
@@ -32,6 +38,7 @@ class PostprocessDocstring(BaseSnippet):
 
     def indent_code(self, lines: List[str], indent_level: int) -> str:
         """Indent the given code to the specified indent level.
+
         Each line will have the specified number of spaces prefixed.
 
         :param lines: List of code lines
@@ -55,8 +62,9 @@ class PostprocessDocstring(BaseSnippet):
         :return: The indented output of the executed query.
         """
         ret = super().run(query, **kwargs)
+        ret_str = str(ret) if not isinstance(ret, str) else ret
         indent_level = self.calculate_indent(query)
-        s_ret = ret.splitlines()
+        s_ret = ret_str.splitlines()
         id_start = 1 if "```" in s_ret[0] else 0
         id_stop = -1 if "```" in s_ret[-1] else None
         return self.indent_code(s_ret[id_start:id_stop], indent_level)
