@@ -45,7 +45,7 @@ class MyWolframAlphaQueryRun(WolframAlphaQueryRun):
         return cls(api_wrapper=api_wrapper)
 
 
-def init_wolfram_alpha(*args) -> BaseTool:
+def init_wolfram_alpha(*args) -> BaseTool:  # noqa: ARG001
     """Initialize a WolframAlpha query tool.
 
     :return: An instance of a WolframAlpha query tool.

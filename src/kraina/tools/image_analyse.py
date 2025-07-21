@@ -1,3 +1,9 @@
+"""Image analysis tool.
+
+This module provides functionality to analyze images using AI assistants.
+It supports both local files and URLs for image analysis.
+"""
+
 from pathlib import Path
 from typing import Dict
 
@@ -8,11 +14,16 @@ from kraina.libs.utils import convert_user_query
 
 
 class ImageAnalyseInput(BaseModel):
+    """Input schema for image analysis.
+
+    Defines the required input parameters for analyzing images.
+    """
+
     uri: str = Field(description="Image to analyse. It can be url or local file")
     prompt: str = Field(description="What to do, how to analyse the image")
 
 
-def image_analyse(uri: str, prompt: str, system_prompt: str = "", model: str = "A", force_api: str = None):
+def image_analyse(uri: str, prompt: str, system_prompt: str = "", model: str = "A", force_api: str | None = None):
     """Analyze an image using an assistant.
 
     If the URI is not a valid HTTP link, it checks if the file exists locally.
@@ -29,9 +40,9 @@ def image_analyse(uri: str, prompt: str, system_prompt: str = "", model: str = "
         if not Path(uri).exists():
             return f"'{uri}' file not exists"
         uri = f"file://{Path(uri).resolve()}"
-    from kraina.assistants.base import Assistant  # noqa
+    from kraina.assistants.assistant import BaseAssistant
 
-    llm = Assistant()
+    llm = BaseAssistant()
     llm.force_api = force_api
     llm.prompt = system_prompt
     llm.model = model

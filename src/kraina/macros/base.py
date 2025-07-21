@@ -25,12 +25,20 @@ class Macro:
 
 
 class Macros(Dict[str, Macro]):
-    """Base macros."""
+    """Base macros class for managing macro discovery and loading.
+
+    This class extends Dict to provide macro management functionality.
+    It automatically discovers and loads macro files from the macros directory.
+    """
 
     def __init__(self):
-        """Initialize macros.
+        """Initialize macros by discovering and loading macro files.
 
-        Iterate over all folders inside macros folder and also search in folders with file tag `.kraina-land`.
+        Iterate over all folders inside macros folder and also search in
+        folders with file tag `.kraina-land`. Macro files must contain a
+        `run()` function to be considered valid.
+
+        Example structure:
         macros/
         ├── pokemon_overview.py
         """

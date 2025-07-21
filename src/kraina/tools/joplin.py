@@ -1,3 +1,9 @@
+"""Joplin note search tool.
+
+This module provides functionality to search through Joplin notes using
+vector embeddings and semantic search capabilities.
+"""
+
 import json
 import os
 import pickle
@@ -17,6 +23,11 @@ from kraina.tools.base import logger
 
 
 class JoplinSearchInput(BaseModel):
+    """Input schema for Joplin note search.
+
+    Defines the required input parameters for searching Joplin notes.
+    """
+
     query: str = Field(
         description="Query the Joplin, a local note-taking app. The query must be short, well-structured for RAG"
     )
@@ -27,7 +38,7 @@ class JoplinSearchInput(BaseModel):
     )
 
 
-def joplin_search(query: str, k: int = 4, model: str = "embed", force_api: str = None):
+def joplin_search(query: str, k: int = 4, model: str = "embed", force_api: str | None = None):
     """Perform a search on Joplin notes using a specified language model.
 
     This function searches through Joplin notes, using embeddings to find the most relevant content.

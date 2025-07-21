@@ -1,3 +1,9 @@
+"""Text to text processing tool.
+
+This module provides functionality to read and process text content from
+local files or URLs, making it available for further processing.
+"""
+
 from pathlib import Path
 from typing import Dict
 
@@ -7,6 +13,11 @@ from pydantic import BaseModel, Field
 
 
 class TextToTextInput(BaseModel):
+    """Input schema for text to text processing.
+
+    Defines the required input parameters for reading text content.
+    """
+
     uri: str = Field(description="Read text content. Content can be local text file or URL from where content is fetch")
 
 
@@ -29,7 +40,7 @@ def text_to_text(uri: str):
             return fd.read()
 
 
-def init_text_to_text(tool_setting: Dict) -> BaseTool:
+def init_text_to_text(tool_setting: Dict) -> BaseTool:  # noqa: ARG001
     """Initialize the text-to-text tool with the given settings.
 
     This function sets up a StructuredTool using the text_to_text function

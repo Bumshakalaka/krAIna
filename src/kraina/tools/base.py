@@ -1,3 +1,10 @@
+"""Base module for tool initialization and management.
+
+This module provides functionality to dynamically load and initialize tools
+that can be used by assistants. It handles tool discovery, configuration,
+and instantiation.
+"""
+
 import logging
 from pathlib import Path
 from typing import List

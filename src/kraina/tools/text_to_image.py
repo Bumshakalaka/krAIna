@@ -1,3 +1,9 @@
+"""Text to image generation tool.
+
+This module provides functionality to generate images from text descriptions
+using AI models like DALL-E. It supports various image sizes and formats.
+"""
+
 from typing import Dict, Literal
 
 from aenum import Enum
@@ -8,7 +14,12 @@ import kraina.libs.images as images
 from kraina.libs.llm import llm_client, map_model
 
 
-class ImageSize(Enum):
+class ImageSize(Enum):  # type: ignore
+    """Enumeration of available image sizes for generation.
+
+    Defines the supported image sizes and their descriptions.
+    """
+
     _init_ = "value __doc__"
     SMALL_SQUARE = "SMALL_SQUARE", "256x256 resolution"
     MEDIUM_SQUARE = "MEDIUM_SQUARE", "512x512 resolution"
@@ -42,21 +53,26 @@ GENERATOR_PROPS = {
 
 
 class TextToImageInput(BaseModel):
+    """Input schema for text to image generation.
+
+    Defines the required input parameters for generating images from text.
+    """
+
     query: str = Field(description="Image description")
     size: ImageSize = Field(
         ImageSize.SMALL_SQUARE, description="Size of the image to generate, default is SMALL_SQUARE"
-    )
+    )  # type: ignore
     no_of_images: int = Field(1, description="How many image to generate")
 
 
 def text_to_image(
     query: str,
     size: (
-        ImageSize | Literal["SMALL_SQUARE", "MEDIUM_SQUARE", "LARGE_SQUARE", "LARGE_LANDSCAPE", "LARGE_PORTRAIT"]
+        ImageSize | Literal["SMALL_SQUARE", "MEDIUM_SQUARE", "LARGE_SQUARE", "LARGE_LANDSCAPE", "LARGE_PORTRAIT"]  # type: ignore  # noqa: F821
     ) = ImageSize.SMALL_SQUARE,
     no_of_images: int = 1,
     model: str = "dall-e-3",
-    force_api: str = None,
+    force_api: str | None = None,
 ):
     """Generate images from a text query using a specified model and size.
 
@@ -68,8 +84,7 @@ def text_to_image(
     :param no_of_images: The number of images to generate, default is 1.
     :param model: The model to use for image generation, default is "dall-e-3".
     :param force_api: Optional parameter to force a specific API type (openai, azure).
-    :return: A string containing markdown formatted image links with their prompts.
-    :raises Exception: If image generation fails or an invalid parameter is provided.
+    :return: A string containing markdown formatted images with descriptions.
     """
     client = llm_client(force_api_type=force_api)
 
@@ -85,9 +100,13 @@ def text_to_image(
     # download and convert images into data uri
     # they can be stored in database but - big image == 5MB or more of data
     ret = []
-    for i in range(no_of_images):
-        img = images.chat_images.create_from_url(response.data[i].url, None, False)
-        ret.append(f"![{img}]({images.chat_images.get_file_url(img)})\n\nPrompt: `{response.data[i].revised_prompt}`")
+    if response.data:
+        for i in range(min(no_of_images, len(response.data))):
+            data_item = response.data[i]
+            if data_item and data_item.url:
+                img = images.chat_images.create_from_url(data_item.url, "", False)
+                revised_prompt = getattr(data_item, "revised_prompt", query)
+                ret.append(f"![{img}]({images.chat_images.get_file_url(img)})\n\nPrompt: `{revised_prompt}`")
     return "\n\n".join(ret)
 
 
