@@ -19,12 +19,15 @@ class Assistants(Dict[str, BaseAssistant]):
     def __init__(self):
         """Initialize assistants.
 
-        Iterate over all folders inside assistants folder and also search in folders with file tag `.kraina-land`.
+        Iterate over all folders inside assistants folder and also search in folders
+        with file tag `.kraina-land`.
+
         assistants/
         ├── fix
         │     ├── prompt.md - assistant system prompt, required
         │     ├── config.yaml - assistant settings, optional
-        │     ├── py_module.py - overwrite default behaviour of assistant, specialisation - must be defined in model.yaml
+        │     ├── py_module.py - overwrite default behaviour of assistant,
+        │         specialisation - must be defined in model.yaml
         """
         super().__init__()
         assistant_sets = find_assets("assistants", Path(__file__).parent)
@@ -47,7 +50,8 @@ class Assistants(Dict[str, BaseAssistant]):
                         settings["tools"] = [x.lower() for x in settings["tools"]]
                         if not set(settings["tools"]).issubset(get_available_tools()):
                             raise KeyError(
-                                f"[{assistant.name}] One of the tools={settings['tools']} is unsupported. Supported tools: {get_available_tools()}"
+                                f"[{assistant.name}] One of the tools={settings['tools']} is "
+                                f"unsupported. Supported tools: {get_available_tools()}"
                             )
                         settings["type"] = AssistantType.WITH_TOOLS
                     contexts = []
@@ -91,4 +95,4 @@ class Assistants(Dict[str, BaseAssistant]):
                 self[assistant.name] = assistant_cls(name=assistant.name, path=assistant, prompt=prompt, **settings)
 
 
-Assistant: TypeAlias = BaseAssistant
+A: TypeAlias = BaseAssistant

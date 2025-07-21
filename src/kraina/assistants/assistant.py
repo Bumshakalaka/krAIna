@@ -42,13 +42,13 @@ class AssistantType(enum.Enum):
 class AssistantResp:
     """Assistant response dataclass."""
 
-    conv_id: Union[int, None]
+    conv_id: Optional[int]
     """conversion ID"""
     content: Union[str, Type[BaseModel]]
     """LLM Response"""
     tokens: Dict[str, int]
     """LLM token usage in Dict"""
-    error: Union[str, None] = None
+    error: Optional[str] = None
     """LLM error string"""
 
 
@@ -74,17 +74,17 @@ class BaseAssistant:
     """Set of callbacks for assistant with tools"""
     type: AssistantType = AssistantType.SIMPLE  # simple, with_tools
     """Type of assistant"""
-    tools: List[str] = None
+    tools: Optional[List[str]] = None
     """Tools to use"""
-    force_api: str = None  # azure, openai, anthropic
+    force_api: Optional[str] = None  # azure, openai, anthropic
     """Force to use azure or openai or anthropic"""
-    contexts: List[str] = None
+    contexts: Optional[List[str]] = None
     """List of additional contexts to be added to system prompt"""
-    path: Path = None
+    path: Optional[Path] = None
     """Path to the assistant folder."""
     json_mode: bool = False
     """Force LLM to output in json_object format"""
-    pydantic_output: Type[BaseModel] = None
+    pydantic_output: Optional[Type[BaseModel]] = None
     """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
     __buildin__: bool = False
     """If True, assistant is built-in and cannot be removed"""
@@ -100,6 +100,7 @@ class BaseAssistant:
 
     @property
     def encoding(self) -> Encoding:
+        """Get the encoding for the model."""
         try:
             return encoding_for_model(self.model)
         except KeyError:
@@ -107,27 +108,29 @@ class BaseAssistant:
 
     @property
     def model(self) -> str:
+        """Get the mapped model name."""
         return map_model(self._model, self.force_api)
 
     @model.setter
     def model(self, value: str):
+        """Set the model name."""
         self._model = value
 
     @lru_cache(maxsize=256)
     def _calc_tokens(self, text) -> int:
         """Calculate number of tokens from text.
 
-        :param text:
-        :return:
+        :param text: Input text to calculate tokens for
+        :return: Number of tokens
         """
         return len(self.encoding.encode(text))
 
-    def tokens_used(
-        self, conv_id: Union[int, None] = None, hist: Union[List[BaseMessage], None] = None
-    ) -> Dict[str, int]:
-        """:param conv_id: Conversation Id. If None, only number of tokens per prompts are returned
+    def tokens_used(self, conv_id: Optional[int] = None, hist: Optional[List[BaseMessage]] = None) -> Dict[str, int]:
+        """Calculate tokens used for conversation.
+
+        :param conv_id: Conversation Id. If None, only number of tokens per prompts are returned
         :param hist: Use provided conversation history or get from db is None
-        :return: Dict
+        :return: Dict with token usage information
         """
         ret = {
             "api": {
@@ -145,8 +148,8 @@ class BaseAssistant:
             else:
                 # list of dicts
                 for el in msg.content:
-                    if el["type"] == "text":
-                        msgs.append(el["text"])
+                    if isinstance(el, dict) and el.get("type") == "text":
+                        msgs.append(el.get("text", ""))
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
         if self.tools:
             for tool in get_and_init_tools(self.tools, self):
@@ -154,7 +157,12 @@ class BaseAssistant:
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
 
-    def _get_history(self, conv_id: Union[int, None] = None) -> List[BaseMessage]:
+    def _get_history(self, conv_id: Optional[int] = None) -> List[BaseMessage]:
+        """Get conversation history from database.
+
+        :param conv_id: Conversation ID to retrieve history for
+        :return: List of base messages from conversation history
+        """
         ai_db = Db()
         if conv_id is None:
             return []
@@ -163,10 +171,10 @@ class BaseAssistant:
         hist = []
         for message in ai_db.get_conversation(conv_id).messages:
             if message.type == LlmMessageType.HUMAN:
-                hist.append(HumanMessage(content=self._format_message(message.message)))
+                hist.append(HumanMessage(content=self._format_message(message.message)))  # type: ignore
             elif message.type == LlmMessageType.AI:
                 # Do not append TOOL messages
-                hist.append(AIMessage(content=self._format_message(message.message, image_data=False)))
+                hist.append(AIMessage(content=self._format_message(message.message, image_data=False)))  # type: ignore
         return hist
 
     @staticmethod
@@ -177,8 +185,9 @@ class BaseAssistant:
         message into text and image segments. Each segment is stored in a dictionary with
         keys indicating the type of content.
 
-        :param msg: The input message string containing text and image markdown.
-        :return: A list of dictionaries representing formatted message segments.
+        :param msg: The input message string containing text and image markdown
+        :param image_data: Whether to include image data in the formatted output
+        :return: A list of dictionaries representing formatted message segments
         """
         # Handle empty messages
         if not msg:
@@ -198,13 +207,13 @@ class BaseAssistant:
             content.append(dict(type="text", text=msg[start_idx:]))
         return content
 
-    def run(self, query: str, use_db=True, conv_id: Union[int, None] = None, **kwargs) -> AssistantResp:
+    def run(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
         """Query LLM as assistant.
 
         Assistant uses the database to handle chat history.
 
-        :param query: Text which is passed as Human text to LLM chat.
-        :param use_db: Use long-term memory of not. Default is True.
+        :param query: Text which is passed as Human text to LLM chat
+        :param use_db: Use long-term memory of not. Default is True
         :param conv_id: Conversation ID. If None, new conversation is started
         :param kwargs: Additional key-value pairs to substitute in System prompt
         :return: AssistantResp dataclass
@@ -234,18 +243,31 @@ class BaseAssistant:
             ret = self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
         if isinstance(ret, list):
             # anthropic returns here list of dict(text, index, type)
-            ret = ret[0]["text"]
+            if ret and isinstance(ret[0], dict) and "text" in ret[0]:
+                ret = ret[0]["text"]  # type: ignore
+            else:
+                ret = str(ret)
         used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
 
-        ai_db.add_message(LlmMessageType.AI, ret) if ai_db else None
+        if ai_db:
+            ai_db.add_message(LlmMessageType.AI, ret)
         logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
-        return AssistantResp(
-            conv_id, self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret, used_tokens
-        )
+        content = self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret
+        return AssistantResp(conv_id, content, used_tokens)  # type: ignore
 
-    def _run_simple_assistant(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:
-        """Run a simple assistant query."""
+    def _run_simple_assistant(
+        self, query: str, hist: List, _ai_db: Optional[Db], _tokens: Dict[str, int], **kwargs
+    ) -> str:
+        """Run a simple assistant query.
+
+        :param query: User query string
+        :param hist: Conversation history
+        :param ai_db: Database instance for conversation storage
+        :param tokens: Token usage tracking
+        :param kwargs: Additional keyword arguments for prompt formatting
+        :return: Assistant response string
+        """
         chat = chat_llm(
             force_api_type=self.force_api,
             model=self.model,
@@ -257,7 +279,7 @@ class BaseAssistant:
             [
                 ("system", self.prompt),
                 MessagesPlaceholder("hist", optional=True),
-                HumanMessage(content=self._format_message(query)),
+                HumanMessage(content=self._format_message(query)),  # type: ignore
             ]
         )
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
@@ -270,8 +292,18 @@ class BaseAssistant:
             },
         ).content
 
-    def _run_assistant_with_tools(self, query: str, hist: List, ai_db: Db, tokens, **kwargs) -> str:
-        """Run an assistant with the tools query."""
+    def _run_assistant_with_tools(
+        self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
+    ) -> str:
+        """Run an assistant with the tools query.
+
+        :param query: User query string
+        :param hist: Conversation history
+        :param ai_db: Database instance for conversation storage
+        :param tokens: Token usage tracking
+        :param kwargs: Additional keyword arguments for prompt formatting
+        :return: Assistant response string
+        """
         llm = chat_llm(
             force_api_type=self.force_api,
             model=self.model,
@@ -283,7 +315,7 @@ class BaseAssistant:
             [
                 ("system", self.prompt),
                 MessagesPlaceholder("chat_history", optional=True),
-                HumanMessage(content=self._format_message(query)),
+                HumanMessage(content=self._format_message(query)),  # type: ignore
                 MessagesPlaceholder("agent_scratchpad"),
             ]
         )
@@ -291,7 +323,7 @@ class BaseAssistant:
         if hist:
             kwargs["chat_history"] = hist
         tokens["tools"] = 0
-        tools = get_and_init_tools(self.tools, self)
+        tools = get_and_init_tools(self.tools or [], self)
         agent = create_tool_calling_agent(llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
         chunks = []
@@ -304,8 +336,10 @@ class BaseAssistant:
                     if action_msg_id != message.id:
                         action_msg_id = message.id
                         tokens["output"] += len(self.encoding.encode(message.content)) + ADDITIONAL_TOKENS_PER_MSG
-                        ai_db.add_message(LlmMessageType.AI, message.content) if ai_db else None
-                        self.callbacks["ai_observation"](message.content) if self.callbacks["ai_observation"] else None
+                        if ai_db:
+                            ai_db.add_message(LlmMessageType.AI, message.content)
+                        if self.callbacks["ai_observation"]:
+                            self.callbacks["ai_observation"](message.content)
                 for action in chunk["actions"]:
                     tokens["tools"] += (
                         len(
@@ -326,18 +360,23 @@ class BaseAssistant:
                         + ADDITIONAL_TOKENS_PER_MSG
                     )
                     msg = f"Invoking Tool: '{action.tool}' with input '{action.tool_input}'"
-                    ai_db.add_message(LlmMessageType.TOOL, msg) if ai_db else None
-                    self.callbacks["action"](msg) if self.callbacks["action"] else None
+                    if ai_db:
+                        ai_db.add_message(LlmMessageType.TOOL, msg)
+                    if self.callbacks["action"]:
+                        self.callbacks["action"](msg)
             # Observation
             elif "steps" in chunk:
                 for step in chunk["steps"]:
                     tokens["tools"] += len(self.encoding.encode(step.observation)) + ADDITIONAL_TOKENS_PER_MSG
                     msg = f"Tool Result: `{step.observation}`"
-                    ai_db.add_message(LlmMessageType.TOOL, msg) if ai_db else None
-                    self.callbacks["observation"](msg) if self.callbacks["observation"] else None
+                    if ai_db:
+                        ai_db.add_message(LlmMessageType.TOOL, msg)
+                    if self.callbacks["observation"]:
+                        self.callbacks["observation"](msg)
             # Final result
             elif "output" in chunk:
-                self.callbacks["output"](chunk["output"]) if self.callbacks["output"] else None
+                if self.callbacks["output"]:
+                    self.callbacks["output"](chunk["output"])
             else:
                 raise ValueError
         return chunks[-1]["output"]
