@@ -8,7 +8,7 @@ UNSUPPORTED = {
     "CF_BITMAP": 2,
     "CF_DIB": 8,
     "CF_DIBV5": 17,
-    "CF_DIF": 5,ST
+    "CF_DIF": 5,
     "CF_DSPBITMAP": 0x0082,
     "CF_DSPENHMETAFILE": 0x008E,
     "CF_DSPMETAFILEPICT": 0x0083,

@@ -67,19 +67,63 @@ jobs:
             dist/kraina_cli
           retention-days: 30
 
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Create virtual environment
+        run: |
+          python -m venv .venv
+
+      - name: Install dependencies
+        run: |
+          .venv\Scripts\activate
+          python -m pip install --upgrade pip
+          pip install pyinstaller-hooks-contrib==2025.5
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build standalone executables
+        run: |
+          .venv\Scripts\activate
+          .\build_standalone.bat
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kraina-windows-x64
+          path: |
+            dist/kraina_app.exe
+            dist/kraina_cli.exe
+          retention-days: 30
+
   release:
-    needs: build-linux
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     permissions:
       contents: write
 
     steps:
-      - name: Download artifacts
+      - name: Download Linux artifacts
         uses: actions/download-artifact@v4
         with:
           name: kraina-linux-x64
-          path: artifacts
+          path: artifacts/linux
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kraina-windows-x64
+          path: artifacts/windows
 
       - name: Display structure of downloaded files
         run: |
@@ -90,7 +134,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/kraina_app
-            artifacts/kraina_cli
+            artifacts/linux/kraina_app
+            artifacts/linux/kraina_cli
+            artifacts/windows/kraina_app.exe
+            artifacts/windows/kraina_cli.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
