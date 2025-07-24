@@ -35,7 +35,8 @@ def run_app_and_cmd(args=None):
         # proc_exe = subprocess.Popen(<Your executable path>, shell=True)
         # proc_exe.send_signal(subprocess.signal.SIGTERM)
         if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-            kraina_app_path = Path(sys.argv[0]).parent.resolve() / "kraina_app"
+            kraina_app_name = "kraina_app.exe" if sys.platform == "win32" else "kraina_app"
+            kraina_app_path = Path(sys.argv[0]).parent.resolve() / kraina_app_name
             if not kraina_app_path.exists():
                 raise FileNotFoundError(f"Kraina app not found at {kraina_app_path}")
             subprocess.Popen([str(kraina_app_path)], start_new_session=True)
@@ -43,7 +44,7 @@ def run_app_and_cmd(args=None):
             subprocess.Popen([sys.executable, Path(__file__).parent / "kraina_app.py"], start_new_session=True)
         # Try to connect to just started application to use IPC
         start = time.time()
-        while time.time() <= start + 15.0:
+        while time.time() <= start + 45.0:
             try:
                 run_cmd(args)
             except ConnectionRefusedError:

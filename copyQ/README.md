@@ -59,8 +59,10 @@ To import these actions into CopyQ:
 3. Edit snippet:
    * Adjust the path to your needs:
     ``` js
-   // Set KrAIna installation folder in your home folder 
-   var kraina_dir = '/Documents/krAIna/';
+   // Set KrAIna CLI app path releated to user home directory
+   // for linux use slash /, for windows use double backslash \\
+   // e.g. '/tools/krAIna/' for linux, '\\tools\\krAIna\\' for windows
+   var kraina_app = '/tools/krAIna/';
    ```
    * Change or remove shortcuts if needed (global shortcut ALT+SHIFT+1, CopyQ shortcut ALT+RETURN).
 4. Save and that's all.

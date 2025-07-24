@@ -2,7 +2,7 @@
 
 # KrAIna - AI-Powered Tools for Everyday Use
 
-![os](https://badgen.net/badge/Windows/planned/yellow)
+![os](https://badgen.net/badge/Windows/supported/green)
 ![os](https://badgen.net/badge/Linux/supported/green)
 ![os](https://badgen.net/badge/Python/3.10|3.11|3.12/blue)
 
@@ -379,7 +379,7 @@ LANGFUSE_HOST=https://cloud.langfuse.com
 ### Development Installation
 
 **Requirements:**
-- Python >= 3.10 + IDLE (Tk GUI)
+- Python >= 3.10 + IDLE (Tk GUI) < 3.13
 - Python venv package  
 - Git
 
@@ -387,9 +387,16 @@ LANGFUSE_HOST=https://cloud.langfuse.com
 ```bash
 # Clone and setup
 git clone <repository>
-cd krAIna
+cd krAIna/
+
+## Linux
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -e .
+
+## Windows
+python -m venv .venv
+.venv\Scripts\activate
 pip install -e .
 
 # Run from source
@@ -402,11 +409,15 @@ python app/kraina_cli.py --help
 ```bash
 # Linux
 ./build_standalone.sh
+# Windows
+./build_standalone.bat
 ```
 
 **Build Output:**
-- `dist/kraina_app` - GUI executable (~110MB)
-- `dist/kraina_cli` - CLI executable (~11MB)
+- `dist/kraina_app` - GUI executable (~110MB) for Linux
+- `dist/kraina_app.exe` - GUI executable (~90MB) for Windows
+- `dist/kraina_cli` - CLI executable (~11MB) for Linux
+- `dist/kraina_cli.exe` - CLI executable (~9MB) for Windows
 - Self-contained with all dependencies
 - No Python installation required on target systems
 
