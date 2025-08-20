@@ -37,6 +37,6 @@ class Response(BaseSnippet):
                 "image_url": {"url": f"data:image/png;base64,{base64_image}"},
             },
         ]
-        ret = chat.invoke([HumanMessage(content=content)])
+        ret = chat.invoke([HumanMessage(content=content)])  # type: ignore
         logger.info(f"{self.name}: ret={ret}")
-        return ret.content
+        return ret.content  # type: ignore

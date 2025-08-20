@@ -74,7 +74,7 @@ class AppHost(threading.Thread):
         while True:
             logger.debug("waiting for connection")
             client = self._host.wait_for_client()  # blocking
-            if client.poll(None):  # blocking
+            if client.poll(None):  # type: ignore # blocking
                 q = queue.Queue(maxsize=1)
                 if self.dispatcher(client.receive(return_on_error=True), q):
                     logger.debug("command posted, waiting for execution")

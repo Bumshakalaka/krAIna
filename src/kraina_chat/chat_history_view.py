@@ -102,7 +102,7 @@ class TextChatView(ScrolledText, ChatView):
         self.tag_config("AI_end")
         self.tag_config("TOOL", lmargin1=10, lmargin2=10, foreground="#DCBF85")
         self.tag_config("TOOL_prefix")
-        self.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+        self.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)  # type: ignore
         self.tag_config("IMAGES")
         self.tag_bind("IMAGES", "<Button-1>", self._show_image)
         self.tag_bind("IMAGES", "<Enter>", self._enter_hyper)
@@ -278,10 +278,10 @@ class HtmlChatView(HtmlFrame, ChatView):
         self.root = parent.master.master
         theme = ttk.Style().theme_use()
         if "dark" in theme:
-            self.html.default_style = LIGHTTHEME + DARKTHEME
+            self.html.default_style = LIGHTTHEME + DARKTHEME  # type: ignore
             self.html.update_default_style()
         else:
-            self.html.default_style = LIGHTTHEME
+            self.html.default_style = LIGHTTHEME  # type: ignore
             self.html.update_default_style()
 
         self.cols = parent.cols
@@ -334,10 +334,10 @@ class HtmlChatView(HtmlFrame, ChatView):
         :param theme: The new theme name
         """
         if "dark" in theme:
-            self.html.default_style = LIGHTTHEME + DARKTHEME
+            self.html.default_style = LIGHTTHEME + DARKTHEME  # type: ignore
             self.html.update_default_style()
         else:
-            self.html.default_style = LIGHTTHEME
+            self.html.default_style = LIGHTTHEME  # type: ignore
             self.html.update_default_style()
         self.cols = {
             "HUMAN": self.root.get_theme_color("accent"),

@@ -31,7 +31,7 @@ from kraina.libs.paths import STORE_PATH_IMAGES
 logger = logging.getLogger(__name__)
 
 
-class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
+class ChatImages(Dict[str, ImageTk.PhotoImage | str | None]):
     """A dictionary-like class to manage images in a chat application.
 
     This class extends a dictionary to store images with unique keys generated from file paths
@@ -248,10 +248,11 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             fd.seek(0)
             return fd.name
 
-    def get(self, img: str) -> Union[ImageTk.PhotoImage, str, None]:
+    def get(self, img: str, default=None) -> Union[ImageTk.PhotoImage, str, None]:  # noqa: ARG002
         """Get an image from the dictionary, checking storage if not in memory.
 
         :param img: The image identifier
+        :param default: The default value to return if the image is not found
         :return: The image if found, None if not found
         """
         # First check if image exists in memory

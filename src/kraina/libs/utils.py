@@ -468,7 +468,7 @@ def grabclipboard():
                 msg += f": {stderr.strip().decode()}"
             raise ChildProcessError(msg)
 
-        data = io.BytesIO(stdout)
+        data = io.BytesIO(stdout)  # type: ignore
         im = Image.open(data)
         im.load()
         return im

@@ -290,7 +290,7 @@ class BaseAssistant:
             config={
                 "callbacks": [langfuse_handler],
             },
-        ).content
+        ).content  # type: ignore
 
     def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs

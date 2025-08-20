@@ -44,7 +44,7 @@ def audio_to_text(uri: str, model: str = "whisper-1", force_api: str | None = No
         return f"'{uri}' file not exists"
     client = llm_client(force_api_type=force_api)
     with open(uri, "rb") as fd:
-        response = client.audio.transcriptions.create(
+        response = client.audio.transcriptions.create(  # type: ignore
             model=model,
             file=fd,
         )

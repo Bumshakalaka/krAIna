@@ -69,7 +69,7 @@ def text_to_image(
     query: str,
     size: (
         ImageSize | Literal["SMALL_SQUARE", "MEDIUM_SQUARE", "LARGE_SQUARE", "LARGE_LANDSCAPE", "LARGE_PORTRAIT"]  # type: ignore  # noqa: F821
-    ) = ImageSize.SMALL_SQUARE,
+    ) = ImageSize.SMALL_SQUARE,  # type: ignore
     no_of_images: int = 1,
     model: str = "dall-e-3",
     force_api: str | None = None,
@@ -89,7 +89,7 @@ def text_to_image(
     client = llm_client(force_api_type=force_api)
 
     generator = "DALLE2" if "2" in model else "DALLE3"
-    response = client.images.generate(
+    response = client.images.generate(  # type: ignore
         model=map_model(model, force_api),
         prompt=query,
         n=1 if GENERATOR_PROPS[generator]["MULTIPLE_IMAGES"] else no_of_images,

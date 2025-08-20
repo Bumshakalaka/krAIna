@@ -525,7 +525,7 @@ SPAN[spancontent]:after {
 IFRAME[frameborder]{
   border-width: attr(frameborder l);
 }
-"""
+"""  # noqa: E501
 """CSS stylesheet for light theme HTML rendering."""
 
 DARKTHEME = """

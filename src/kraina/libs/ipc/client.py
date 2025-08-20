@@ -60,9 +60,11 @@ class AppClient:
         self._conn.send(to_send)
         ret = None
         if self._conn.poll(30.0):
-            resp = self._conn.receive().split("|")
-            if resp[-1] not in ["ACK", ""]:
-                ret = str(resp[-1])
+            resp = self._conn.receive()
+            if resp:
+                resp = resp.split("|")
+                if resp[-1] not in ["ACK", ""]:
+                    ret = str(resp[-1])
         return ret
 
     def send(self, command: str, *args) -> Union[str, None]:

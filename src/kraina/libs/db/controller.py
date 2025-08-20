@@ -196,14 +196,15 @@ class Db:
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
         with Session(self.engine) as s:
             conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            conv_obj.messages.append(
-                Messages(
-                    type=message_type,
-                    message=message.strip(),
-                    create_at=datetime.datetime.now(),
+            if conv_obj:
+                conv_obj.messages.append(
+                    Messages(
+                        type=message_type,
+                        message=message.strip(),
+                        create_at=datetime.datetime.now(),
+                    )
                 )
-            )
-            s.commit()
+                s.commit()
 
     def add_messages(self, messages: List[Tuple[LlmMessageType, str]], conv_id: Union[int, None] = None):
         """Add a list of messages to the conversation.
@@ -217,12 +218,13 @@ class Db:
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
         with Session(self.engine) as s:
             conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            for message in messages:
-                conv_obj.messages.append(
-                    Messages(
-                        type=message[0],
-                        message=message[1].strip(),
-                        create_at=datetime.datetime.now(),
+            if conv_obj:
+                for message in messages:
+                    conv_obj.messages.append(
+                        Messages(
+                            type=message[0],
+                            message=message[1].strip(),
+                            create_at=datetime.datetime.now(),
+                        )
                     )
-                )
-            s.commit()
+                s.commit()

@@ -441,8 +441,8 @@ class UserQuery(ttk.Frame):
 
         f.pack(side=tk.TOP, fill=tk.X)
         self.block_events = 0
-        self.drop_target_register(DND_FILES)
-        self.dnd_bind("<<Drop>>", self._dnd_drop)
+        self.drop_target_register(DND_FILES)  # type: ignore
+        self.dnd_bind("<<Drop>>", self._dnd_drop)  # type: ignore
 
     def _enter_hyper(self, event):  # noqa: ARG002
         """Change cursor to hand when hovering over hyperlinks.

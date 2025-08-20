@@ -146,6 +146,6 @@ class BaseSnippet:
                 ("human", "{text}"),
             ]
         )
-        ret = self.invoke(chat, prompt, text=query, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)
+        ret = self.invoke(chat, prompt, text=query, date=datetime.now().strftime("%Y-%m-%d"), **kwargs)  # type: ignore
         logger.info(f"{self.name}: ret={str(ret)[0:80]}")
         return self.pydantic_output.model_validate_json(ret.content) if self.pydantic_output else ret.content  # type: ignore
