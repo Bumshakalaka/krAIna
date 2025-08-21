@@ -86,7 +86,6 @@ class StatusBar(tk.Frame):
             y_offset=-50,
             x_offset=-150,
         )
-        ttk.Sizegrip(self).pack(side=tk.RIGHT, fill=tk.BOTH)
         self.dbg_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.macro_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.label_api.pack(side=tk.RIGHT, fill=tk.BOTH)
