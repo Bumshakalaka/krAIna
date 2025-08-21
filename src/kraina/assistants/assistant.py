@@ -10,10 +10,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Type, Union
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
 from tiktoken import Encoding, encoding_for_model, get_encoding
 
@@ -292,6 +292,26 @@ class BaseAssistant:
             },
         ).content  # type: ignore
 
+    def _last_agent_step(self, response_metadata: Dict) -> bool:
+        """Determine if the agent's response indicates the last step in a sequence.
+
+        This method checks the response metadata for specific keys that indicate
+        a finishing reason and returns True if the reason matches predefined stop signals.
+
+        :param response_metadata: A dictionary containing metadata about the agent's response.
+        :return: True if the response indicates the last step, False otherwise.
+        """
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            if reason in response_metadata:
+                finish_reason: str = response_metadata[reason]
+                break
+        else:
+            finish_reason = "unknown"
+        stop_str = ["stop", "end_turn", "stop_sequence"]
+        # TODO: check other LLM providers
+        logger.info(response_metadata)
+        return finish_reason in stop_str
+
     def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
     ) -> str:
@@ -311,72 +331,74 @@ class BaseAssistant:
             max_tokens=float(self.max_tokens),
             json_mode=self.json_mode,
         )
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self.prompt),
-                MessagesPlaceholder("chat_history", optional=True),
-                HumanMessage(content=self._format_message(query)),  # type: ignore
-                MessagesPlaceholder("agent_scratchpad"),
-            ]
-        )
+
+        # Prepare prompt string with date substitution for LangGraph
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
-        if hist:
-            kwargs["chat_history"] = hist
+        prompt_string = self.prompt.format(**kwargs)
+
         tokens["tools"] = 0
         tools = get_and_init_tools(self.tools or [], self)
-        agent = create_tool_calling_agent(llm, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
+
+        # Create LangGraph agent
+        agent_executor = create_react_agent(llm, tools, prompt=prompt_string)
+
+        # Convert input format from kwargs to LangGraph messages format
+        messages = []
+        if hist:
+            messages.extend(hist)
+        # Handle multimodal content properly
+        formatted_query = self._format_message(query)
+        if len(formatted_query) == 1 and formatted_query[0].get("type") == "text":
+            # Simple text message
+            messages.append(HumanMessage(content=formatted_query[0]["text"]))
+        else:
+            # Multimodal content - cast to proper type
+            messages.append(HumanMessage(content=formatted_query))  # type: ignore
+
+        # Use LangGraph streaming for compatibility with callbacks
         chunks = []
-        action_msg_id = ""
-        for chunk in agent_executor.stream(kwargs, config={"callbacks": [langfuse_handler]}):
+        final_response = ""
+        for chunk in agent_executor.stream({"messages": messages}, config={"callbacks": [langfuse_handler]}):
             chunks.append(chunk)
-            # Agent Action
-            if "actions" in chunk:
-                for message in chunk["messages"]:
-                    if action_msg_id != message.id:
-                        action_msg_id = message.id
-                        tokens["output"] += len(self.encoding.encode(message.content)) + ADDITIONAL_TOKENS_PER_MSG
-                        if ai_db:
-                            ai_db.add_message(LlmMessageType.AI, message.content)
-                        if self.callbacks["ai_observation"]:
-                            self.callbacks["ai_observation"](message.content)
-                for action in chunk["actions"]:
-                    tokens["tools"] += (
-                        len(
-                            self.encoding.encode(
-                                str(
-                                    dict(
-                                        function=dict(
-                                            arguments=action.tool_input,
-                                            name=action.tool,
-                                            id=action.tool_call_id,
-                                            index=0,
-                                            type="function",
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                        + ADDITIONAL_TOKENS_PER_MSG
-                    )
-                    msg = f"Invoking Tool: '{action.tool}' with input '{action.tool_input}'"
-                    if ai_db:
-                        ai_db.add_message(LlmMessageType.TOOL, msg)
-                    if self.callbacks["action"]:
-                        self.callbacks["action"](msg)
-            # Observation
-            elif "steps" in chunk:
-                for step in chunk["steps"]:
-                    tokens["tools"] += len(self.encoding.encode(step.observation)) + ADDITIONAL_TOKENS_PER_MSG
-                    msg = f"Tool Result: `{step.observation}`"
+
+            if "agent" in chunk:
+                for message in chunk["agent"]["messages"]:
+                    if isinstance(message, AIMessage):
+                        # Handle AI messages (reasoning/tool calls)
+                        if message.content:
+                            # Convert content to string for token counting and storage
+                            content_str = message.content if isinstance(message.content, str) else str(message.content)
+                            tokens["output"] += len(self.encoding.encode(content_str)) + ADDITIONAL_TOKENS_PER_MSG
+                            if ai_db:
+                                ai_db.add_message(LlmMessageType.AI, content_str)
+                            if self.callbacks["ai_observation"] and not self._last_agent_step(
+                                message.response_metadata
+                            ):
+                                self.callbacks["ai_observation"](content_str)
+                            final_response = content_str
+
+                        # Handle tool calls
+                        if hasattr(message, "tool_calls") and message.tool_calls:
+                            for tool_call in message.tool_calls:
+                                tokens["tools"] += len(self.encoding.encode(str(tool_call))) + ADDITIONAL_TOKENS_PER_MSG
+                                msg = f'Invoking Tool: "{tool_call["name"]}" with input "{tool_call["args"]}"'
+                                if ai_db:
+                                    ai_db.add_message(LlmMessageType.TOOL, msg)
+                                if self.callbacks["action"]:
+                                    self.callbacks["action"](msg)
+            elif "tools" in chunk:
+                for message in chunk["tools"]["messages"]:
+                    # Handle tool results (ToolMessage)
+                    content_str = message.content if isinstance(message.content, str) else str(message.content)
+                    tokens["tools"] += len(self.encoding.encode(content_str)) + ADDITIONAL_TOKENS_PER_MSG
+                    msg = f"Tool Result: `{content_str}`"
                     if ai_db:
                         ai_db.add_message(LlmMessageType.TOOL, msg)
                     if self.callbacks["observation"]:
                         self.callbacks["observation"](msg)
-            # Final result
-            elif "output" in chunk:
-                if self.callbacks["output"]:
-                    self.callbacks["output"](chunk["output"])
-            else:
-                raise ValueError
-        return chunks[-1]["output"]
+
+        # Trigger final output callback
+        if self.callbacks["output"]:
+            self.callbacks["output"](final_response)
+
+        return final_response
