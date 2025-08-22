@@ -59,8 +59,17 @@ chat:
 assistants:
   # assistants settings
   # assistant name:
-  #    settings
-  # aren't implemented yet
+  #    tools: assistant tools
+  samantha:
+    tools:
+      - text-to-image
+      - vector-search
+      - audio-to-text
+      - text-to-text
+      - brave_web
+      - joplin-search
+      - file_mgmt
+      - context7   
 snippets:
   # snippets settings
   # snippet name:
@@ -80,3 +89,7 @@ tools:
     model: embed
   joplin-search:
     model: embed
+  context7:
+    type: mcp
+    url: https://mcp.context7.com/mcp    
+

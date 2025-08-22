@@ -22,7 +22,7 @@ from kraina.libs.db.controller import Db, LlmMessageType
 from kraina.libs.langfuse import langfuse_handler
 from kraina.libs.llm import chat_llm, map_model
 from kraina.libs.utils import IMAGE_DATA_URL_MARKDOWN_RE
-from kraina.tools.base import get_and_init_mcp_tools, get_and_init_tools
+from kraina.tools.base import get_and_init_langchain_tools, get_and_init_mcp_tools
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class BaseAssistant:
                         msgs.append(el.get("text", ""))
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
         if self.tools:
-            for tool in get_and_init_tools(self.tools, self):
+            for tool in get_and_init_langchain_tools(self.tools, self):
                 ret["prompt"] += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
@@ -340,7 +340,7 @@ class BaseAssistant:
         prompt_string = self.prompt.format(**kwargs)
 
         tokens["tools"] = 0
-        tools = get_and_init_tools(self.tools or [], self) + await get_and_init_mcp_tools(self.tools or [])
+        tools = get_and_init_langchain_tools(self.tools or [], self) + await get_and_init_mcp_tools(self.tools or [])
 
         # Create LangGraph agent
         agent_executor = create_react_agent(llm, tools, prompt=prompt_string)
