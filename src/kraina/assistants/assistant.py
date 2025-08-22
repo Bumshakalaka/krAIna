@@ -89,6 +89,8 @@ class BaseAssistant:
     """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
     __buildin__: bool = False
     """If True, assistant is built-in and cannot be removed"""
+    _tools_tokens: int = -1
+    """Number of tokens used by tools. Updated on LLM call."""
 
     def __init_subclass__(cls, **kwargs):
         """Automatically add all subclasses of this class to `SPECIALIZED_ASSISTANT` dict.
@@ -140,6 +142,7 @@ class BaseAssistant:
                 "temp": self.temperature,
             },
             "prompt": 0,
+            "tools": self._tools_tokens,
             "history": 0,
         }
         msgs = []
@@ -152,9 +155,6 @@ class BaseAssistant:
                     if isinstance(el, dict) and el.get("type") == "text":
                         msgs.append(el.get("text", ""))
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
-        if self.tools:
-            for tool in get_and_init_langchain_tools(self.tools, self):
-                ret["prompt"] += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
 
@@ -342,7 +342,11 @@ class BaseAssistant:
         tokens["tools"] = 0
         tools = get_and_init_langchain_tools(self.tools or [], self) + await get_and_init_mcp_tools(self.tools or [])
 
-        # Create LangGraph agent
+        if self._tools_tokens < 0:
+            self._tools_tokens = 0
+            for tool in tools:
+                self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
+
         agent_executor = create_react_agent(llm, tools, prompt=prompt_string)
 
         # Convert input format from kwargs to LangGraph messages format
