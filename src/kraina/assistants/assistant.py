@@ -1,5 +1,6 @@
 """Base assistant class."""
 
+import asyncio
 import enum
 import json
 import logging
@@ -21,7 +22,7 @@ from kraina.libs.db.controller import Db, LlmMessageType
 from kraina.libs.langfuse import langfuse_handler
 from kraina.libs.llm import chat_llm, map_model
 from kraina.libs.utils import IMAGE_DATA_URL_MARKDOWN_RE
-from kraina.tools.base import get_and_init_tools
+from kraina.tools.base import get_and_init_mcp_tools, get_and_init_tools
 
 logger = logging.getLogger(__name__)
 
@@ -312,10 +313,12 @@ class BaseAssistant:
         logger.info(response_metadata)
         return finish_reason in stop_str
 
-    def _run_assistant_with_tools(
+    async def _run_assistant_with_tools_async(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
     ) -> str:
-        """Run an assistant with the tools query.
+        """Run an assistant with the tools query in async.
+
+        Async is required to have working MCP tools.
 
         :param query: User query string
         :param hist: Conversation history
@@ -337,7 +340,7 @@ class BaseAssistant:
         prompt_string = self.prompt.format(**kwargs)
 
         tokens["tools"] = 0
-        tools = get_and_init_tools(self.tools or [], self)
+        tools = get_and_init_tools(self.tools or [], self) + await get_and_init_mcp_tools(self.tools or [])
 
         # Create LangGraph agent
         agent_executor = create_react_agent(llm, tools, prompt=prompt_string)
@@ -358,7 +361,7 @@ class BaseAssistant:
         # Use LangGraph streaming for compatibility with callbacks
         chunks = []
         final_response = ""
-        for chunk in agent_executor.stream({"messages": messages}, config={"callbacks": [langfuse_handler]}):
+        async for chunk in agent_executor.astream({"messages": messages}, config={"callbacks": [langfuse_handler]}):
             chunks.append(chunk)
 
             if "agent" in chunk:
@@ -402,3 +405,17 @@ class BaseAssistant:
             self.callbacks["output"](final_response)
 
         return final_response
+
+    def _run_assistant_with_tools(
+        self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
+    ) -> str:
+        """Run an assistant with the tools query.
+
+        :param query: User query string
+        :param hist: Conversation history
+        :param ai_db: Database instance for conversation storage
+        :param tokens: Token usage tracking
+        :param kwargs: Additional keyword arguments for prompt formatting
+        :return: Assistant response string
+        """
+        return asyncio.run(self._run_assistant_with_tools_async(query, hist, ai_db, tokens, **kwargs))
