@@ -226,7 +226,7 @@ class LeftSidebar(ttk.Frame):
             if assistant.type == AssistantType.WITH_TOOLS:
                 tools_ = "\n- " + "\n- ".join(assistant.tools)
                 msg_ += f"\nTools:{tools_}"
-            ToolTip(rbut, msg=msg_, follow=False, delay=0.5)
+            ToolTip(rbut, msg=msg_, follow=False, delay=0.5, y_offset=-12 * len(msg_.split("\n")))
             rbut.bind("<ButtonRelease-3>", self._assistant_menu)
             self.root.bind(f"<Control-Key-{key}>", functools.partial(self._assistant_rbut_select, rbut))
             key += 1
