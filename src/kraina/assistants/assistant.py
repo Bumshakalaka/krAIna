@@ -94,6 +94,8 @@ class BaseAssistant:
     """Number of tokens used by tools. Updated on LLM call."""
     _initialized_tools: List[BaseTool] = field(default_factory=list)
     """Internal list of initialized MCP and langchain tools."""
+    _tools_number: int = -1
+    """Number of tools used by assistant."""
 
     def __init_subclass__(cls, **kwargs):
         """Automatically add all subclasses of this class to `SPECIALIZED_ASSISTANT` dict.
@@ -103,6 +105,11 @@ class BaseAssistant:
         super().__init_subclass__(**kwargs)
         if not cls.__name__.startswith("_"):
             SPECIALIZED_ASSISTANT[cls.__name__] = cls
+
+    @property
+    def used_tools(self) -> str:
+        """Get the number of tools ad token usage by assistant."""
+        return f"{self._tools_tokens} ({self._tools_number})"
 
     @property
     def encoding(self) -> Encoding:
@@ -145,7 +152,7 @@ class BaseAssistant:
                 "temp": self.temperature,
             },
             "prompt": 0,
-            "tools": self._tools_tokens,
+            "tools_input": self.used_tools,
             "history": 0,
         }
         msgs = []
@@ -252,7 +259,8 @@ class BaseAssistant:
             else:
                 ret = str(ret)
         used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
-        used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
+        used_tokens["tools_input"] = self.used_tools  # type: ignore
+        used_tokens["total"] = sum([v for k, v in used_tokens.items() if k not in ["api", "tools_input"]])
 
         if ai_db:
             ai_db.add_message(LlmMessageType.AI, ret)
@@ -352,6 +360,7 @@ class BaseAssistant:
             for tool in self._initialized_tools:
                 self._tools_tokens = 0
                 self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
+            self._tools_number = len(self._initialized_tools) + 1
 
         agent_executor = create_react_agent(llm, self._initialized_tools, prompt=prompt_string)
 
