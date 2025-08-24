@@ -13,6 +13,7 @@ from typing import Callable, Dict, List, Optional, Type, Union
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
@@ -91,6 +92,8 @@ class BaseAssistant:
     """If True, assistant is built-in and cannot be removed"""
     _tools_tokens: int = -1
     """Number of tokens used by tools. Updated on LLM call."""
+    _initialized_tools: List[BaseTool] = field(default_factory=list)
+    """Internal list of initialized MCP and langchain tools."""
 
     def __init_subclass__(cls, **kwargs):
         """Automatically add all subclasses of this class to `SPECIALIZED_ASSISTANT` dict.
@@ -340,14 +343,17 @@ class BaseAssistant:
         prompt_string = self.prompt.format(**kwargs)
 
         tokens["tools"] = 0
-        tools = get_and_init_langchain_tools(self.tools or [], self) + await get_and_init_mcp_tools(self.tools or [])
 
-        if self._tools_tokens < 0:
-            self._tools_tokens = 0
-            for tool in tools:
+        # init tools - first call of the assistant initialize tools
+        # It is used to reuse MCP connections between calls and maintain async context.
+        if self.tools and not self._initialized_tools:
+            self._initialized_tools = get_and_init_langchain_tools(self.tools, self)
+            self._initialized_tools += await get_and_init_mcp_tools(self.tools)
+            for tool in self._initialized_tools:
+                self._tools_tokens = 0
                 self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
 
-        agent_executor = create_react_agent(llm, tools, prompt=prompt_string)
+        agent_executor = create_react_agent(llm, self._initialized_tools, prompt=prompt_string)
 
         # Convert input format from kwargs to LangGraph messages format
         messages = []
@@ -376,11 +382,11 @@ class BaseAssistant:
                             # Convert content to string for token counting and storage
                             content_str = message.content if isinstance(message.content, str) else str(message.content)
                             tokens["output"] += len(self.encoding.encode(content_str)) + ADDITIONAL_TOKENS_PER_MSG
-                            if ai_db:
-                                ai_db.add_message(LlmMessageType.AI, content_str)
                             if self.callbacks["ai_observation"] and not self._last_agent_step(
                                 message.response_metadata
                             ):
+                                if ai_db:
+                                    ai_db.add_message(LlmMessageType.AI, content_str)
                                 self.callbacks["ai_observation"](content_str)
                             final_response = content_str
 
