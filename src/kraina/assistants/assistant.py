@@ -423,7 +423,8 @@ class BaseAssistant:
         if self.callbacks["output"]:
             self.callbacks["output"](final_response)
 
-        return final_response
+        # corner case: if final_response is empty, use content_str which will be direct result from tool call
+        return final_response or content_str
 
     def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
