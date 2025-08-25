@@ -1,3 +1,9 @@
+"""Vector store search tool.
+
+This module provides functionality to search through vector stores using
+semantic similarity. It enables querying of documents stored in vector databases.
+"""
+
 import json
 import pickle
 from datetime import datetime
@@ -16,6 +22,11 @@ from kraina.tools.vector_store_file_splitter import get_splitter
 
 
 class VectorSearchInput(BaseModel):
+    """Input schema for vector store search.
+
+    Defines the required input parameters for searching vector stores.
+    """
+
     query: str = Field(description="Query the file. The query must be short, well-structured for RAG")
     file_path: str = Field(description="local file to query")
     k: int = Field(
@@ -24,7 +35,7 @@ class VectorSearchInput(BaseModel):
     )
 
 
-def vector_search(query: str, file_path: str, k: int = 4, model: str = "embed", force_api: str = None):
+def vector_search(query: str, file_path: str, k: int = 10, model: str = "embed", force_api: str | None = None):
     """Perform a vector search on a document using a specified model and API.
 
     This function processes a document file, creates or loads an embedded vector store,

@@ -1,3 +1,9 @@
+"""File watching module for monitoring changes in krAIna configuration files.
+
+This module provides functionality to watch for file changes in specific
+directories and trigger callbacks when relevant files are modified.
+"""
+
 import logging
 import threading
 from pathlib import Path
@@ -12,6 +18,12 @@ watch_exit_event = threading.Event()
 
 
 class ChatFilter(DefaultFilter):
+    """Filter for determining which file changes should trigger actions.
+
+    This filter extends the DefaultFilter to only allow specific file types
+    and paths that are relevant to the krAIna application.
+    """
+
     allowed_extensions = ".yaml", ".py", ".env", ".md"
     allowed_path_strings = "assistants", "snippets", ".env", "config.yaml", "macros"
 
@@ -21,9 +33,13 @@ class ChatFilter(DefaultFilter):
         This method checks if the file change matches the allowed extensions,
         path strings, and is of type 'modified'.
 
-        :param change: The type of change detected (e.g., modified, added).
-        :param path: The file path that has changed.
-        :return: True if the change should be processed, False otherwise.
+        Args:
+            change: The type of change detected (e.g., modified, added).
+            path: The file path that has changed.
+
+        Returns:
+            True if the change should be processed, False otherwise.
+
         """
         return (
             super().__call__(change, path)
@@ -41,8 +57,10 @@ def watch_my_files(callback):
     it logs the change and calls the provided callback with a string indicating
     the type of file changed.
 
-    :param callback: A function to be called when a relevant file change is detected.
-                     The callback receives a string argument indicating the type of file.
+    Args:
+        callback: A function to be called when a relevant file change is detected.
+                 The callback receives a string argument indicating the type of file.
+
     """
 
     def _call(cbk):

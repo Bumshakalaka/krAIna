@@ -1,4 +1,9 @@
-"""Debug window."""
+"""Debug window for displaying and managing application logs.
+
+This module provides a debug window interface that displays log messages
+with different levels, allows filtering by log level, and provides
+search and save functionality for log entries.
+"""
 
 import logging
 import tkinter as tk
@@ -16,9 +21,18 @@ logger = logging.getLogger(__name__)
 
 
 class DbgLogWindow(tk.Toplevel):
-    """Create Debug Window."""
+    """Debug window for displaying application logs with filtering and search capabilities.
+
+    This class creates a toplevel window that displays log messages from the
+    application's logging system. It provides filtering by log level, search
+    functionality, and the ability to save logs to files.
+    """
 
     def __init__(self, parent):
+        """Initialize the debug log window.
+
+        :param parent: The parent window widget.
+        """
         super().__init__(parent)
         self.visible = True
         self.root = parent
@@ -51,12 +65,12 @@ class DbgLogWindow(tk.Toplevel):
         self.text = ScrolledText(self, state="normal", height=12)
         tag_settings = dict(elide=True, lmargin2=10)
         self.text.configure(wrap=tk.WORD)
-        self.text.tag_config("DEBUG", **tag_settings)
-        self.text.tag_config("INFO", **tag_settings)
-        self.text.tag_config("WARNING", foreground="orange", **tag_settings)
-        self.text.tag_config("ERROR", foreground="red", **tag_settings)
-        self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)
-        self.text.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+        self.text.tag_config("DEBUG", **tag_settings)  # type: ignore
+        self.text.tag_config("INFO", **tag_settings)  # type: ignore
+        self.text.tag_config("WARNING", foreground="orange", **tag_settings)  # type: ignore
+        self.text.tag_config("ERROR", foreground="red", **tag_settings)  # type: ignore
+        self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)  # type: ignore
+        self.text.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)  # type: ignore
 
         self.text.tag_bind("hyper", "<Enter>", self._enter_hyper)
         self.text.tag_bind("hyper", "<Leave>", self._leave_hyper)
@@ -82,21 +96,21 @@ class DbgLogWindow(tk.Toplevel):
 
         self.view_selected()
 
-    def _enter_hyper(self, event):
+    def _enter_hyper(self, event):  # noqa: ARG002
         """Change the cursor to a hand when hovering over a hyperlink.
 
         :param event: The event object containing information about the hover event.
         """
         self.text.config(cursor="hand2")
 
-    def _leave_hyper(self, event):
+    def _leave_hyper(self, event):  # noqa: ARG002
         """Revert the cursor back to default when leaving a hyperlink.
 
         :param event: The event object containing information about the leave event.
         """
         self.text.config(cursor="")
 
-    def _click_hyper(self, event):
+    def _click_hyper(self, event):  # noqa: ARG002
         """Open the hyperlink in a web browser when clicked.
 
         :param event: The event object containing information about the click event.
@@ -108,9 +122,13 @@ class DbgLogWindow(tk.Toplevel):
         webbrowser.open(link, new=2, autoraise=True)
 
     def set_title_bar_color(self):
-        """Set background color of title on Windows only."""
+        """Set background color of title bar on Windows systems.
+
+        This method applies Windows-specific styling to the title bar
+        based on the current theme (dark or light mode).
+        """
         if get_windows_version() == 10:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             theme = ttk.Style(self).theme_use()
             if theme == "dark":
@@ -122,7 +140,7 @@ class DbgLogWindow(tk.Toplevel):
             self.wm_attributes("-alpha", 0.99)
             self.wm_attributes("-alpha", 1)
         elif get_windows_version() == 11:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             if "dark" in ttk.Style(self).theme_use():
                 take_from = "dark"
@@ -133,10 +151,10 @@ class DbgLogWindow(tk.Toplevel):
             pywinstyles.change_header_color(self, col)
 
     def find_select_string(self, pattern: str) -> bool:
-        """Find and select pattern in the log.
+        """Find and select pattern in the log text.
 
-        :param pattern: tring to find
-        :return: Always True as it bind to Entry validate command
+        :param pattern: String pattern to find in the log text.
+        :return: Always True as it is bound to Entry validate command.
         """
         self.text.tag_remove("sel", "1.0", tk.END)
         if not pattern:
@@ -158,22 +176,31 @@ class DbgLogWindow(tk.Toplevel):
         return True
 
     def always_on_top(self):
-        """Toggle always on top window setting."""
+        """Toggle always on top window setting.
+
+        Sets or unsets the window's topmost attribute based on the
+        checkbox state.
+        """
         self.wm_attributes("-topmost", self._always_on_top.get())
 
     def save_log(self):
-        """Save all logs in text widget to the file.
+        """Save all logs in text widget to a file.
 
-        Also, the invisible once.
-
-        :return:
+        Opens a file dialog to save the current log content to a .log file.
+        The file is saved in the parent directory of this module by default.
         """
         fd = asksaveasfile(parent=self, mode="w", defaultextension=".log", initialdir=Path(__name__).parent)
         if fd:
             fd.write(self.text.get("1.0", tk.END))
 
-    def hide(self, *args):
-        """Hide the window."""
+    def hide(self, *args):  # noqa: ARG002
+        """Hide the debug window.
+
+        Saves the current window geometry before hiding and withdraws
+        the window from display.
+
+        :param args: Variable arguments (unused).
+        """
         if self.visible:
             if int(self.geometry().split("x")[0]) > 10:
                 chat_persistence.SETTINGS.dbg_wnd_geometry = self.geometry()
@@ -181,7 +208,11 @@ class DbgLogWindow(tk.Toplevel):
             self.visible = False
 
     def show(self):
-        """Show the window."""
+        """Show the debug window.
+
+        Restores the window geometry, sets title bar color, retrieves
+        logs, and makes the window visible.
+        """
         if not self.visible:
             self.visible = True
             self.set_title_bar_color()
@@ -192,6 +223,11 @@ class DbgLogWindow(tk.Toplevel):
             self.lift()
 
     def _update_geometry(self):
+        """Update window geometry and ensure it's within screen bounds.
+
+        Prevents the chat window from being positioned outside the
+        visible screen area by resetting to default coordinates if needed.
+        """
         # Prevent that chat will always be visible
         w_size, offset_x, offset_y = chat_persistence.SETTINGS.dbg_wnd_geometry.split("+")
         if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
@@ -204,10 +240,12 @@ class DbgLogWindow(tk.Toplevel):
         self.wm_geometry(chat_persistence.SETTINGS.dbg_wnd_geometry)
 
     def view_selected(self, event=None):
-        """Show the logs at certain log level and above.
+        """Show logs at the selected log level and above.
 
-        :param event:
-        :return:
+        Filters the displayed log messages based on the selected log level
+        from the combobox. Also updates the logger level for new messages.
+
+        :param event: The combobox selection event (optional).
         """
         req_lvl = self.level.get()
         hide = True
@@ -222,7 +260,14 @@ class DbgLogWindow(tk.Toplevel):
             self.root.queue_handler.setLevel(req_lvl if req_lvl == "DEBUG" else "INFO")
 
     def display(self, record: logging.LogRecord):
-        """Display formated log record in text widget."""
+        """Display formatted log record in the text widget.
+
+        Inserts a formatted log message into the text widget with appropriate
+        styling based on the log level. Automatically scrolls to the bottom
+        if the user was already at the bottom.
+
+        :param record: The log record to display.
+        """
         y_pos = self.text.yview()[1]
         msg = self.root.queue_handler.format(record)
         self.text.insert(tk.END, *find_hyperlinks(msg + "\n", record.levelname))
@@ -230,11 +275,13 @@ class DbgLogWindow(tk.Toplevel):
             self.text.yview(tk.END)
 
     def get_logs(self):
-        """Get all logs from log queue.
+        """Get all logs from the log queue.
 
-        Call periodically only when the window is visible.
+        Retrieves and displays all pending log messages from the queue.
+        Schedules itself to run again after 100ms if the window is visible.
 
-        :return:
+        This method should only be called periodically when the window
+        is visible to avoid unnecessary processing.
         """
         while True:
             try:

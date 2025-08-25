@@ -1,4 +1,8 @@
-"""Status bar widget."""
+"""Status bar widget for the kraina chat application.
+
+This module provides a status bar widget that displays various application states
+including API information, token usage, and debug controls.
+"""
 
 import logging
 import tkinter as tk
@@ -16,12 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 class StatusBar(tk.Frame):
-    """Status Bar."""
+    """Status bar widget displaying application state and controls.
+
+    The status bar shows API information, token usage, and provides access to
+    debug and macro windows. It also handles visual feedback for errors and
+    running macros.
+    """
 
     def __init__(self, parent):
-        """Initialize status bar.
+        """Initialize the status bar widget.
 
-        :param parent: main App
+        Args:
+            parent: The parent application window.
+
         """
         super().__init__(parent, padx=2, pady=0)
         self.root = parent
@@ -75,7 +86,6 @@ class StatusBar(tk.Frame):
             y_offset=-50,
             x_offset=-150,
         )
-        ttk.Sizegrip(self).pack(side=tk.RIGHT, fill=tk.BOTH)
         self.dbg_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.macro_window_btn.pack(side=tk.RIGHT, fill=tk.BOTH)
         self.label_api.pack(side=tk.RIGHT, fill=tk.BOTH)
@@ -87,10 +97,14 @@ class StatusBar(tk.Frame):
         self.root.bind_on_event(APP_EVENTS.MACRO_RUNNING, self.change_macro_status)
         self.blink_after_id = None
 
-    def blink_start(self, data):
-        """Start Debug button blinking.
+    def blink_start(self, data):  # noqa: ARG002
+        """Start debug button blinking animation.
 
-        Only when the Debug window does not exist or is not visible.
+        Only starts blinking when the debug window does not exist or is not visible.
+
+        Args:
+            data: Event data (unused).
+
         """
         if self.root.dbg_window and self.root.dbg_window.visible:
             return
@@ -98,13 +112,19 @@ class StatusBar(tk.Frame):
         self.blink_after_id = self.after(300, self.blink)
 
     def blink_stop(self):
-        """Stop Debug button blinking."""
+        """Stop debug button blinking animation.
+
+        Cancels the blinking timer and resets button style to default.
+        """
         if self.blink_after_id:
             self.after_cancel(self.blink_after_id)
             self.dbg_window_btn.configure(style="")
 
     def blink(self):
-        """Change foreground color to red and back to theme default every 300ms."""
+        """Toggle debug button foreground color between red and default.
+
+        Changes the button style every 300ms to create a blinking effect.
+        """
         if self.dbg_window_btn.config("style")[4] == "":
             self.dbg_window_btn.configure(style="ERROR.TButton")
         else:
@@ -112,13 +132,23 @@ class StatusBar(tk.Frame):
         self.blink_after_id = self.after(300, self.blink)
 
     def change_macro_status(self, running):
+        """Update macro button visual state based on running status.
+
+        Args:
+            running: Boolean indicating if a macro is currently running.
+
+        """
         if running:
             self.macro_window_btn.configure(style="WORKING.TButton")
         else:
             self.macro_window_btn.configure(style="")
 
     def create_dbg_window(self):
-        """Create a debug window or summon it if it already exists."""
+        """Create or toggle debug window visibility.
+
+        Creates a new debug window if none exists, or toggles visibility
+        of the existing window. Stops button blinking when called.
+        """
         self.blink_stop()
         if not self.root.dbg_window:
             self.root.dbg_window = DbgLogWindow(self.root)
@@ -128,7 +158,15 @@ class StatusBar(tk.Frame):
             self.root.dbg_window.hide()
 
     def update_statusbar_api(self, data: str):
-        """update_statusbar_api"""
+        """Update API information display in status bar.
+
+        Updates the API name and description based on chat settings and
+        assistant force_api configuration.
+
+        Args:
+            data: API type string from chat settings.
+
+        """
         assistant_force_api = self.root.current_assistant.force_api
         force_api = data if assistant_force_api is None else assistant_force_api
         self.api_name_descr.set(
@@ -140,7 +178,15 @@ class StatusBar(tk.Frame):
         self.label_api.configure(background=self.root.get_theme_color("bg"))
 
     def update_statusbar(self, data: AssistantResp):
-        """Update status bar."""
+        """Update status bar with token usage or error information.
+
+        Updates the token usage display and handles error states with
+        appropriate visual feedback.
+
+        Args:
+            data: Assistant response containing token usage or error information.
+
+        """
         if data.error:
             self.token_usage.set(str(data.error)[0:110] + "..." if len(str(data.error)) > 120 else str(data.error))
             self.token_usage_full_str.set(str(data.error))

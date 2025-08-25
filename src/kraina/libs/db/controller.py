@@ -3,7 +3,7 @@
 import datetime
 import enum
 from functools import lru_cache
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import Engine, and_, create_engine, delete, event, select, update
 from sqlalchemy.orm import Session
@@ -25,6 +25,8 @@ class ConversationNotFound(KrainaDbError):
 
 
 class LlmMessageType(enum.IntEnum):
+    """Llm Message Type."""
+
     SYSTEM = 0
     HUMAN = 1
     AI = 2
@@ -34,8 +36,8 @@ class LlmMessageType(enum.IntEnum):
 
 
 @event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Enabling Foreign Key Support
+def set_sqlite_pragma(dbapi_connection, connection_record):  # noqa: ARG001
+    """Enable Foreign Key Support.
 
     https://www.sqlite.org/foreignkeys.html
     https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#foreign-key-support
@@ -89,7 +91,9 @@ class Db:
             ).scalar()
         return bool(data)
 
-    def new_conversation(self, name: str = None, description: str = None, assistant: str = None):
+    def new_conversation(
+        self, name: Optional[str] = None, description: Optional[str] = None, assistant: Optional[str] = None
+    ):
         """Create a new conversation in the database and set the last conv_id.
 
         :param name: Name of the conversation
@@ -192,14 +196,15 @@ class Db:
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
         with Session(self.engine) as s:
             conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            conv_obj.messages.append(
-                Messages(
-                    type=message_type,
-                    message=message.strip(),
-                    create_at=datetime.datetime.now(),
+            if conv_obj:
+                conv_obj.messages.append(
+                    Messages(
+                        type=message_type,
+                        message=message.strip(),
+                        create_at=datetime.datetime.now(),
+                    )
                 )
-            )
-            s.commit()
+                s.commit()
 
     def add_messages(self, messages: List[Tuple[LlmMessageType, str]], conv_id: Union[int, None] = None):
         """Add a list of messages to the conversation.
@@ -213,12 +218,13 @@ class Db:
             raise ConversationNotFound(f"Conversation_id={conv_id} not found")
         with Session(self.engine) as s:
             conv_obj = s.execute(select(Conversations).where(Conversations.conversation_id == conv_id)).scalar()
-            for message in messages:
-                conv_obj.messages.append(
-                    Messages(
-                        type=message[0],
-                        message=message[1].strip(),
-                        create_at=datetime.datetime.now(),
+            if conv_obj:
+                for message in messages:
+                    conv_obj.messages.append(
+                        Messages(
+                            type=message[0],
+                            message=message[1].strip(),
+                            create_at=datetime.datetime.now(),
+                        )
                     )
-                )
-            s.commit()
+                s.commit()

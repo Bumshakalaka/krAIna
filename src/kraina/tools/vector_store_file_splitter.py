@@ -1,4 +1,9 @@
-"""Vector store splitters."""
+"""Vector store file splitter utilities.
+
+This module provides functionality to split various file types into documents
+for vector store indexing. It includes automatic file type detection and
+specialized splitters for different document formats.
+"""
 
 import csv
 import re
@@ -18,9 +23,9 @@ def get_splitter(file_path: str) -> Type["FileSplitter"]:
     This function matches the file path against registered file patterns
     in FILE_SPLITTERS and returns the FileSplitter with the highest priority.
 
-    :param file_path: The path of the file for which a splitter is needed.
-    :return: The FileSplitter class that matches the file path pattern.
-    :raises AttributeError: If no matching splitter is found for the file path.
+    :param file_path: Path to the file for which a splitter is needed.
+    :return: The FileSplitter class with the highest priority that matches the file path.
+    :raises ValueError: If no matching splitter is found for the given file path.
     """
     ret = []
     for _, obj in FILE_SPLITTERS.items():
@@ -34,9 +39,9 @@ def get_splitter(file_path: str) -> Type["FileSplitter"]:
     return sorted(ret, key=lambda x: x[0])[-1][1]
 
 
-@dataclass(eq=False)
+@dataclass
 class FileSplitter:
-    """Base class for file splitters, adding subclasses to a global registry.
+    """Base class for file splitters.
 
     This class serves as a base for specific file splitters. Subclasses are automatically
     registered in the `FILE_SPLITTERS` dictionary unless their class name starts with '_'.
@@ -45,8 +50,8 @@ class FileSplitter:
     :param priority: Priority of the file splitter.
     """
 
-    file_pattern_re: str = None
-    priority: int = None
+    file_pattern_re: str
+    priority: int
 
     def __init_subclass__(cls, **kwargs):
         """Automatically register subclasses in `FILE_SPLITTERS`.

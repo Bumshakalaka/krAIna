@@ -1,3 +1,9 @@
+"""Audio to text transcription tool.
+
+This module provides functionality to transcribe audio files to text using
+language models like Whisper. It supports both local files and URLs.
+"""
+
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -10,10 +16,15 @@ from kraina.libs.llm import llm_client, map_model
 
 
 class AudioToTextInput(BaseModel):
+    """Input schema for audio to text transcription.
+
+    Defines the required input parameters for transcribing audio files.
+    """
+
     uri: str = Field(description="Audio file to transcript. Local or from URL")
 
 
-def audio_to_text(uri: str, model: str = "whisper-1", force_api: str = None):
+def audio_to_text(uri: str, model: str = "whisper-1", force_api: str | None = None):
     """Convert audio file to text using a specified model.
 
     This function checks for the existence of the audio file, then uses a language model client
@@ -33,7 +44,7 @@ def audio_to_text(uri: str, model: str = "whisper-1", force_api: str = None):
         return f"'{uri}' file not exists"
     client = llm_client(force_api_type=force_api)
     with open(uri, "rb") as fd:
-        response = client.audio.transcriptions.create(
+        response = client.audio.transcriptions.create(  # type: ignore
             model=model,
             file=fd,
         )

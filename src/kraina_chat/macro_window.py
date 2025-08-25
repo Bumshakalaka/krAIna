@@ -1,4 +1,4 @@
-"""Debug window."""
+"""Debug window for managing and running macros with parameter configuration."""
 
 import collections
 import copy
@@ -10,7 +10,7 @@ import tkinter as tk
 import webbrowser
 from pathlib import Path
 from tkinter import ttk
-from typing import Dict
+from typing import Dict, Optional
 
 from tktooltip import ToolTip
 
@@ -42,33 +42,50 @@ def dict_merge(existing_dict: dict, new_dict: dict) -> dict:
 
 
 class LogFilter(logging.Filter):
-    """Filter out log messages."""
+    """Filter out specific log messages by name."""
 
     def __init__(self):
+        """Initialize the log filter."""
         super().__init__()
 
     def filter(self, record: logging.LogRecord):
+        """Filter log records based on logger name.
+
+        :param record: The log record to filter.
+        :return: False if record should be filtered out, True otherwise.
+        """
         if record.name in ["__main__", "IPyCClient", "IPyCHost", "chat.main", "httpx"]:
             return False
         return True
 
 
 class QueueHandler(logging.Handler):
-    """Class to send logging records to a queue."""
+    """Handler to send logging records to a queue."""
 
     def __init__(self, log_queue):
+        """Initialize the queue handler.
+
+        :param log_queue: The queue to store log records in.
+        """
         super().__init__()
         self.log_queue = log_queue
 
     def emit(self, record):
-        """Store log record in queue."""
+        """Store log record in the queue.
+
+        :param record: The log record to store.
+        """
         self.log_queue.append(record)
 
 
 class MacroWindow(tk.Toplevel):
-    """Create Macro Window."""
+    """Main window for managing and running macros with parameter configuration."""
 
     def __init__(self, parent):
+        """Initialize the macro window.
+
+        :param parent: The parent window widget.
+        """
         super().__init__(parent)
         self.visible = True
         self.hide()
@@ -77,8 +94,8 @@ class MacroWindow(tk.Toplevel):
         self._update_geometry()
         self.root = parent
         self.macros: Dict[str, Macro] = Macros()
-        self.current_macro_name: str = None
-        self.macro_thread: threading.Thread = None
+        self.current_macro_name: Optional[str] = None  # type: ignore
+        self.macro_thread: Optional[threading.Thread] = None
 
         self.current_macro_params: Dict[str, Dict] = collections.defaultdict(dict)
         for k, v in self.macros.items():
@@ -125,12 +142,12 @@ class MacroWindow(tk.Toplevel):
         self.text = ScrolledText(middle_right, height=12)
         tag_settings = dict(lmargin2=10)
         self.text.configure(wrap=tk.WORD)
-        self.text.tag_config("DEBUG", **tag_settings)
-        self.text.tag_config("INFO", **tag_settings)
-        self.text.tag_config("WARNING", foreground="orange", **tag_settings)
-        self.text.tag_config("ERROR", foreground="red", **tag_settings)
-        self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)
-        self.text.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)
+        self.text.tag_config("DEBUG", **tag_settings)  # type: ignore
+        self.text.tag_config("INFO", **tag_settings)  # type: ignore
+        self.text.tag_config("WARNING", foreground="orange", **tag_settings)  # type: ignore
+        self.text.tag_config("ERROR", foreground="red", **tag_settings)  # type: ignore
+        self.text.tag_config("CRITICAL", foreground="red", underline=True, **tag_settings)  # type: ignore
+        self.text.tag_config("hyper", foreground=self.root.get_theme_color("accent"), underline=1)  # type: ignore
 
         self.text.tag_bind("hyper", "<Enter>", self._enter_hyper)
         self.text.tag_bind("hyper", "<Leave>", self._leave_hyper)
@@ -206,7 +223,7 @@ class MacroWindow(tk.Toplevel):
         self.macro_list.selection_set(self.macro_list.nearest(event.y))
         self.macro_list.activate(self.macro_list.nearest(event.y))
         idx = self.macro_list.curselection()
-        self.current_macro_name = event.widget.get(idx)
+        self.current_macro_name: str = event.widget.get(idx)
         self.macro_params_update()
         self.edit_macro(self.macros[self.current_macro_name].path)
 
@@ -243,7 +260,7 @@ class MacroWindow(tk.Toplevel):
         cur_idx = self.macro_list.curselection()
         if cur_idx == ():
             cur_idx = (0,)
-        cur_macro = self.macro_list.get(cur_idx)
+        cur_macro = self.macro_list.get(cur_idx)  # type: ignore
         self.macro_list.selection_clear(0, tk.END)
 
         new_params = collections.defaultdict(dict)
@@ -258,10 +275,10 @@ class MacroWindow(tk.Toplevel):
             self.current_macro_params[k] = dict_merge(self.current_macro_params[k], v)
 
         self.macro_list_var.set(list(self.macros.keys()))
-        if cur_idx[0] < len(self.macros.keys()) and cur_macro == self.macro_list.get(cur_idx):
-            self.macro_list.activate(cur_idx)
-            self.current_macro_name = self.macro_list.get(cur_idx)
-            self.macro_list.select_set(cur_idx)
+        if cur_idx[0] < len(self.macros.keys()) and cur_macro == self.macro_list.get(cur_idx):  # type: ignore
+            self.macro_list.activate(cur_idx)  # type: ignore
+            self.current_macro_name = self.macro_list.get(cur_idx)  # type: ignore
+            self.macro_list.select_set(cur_idx)  # type: ignore
         else:
             self.macro_list.activate(0)
             self.current_macro_name = self.macro_list.get(0)
@@ -304,6 +321,12 @@ class MacroWindow(tk.Toplevel):
             self.text.insert(tk.END, str(self.macros[self.current_macro_name].method.__doc__) + "\n")
 
     def macro_params_save(self, param_name, to_save):
+        """Save a macro parameter value.
+
+        :param param_name: The name of the parameter to save.
+        :param to_save: The value to save for the parameter.
+        :return: Always returns True to indicate successful validation.
+        """
         self.current_macro_params[self.current_macro_name].update({param_name: to_save})
         return True
 
@@ -312,7 +335,7 @@ class MacroWindow(tk.Toplevel):
         self.wm_attributes("-topmost", self._always_on_top.get())
 
     def hide(self, *args):
-        """Hide the window."""
+        """Hide the window and save its geometry."""
         if self.visible:
             if int(self.geometry().split("x")[0]) > 10:
                 chat_persistence.SETTINGS.macro_wnd_geometry = self.geometry()
@@ -320,7 +343,7 @@ class MacroWindow(tk.Toplevel):
             self.visible = False
 
     def show(self):
-        """Show the window."""
+        """Show the window and restore its state."""
         if not self.visible:
             self.visible = True
             self.set_title_bar_color()
@@ -331,7 +354,7 @@ class MacroWindow(tk.Toplevel):
             self.lift()
 
     def run_macro(self):
-        """Run the macro."""
+        """Run the currently selected macro with its parameters."""
         self.run_btn.config(state="disabled")
         self.macro_list.config(state="disabled")
         self.pb.start(interval=20)
@@ -361,8 +384,8 @@ class MacroWindow(tk.Toplevel):
         self.is_macro_running()
 
     def is_macro_running(self):
-        """If macro thread stops, unblock RUN button and stop progress bar."""
-        if not self.macro_thread.is_alive():
+        """Check if macro thread is still running and update UI accordingly."""
+        if self.macro_thread and not self.macro_thread.is_alive():
             self.pb.stop()
             self.run_btn.config(state="normal")
             self.macro_list.config(state="normal")
@@ -372,9 +395,9 @@ class MacroWindow(tk.Toplevel):
         self.after(200, self.is_macro_running)
 
     def set_title_bar_color(self):
-        """Set background color of title on Windows only."""
+        """Set background color of title bar based on Windows version and theme."""
         if get_windows_version() == 10:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             theme = ttk.Style(self).theme_use()
             if theme == "dark":
@@ -386,7 +409,7 @@ class MacroWindow(tk.Toplevel):
             self.wm_attributes("-alpha", 0.99)
             self.wm_attributes("-alpha", 1)
         elif get_windows_version() == 11:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             if "dark" in ttk.Style(self).theme_use():
                 take_from = "dark"
@@ -397,6 +420,7 @@ class MacroWindow(tk.Toplevel):
             pywinstyles.change_header_color(self, col)
 
     def _update_geometry(self):
+        """Update window geometry and ensure it's within screen bounds."""
         # Prevent that chat will always be visible
         w_size, offset_x, offset_y = chat_persistence.SETTINGS.macro_wnd_geometry.split("+")
         if int(offset_x) > self.winfo_screenwidth() or int(offset_y) > self.winfo_screenheight():
@@ -409,7 +433,10 @@ class MacroWindow(tk.Toplevel):
         self.wm_geometry(chat_persistence.SETTINGS.macro_wnd_geometry)
 
     def display(self, record: logging.LogRecord):
-        """Display formated log record in text widget."""
+        """Display formatted log record in text widget.
+
+        :param record: The log record to display.
+        """
         y_pos = self.text.yview()[1]
         msg = self.root.queue_handler.format(record)
         self.text.insert(tk.END, *find_hyperlinks(msg + "\n", record.levelname))
@@ -417,11 +444,11 @@ class MacroWindow(tk.Toplevel):
             self.text.yview(tk.END)
 
     def get_logs(self):
-        """Get all logs from log queue.
+        """Get all logs from log queue and display them.
 
-        Call periodically.
+        Call periodically to update the log display.
 
-        :return:
+        :return: None
         """
         while True:
             try:

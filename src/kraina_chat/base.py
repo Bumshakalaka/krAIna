@@ -1,4 +1,8 @@
-"""Base functions."""
+"""Base functions for the krAIna chat application.
+
+This module provides core functionality including Windows version detection,
+IPC event handling, application events enumeration, and theme styling.
+"""
 
 import enum
 import queue
@@ -12,9 +16,17 @@ from typing import Any, Dict
 # which makes the application two times bigger.
 # we don't need the validation in kraina_cli
 SETTINGS_FILE = (Path(sys.argv[0]).parent / ".settings.yaml").resolve()
+"""Path to the settings file for the application."""
 
 
 def get_windows_version() -> int:
+    """Get the Windows version number.
+
+    Determines the Windows version based on system information.
+    Returns 0 for non-Windows platforms.
+
+    :return: Windows version number (10, 11, or other major version)
+    """
     if sys.platform == "win32":
         # Running on Windows
         version = sys.getwindowsversion()
@@ -31,14 +43,25 @@ def get_windows_version() -> int:
 
 @dataclass
 class ipc_event:
-    """Dataclass used only by IPC to send event from client to host and to receive response in 'q' queue."""
+    """Dataclass for IPC communication between client and host.
+
+    Used to send events from client to host and receive responses
+    through the queue mechanism.
+
+    :param q: Queue for receiving responses
+    :param data: Event data to be sent
+    """
 
     q: queue.Queue
     data: Any
 
 
 class APP_EVENTS(enum.Enum):
-    """App events table."""
+    """Application events enumeration.
+
+    Defines all possible events that can be triggered within the
+    krAIna chat application for inter-process communication.
+    """
 
     QUERY_ASSIST_CREATED = "<<QueryAssistantCreated>>"
     QUERY_TO_ASSISTANT = "<<QueryAssistant>>"
@@ -79,9 +102,12 @@ class APP_EVENTS(enum.Enum):
 
 
 def app_interface() -> Dict:
-    """Return App interface.
+    """Return application interface commands and descriptions.
 
-    :return: Dict(command, description)
+    Provides a mapping of available application commands to their
+    descriptions for external integration.
+
+    :return: Dictionary mapping command names to descriptions
     """
     return {
         APP_EVENTS.SHOW_APP.name: "Trigger to display the application",
@@ -167,13 +193,14 @@ HIGHLIGHTER_CSS = """
 .codehilite .vm { color: #f8f8f2 } /* Name.Variable.Magic */
 .codehilite .il { color: #ae81ff } /* Literal.Number.Integer.Long */
 """
+"""CSS styles for syntax highlighting in code blocks."""
 
 LIGHTTHEME = r"""
 /* Default stylesheet to be loaded whenever HTML is parsed. */
 /* This is a modified version of the stylesheet that comes bundled with Tkhtml. */
 /* Display types for non-table items. */
-  ADDRESS, BLOCKQUOTE, BODY, DD, DIV, DL, DT, FIELDSET, 
-  FRAME, H1, H2, H3, H4, H5, H6, NOFRAMES, 
+  ADDRESS, BLOCKQUOTE, BODY, DD, DIV, DL, DT, FIELDSET,
+  FRAME, H1, H2, H3, H4, H5, H6, NOFRAMES,
   OL, P, UL, APPLET, CENTER, DIR, HR, MENU, PRE, FORM
                 { display: block }
 HEAD, SCRIPT, TITLE { display: none }
@@ -187,9 +214,9 @@ OL[type]         { list-style-type : tcl(::tkhtml::ol_liststyletype) }
 UL>LI { list-style-type : disc }
 UL>UL>LI { list-style-type : circle }
 UL>UL UL>LI { list-style-type : square }
-UL[type="square"]>LI { list-style-type : square } 
-UL[type="disc"]>LI   { list-style-type : disc   } 
-UL[type="circle"]>LI { list-style-type : circle } 
+UL[type="square"]>LI { list-style-type : square }
+UL[type="disc"]>LI   { list-style-type : disc   }
+UL[type="circle"]>LI { list-style-type : circle }
 LI[type="circle"]    { list-style-type : circle }
 LI[type="square"]    { list-style-type : square }
 LI[type="disc"]      { list-style-type : disc   }
@@ -200,12 +227,12 @@ NOBR {
  * only be done for images, tables etc. "align" can mean different things
  * for different elements.
  */
-TABLE[align="left"]       { float:left } 
-TABLE[align="right"]      { 
-    float:right; 
+TABLE[align="left"]       { float:left }
+TABLE[align="right"]      {
+    float:right;
     text-align: inherit;
 }
-TABLE[align="center"]     { 
+TABLE[align="center"]     {
     margin-left:auto;
     margin-right:auto;
     text-align:inherit;
@@ -214,7 +241,7 @@ IMG[align="left"]         { float:left }
 IMG[align="right"]        { float:right }
 /* If the 'align' attribute was not mapped to float by the rules above, map
  * it to 'text-align'. The rules above take precedence because of their
- * higher specificity. 
+ * higher specificity.
  *
  * Also the <center> tag means to center align things.
  */
@@ -231,12 +258,12 @@ TD, TH {
   border-left-color: grey25;
 }
 /* For a horizontal line, use a table with no content. We use a table
- * instead of a block because tables are laid out around floating boxes, 
+ * instead of a block because tables are laid out around floating boxes,
  * whereas regular blocks are not.
  */
 /*
-HR { 
-  display: table; 
+HR {
+  display: table;
   border-top: 1px solid grey45;
   background: grey80;
   height: 1px;
@@ -252,7 +279,7 @@ HR {
   margin: 0.5em auto 0.5em auto;
 }
 /* Basic table tag rules. */
-TABLE { 
+TABLE {
   display: table;
   border-spacing: 0px;
   border-bottom-color: grey25;
@@ -276,7 +303,7 @@ H2              { font-size: 1.5em; margin: .83em 0 }
 H3              { font-size: 1.17em; margin: 1em 0 }
 H4, P,
 BLOCKQUOTE, UL,
-FIELDSET, 
+FIELDSET,
 OL, DL, DIR,
 MENU            { margin-top: 1.0em; margin-bottom: 1.0em }
 H5              { font-size: .83em; line-height: 1.17em; margin: 1.67em 0 }
@@ -300,7 +327,7 @@ UL UL, OL OL    { margin-top: 0; margin-bottom: 0 }
 U, INS          { text-decoration: underline }
 ABBR, ACRONYM   { font-variant: small-caps; letter-spacing: 0.1em }
 /* Formatting for <pre> etc. */
-PRE, PLAINTEXT, XMP { 
+PRE, PLAINTEXT, XMP {
   display: block;
   white-space: pre;
   margin: 1em 0;
@@ -320,15 +347,15 @@ A:active {
 /* Deal with the "nowrap" HTML attribute on table cells. */
 TD[nowrap] ,     TH[nowrap]     { white-space: nowrap; }
 TD[nowrap="0"] , TH[nowrap="0"] { white-space: normal; }
-BR { 
+BR {
     display: block;
 }
 /* BR:before       { content: "\A" } */
 /*
- * Default decorations for form items. 
+ * Default decorations for form items.
  */
 INPUT[type="hidden"] { display: none }
-INPUT, TEXTAREA, SELECT, BUTTON { 
+INPUT, TEXTAREA, SELECT, BUTTON {
   border: 1px solid #828282;
   background-color: white;
   line-height: normal;
@@ -404,8 +431,8 @@ IFRAME {
 }
 /*
  *************************************************************************
- * Below this point are stylesheet rules for mapping presentational 
- * attributes of Html to CSS property values. Strictly speaking, this 
+ * Below this point are stylesheet rules for mapping presentational
+ * attributes of Html to CSS property values. Strictly speaking, this
  * shouldn't be specified here (in the UA stylesheet), but it doesn't matter
  * in practice. See CSS 2.1 spec for more details.
  */
@@ -456,8 +483,8 @@ TABLE[cellpadding] td, TABLE[cellpadding] th {
 TABLE[cellspacing], table[cellspacing] {
     border-spacing: attr(cellspacing l);
 }
-/* Map the valign attribute to the 'vertical-align' property for table 
- * cells. The default value is "middle", or use the actual value of 
+/* Map the valign attribute to the 'vertical-align' property for table
+ * cells. The default value is "middle", or use the actual value of
  * valign if it is defined.
  */
 TD,TH                        {vertical-align: middle}
@@ -498,7 +525,8 @@ SPAN[spancontent]:after {
 IFRAME[frameborder]{
   border-width: attr(frameborder l);
 }
-"""
+"""  # noqa: E501
+"""CSS stylesheet for light theme HTML rendering."""
 
 DARKTHEME = """
 /* Additional stylesheet to be loaded whenever dark mode is enabled. */
@@ -522,3 +550,4 @@ INPUT[type="submit"],INPUT[type="button"], INPUT[type="reset"], BUTTON {
   color: tcl(::tkhtml::if_disabled #595959 #fafafa);
 }
 """
+"""CSS stylesheet for dark theme HTML rendering."""

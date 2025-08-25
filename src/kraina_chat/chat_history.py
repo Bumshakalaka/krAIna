@@ -1,4 +1,9 @@
-"""Chat window."""
+"""Chat history management and user interface components.
+
+This module provides the main chat interface including history management,
+user query handling, file operations, and clipboard integration for the
+krAIna chat application.
+"""
 
 import base64
 import functools
@@ -39,9 +44,20 @@ from kraina_chat.scroll_text import ScrolledText
 
 
 class FixedNotebook(Notebook):
-    """Remove fix after PR: https://github.com/Andereoo/TkinterWeb/pull/102"""
+    """Fixed notebook widget for tab management.
+
+    Provides a workaround for tab selection issues in the TkinterWeb
+    notebook widget until the fix is merged in the upstream repository.
+
+    See: https://github.com/Andereoo/TkinterWeb/pull/102
+    """
 
     def select(self, tabId=None):
+        """Select a tab by ID or index.
+
+        :param tabId: The tab ID or index to select
+        :return: The selected tab ID
+        """
         if tabId in self.pages:
             tabId = self.pages.index(tabId)
             return self.notebook.select(tabId)
@@ -54,10 +70,20 @@ logger = logging.getLogger(__name__)
 
 
 class ChatHistory(FixedNotebook):
-    """Chat history Widget with two ChatViews: Text and Markdown"""
+    """Chat history widget with dual view support.
+
+    Manages both text and HTML-based chat views, handling message routing,
+    theme updates, and conversation state management.
+    """
 
     def __init__(self, parent):
-        """Initialize widget."""
+        """Initialize the chat history widget.
+
+        Sets up dual view tabs (HTML and text), configures event bindings,
+        and initializes color schemes for different message types.
+
+        :param parent: The parent widget containing this chat history
+        """
         super().__init__(parent)
         self.root = parent.master
         self.parent = parent
@@ -90,12 +116,26 @@ class ChatHistory(FixedNotebook):
 
     @staticmethod
     def _remove_img_data(msg: str) -> str:
+        """Remove image data URLs from message text.
+
+        Replaces image data URLs with a placeholder text to reduce
+        message size for storage and processing.
+
+        :param msg: The message text containing potential image data URLs
+        :return: Message text with image data URLs replaced
+        """
         if msg:
             return IMAGE_DATA_URL_MARKDOWN_RE.sub("generated image cannot be put here because of size", msg)
         return msg
 
     def update_title(self, conv: Union[Conversations, None]):
-        """Update chat label title."""
+        """Update the chat title display.
+
+        Sets the active chat name and description in the UI variables
+        based on the provided conversation object.
+
+        :param conv: The conversation object or None for new chats
+        """
         if conv:
             name = conv.name if conv.name else f"ID:{conv.conversation_id}"
             descr = ""
@@ -108,12 +148,21 @@ class ChatHistory(FixedNotebook):
         self.root.setvar("active_chat_name", name)
         self.root.setvar("active_chat_descr", descr)
 
-    def _view_change(self, *args):
-        """Save selected tab into persistence."""
+    def _view_change(self, *args):  # noqa: ARG002
+        """Save the selected tab preference to persistence.
+
+        Called when the user switches between HTML and text views.
+        """
         chat_persistence.SETTINGS.last_view_id = self.index(self.select())
 
     def update_tags(self, theme: str):
-        """Update widgets when theme changed."""
+        """Update all chat views when theme changes.
+
+        Refreshes the styling of all chat views and reloads the current
+        conversation to apply the new theme.
+
+        :param theme: The new theme name
+        """
         for view in self.views.values():
             view.update_tags(theme)
         if self.root.conv_id:
@@ -128,7 +177,11 @@ class ChatHistory(FixedNotebook):
             )
 
     def new_chat(self, *args):
-        """Call view methods."""
+        """Start a new chat session.
+
+        Clears all chat views, resets conversation state, and optionally
+        sets the default assistant if configured.
+        """
         for view in self.views.values():
             view.new_chat(*args)
         if (
@@ -141,7 +194,13 @@ class ChatHistory(FixedNotebook):
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, None)
 
     def load_chat(self, conversation: Conversations):
-        """Call view methods."""
+        """Load an existing conversation into all views.
+
+        Populates all chat views with the messages from the provided
+        conversation and updates the UI state accordingly.
+
+        :param conversation: The conversation object to load
+        """
         self.raw_messages = []
         for message in conversation.messages:
             self.raw_messages.append([LlmMessageType(message.type).name, self._remove_img_data(message.message)])
@@ -164,6 +223,13 @@ class ChatHistory(FixedNotebook):
         self.root.post_event(APP_EVENTS.UPDATE_CHAT_TITLE, conversation)
 
     def copy_chat(self, conversation: Conversations):
+        """Copy conversation content to clipboard.
+
+        Formats the conversation messages for clipboard copying in both
+        text and HTML formats, handling different message types appropriately.
+
+        :param conversation: The conversation to copy to clipboard
+        """
         # Always use colors from Light Theme
         cols = {
             "HUMAN": self.root.get_theme_color("accent", "sun-valley-light"),
@@ -193,6 +259,13 @@ class ChatHistory(FixedNotebook):
             klembord.set({"UTF8_STRING": to_clip_text.encode(), "text/html": to_clip_html.encode()})
 
     def export_to_file(self, conversation: Conversations):
+        """Export conversation to various file formats.
+
+        Allows users to save conversations as text, HTML, or PDF files
+        with appropriate formatting and styling.
+
+        :param conversation: The conversation to export
+        """
         fn = asksaveasfilename(
             parent=self,
             initialdir=Path(__name__).parent,
@@ -250,13 +323,25 @@ class ChatHistory(FixedNotebook):
                 self.after_idle(messagebox.showerror, "Export to PDF", err_msg)
 
     def ai_observation(self, message: str):
-        """Call view methods."""
+        """Handle AI observation messages.
+
+        Adds AI observation messages to the raw message list and
+        forwards them to all chat views.
+
+        :param message: The AI observation message content
+        """
         self.raw_messages.append(["AI", self._remove_img_data(message)])
         for view in self.views.values():
             view.ai_message(message)
 
     def ai_message(self, message: str):
-        """Call view methods."""
+        """Handle AI response messages.
+
+        Processes AI messages, updates the UI state, and triggers
+        chat history updates and description generation.
+
+        :param message: The AI message content
+        """
         self.raw_messages.append(["AI", self._remove_img_data(message)])
         for view in self.views.values():
             view.ai_message(message)
@@ -269,20 +354,35 @@ class ChatHistory(FixedNotebook):
             self._describe_chat()
 
     def human_message(self, message: str):
-        """Call view methods."""
+        """Handle human input messages.
+
+        Processes human messages and forwards them to the AI assistant
+        for processing.
+
+        :param message: The human message content
+        """
         self.raw_messages.append(["HUMAN", self._remove_img_data(message)])
         for view in self.views.values():
             view.human_message(message)
         self.root.post_event(APP_EVENTS.QUERY_TO_ASSISTANT, message)
 
     def tool_message(self, message: str):
-        """Call view methods."""
+        """Handle tool response messages.
+
+        Processes tool messages and displays them in all chat views.
+
+        :param message: The tool message content
+        """
         self.raw_messages.append(["TOOL", self._remove_img_data(message)])
         for view in self.views.values():
             view.tool_message(message)
 
     def _describe_chat(self):
-        """Call nameit snippet to describe chat after."""
+        """Generate chat description using AI.
+
+        Triggers the nameit snippet to automatically generate a description
+        for the chat based on the conversation content.
+        """
         self.root.post_event(
             APP_EVENTS.DESCRIBE_NEW_CHAT,
             "\n".join([str_shortening(x[1], 512) for x in self.raw_messages if x[0] in ["AI", "HUMAN"]][0:4]),
@@ -290,12 +390,19 @@ class ChatHistory(FixedNotebook):
 
 
 class UserQuery(ttk.Frame):
-    """User query frame."""
+    """User query input frame with advanced features.
+
+    Provides a comprehensive input interface for user queries including
+    text input, file handling, clipboard integration, and snippet support.
+    """
 
     def __init__(self, parent):
         """Initialize the user query frame.
 
-        :param parent: Chat frame.
+        Sets up the text input area, buttons, token counting, and
+        various event handlers for user interaction.
+
+        :param parent: The parent widget containing this query frame
         """
         super().__init__(parent, height=10)
         self.root = parent.master
@@ -334,24 +441,31 @@ class UserQuery(ttk.Frame):
 
         f.pack(side=tk.TOP, fill=tk.X)
         self.block_events = 0
-        self.drop_target_register(DND_FILES)
-        self.dnd_bind("<<Drop>>", self._dnd_drop)
+        self.drop_target_register(DND_FILES)  # type: ignore
+        self.dnd_bind("<<Drop>>", self._dnd_drop)  # type: ignore
 
-    def _enter_hyper(self, event):
-        """Change the cursor to a hand when hovering over a hyperlink.
+    def _enter_hyper(self, event):  # noqa: ARG002
+        """Change cursor to hand when hovering over hyperlinks.
 
-        :param event: The event object containing information about the hover event.
+        :param event: The mouse enter event object
         """
         self.text.config(cursor="hand2")
 
-    def _leave_hyper(self, event):
-        """Revert the cursor back to default when leaving a hyperlink.
+    def _leave_hyper(self, event):  # noqa: ARG002
+        """Revert cursor to default when leaving hyperlinks.
 
-        :param event: The event object containing information about the leave event.
+        :param event: The mouse leave event object
         """
         self.text.config(cursor="")
 
-    def _show_image(self, event):
+    def _show_image(self, event):  # noqa: ARG002
+        """Display image in web browser when clicked.
+
+        Extracts image identifier from tags and opens the corresponding
+        image file in the default web browser.
+
+        :param event: The mouse click event object
+        """
         print(self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False))
         for el in self.text.dump(tk.CURRENT, image=False, text=False, tag=True, mark=False, window=False):
             # [('tagon', 'IMAGES', '3.0'), ('tagon', 'img-931081a4f276e7e1889ce52da2e87f9b', '3.0')]
@@ -359,6 +473,14 @@ class UserQuery(ttk.Frame):
                 webbrowser.open(self.root.images.get_file_uri(el[1]), new=2, autoraise=True)
 
     def _dnd_drop(self, e):
+        """Handle drag and drop file operations.
+
+        Processes dropped files, inserting images directly or adding
+        file references for supported document types.
+
+        :param e: The drop event object
+        :return: Action result or REFUSE_DROP for unsupported files
+        """
         if e.data and Path(e.data).suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp"]:
             name = self.root.images.create_from_file(Path(e.data))
             self.text.image_create(tk.END, image=self.root.images[name], name=name)
@@ -371,6 +493,11 @@ class UserQuery(ttk.Frame):
             return REFUSE_DROP
 
     def add_file(self):
+        """Open file dialog to add files to the query.
+
+        Allows users to select image files for direct insertion or
+        document files for reference links.
+        """
         fn = askopenfilename(
             parent=self,
             initialdir=Path(__name__).parent,
@@ -388,16 +515,14 @@ class UserQuery(ttk.Frame):
         else:
             self.text.insert(tk.END, f"[{Path(fn).name}]({fn})\n")
 
-    def _on_paste(self, *args):
-        """Handle the paste event to insert an image from the clipboard.
+    def _on_paste(self, *args):  # noqa: ARG002
+        """Handle clipboard paste events.
 
-        This function attempts to grab an image from the clipboard, convert it to a PNG format,
-        and insert it into a text widget. The image is encoded in base64 and stored in a
-        custom image manager.
+        Attempts to insert images from the clipboard, converting them
+        to PNG format and storing them in the image manager.
 
-        :param args: Additional arguments (unused).
-        :return: None
-        :raises UnidentifiedImageError: If the clipboard content is not an image.
+        :param args: Additional arguments (unused)
+        :raises UnidentifiedImageError: If clipboard content is not an image
         """
         try:
             im = grabclipboard()
@@ -413,11 +538,18 @@ class UserQuery(ttk.Frame):
         except UnidentifiedImageError:
             pass
 
-    def _show_tokens(self, *args):
-        """Schedule tokens count on every button release of text paste."""
+    def _show_tokens(self, *args):  # noqa: ARG002
+        """Schedule token count calculation.
+
+        Debounces token counting to avoid excessive calculations
+        during rapid text input.
+        """
 
         def _call(text):
-            """Calculate the number of tokens per text"""
+            """Calculate token count for the given text.
+
+            :param text: The text to count tokens for
+            """
             try:
                 enc = encoding_for_model(self.root.current_assistant.model)
             except KeyError:
@@ -432,16 +564,15 @@ class UserQuery(ttk.Frame):
         # schedule calculation of tokens with delay
         self.tokens_after_id = self.after(500, _call, self.text.get("1.0", tk.END))
 
-    def invoke(self, entity: str, event=None):
-        """Callback called on send user query.
+    def invoke(self, entity: str, event=None):  # noqa: ARG002
+        """Process user query submission.
 
-        It generates virtual event depends on entity parameter
+        Handles sending queries to either the AI assistant or snippets
+        based on the entity parameter.
 
-        :param entity: Destination for sending user queries.
-                       'assistant' - send to assistant to answer via APP_EVENTS.QUERY_ASSIST_CREATED
-                       else - this is snipped, generate APP_EVENTS.QUERY_SNIPPET
-        :param event: tk bind Event
-        :return:
+        :param entity: Target entity ('assistant' or snippet name)
+        :param event: The triggering event object
+        :return: 'break' to prevent default event handling
         """
         if entity == "assistant":
             query = ""
@@ -469,6 +600,13 @@ class UserQuery(ttk.Frame):
         return "break"  # stop other events associate with bind to execute
 
     def _snippets_menu(self, event: tk.Event):
+        """Display context menu for available snippets.
+
+        Shows a popup menu with all available AI snippets when
+        right-clicking in the text area.
+
+        :param event: The right-click event object
+        """
         w = tk.Menu(self, tearoff=False)
         w.bind("<FocusOut>", lambda ev: ev.widget.destroy())
         for skill in self.root.ai_snippets.keys():
@@ -479,15 +617,24 @@ class UserQuery(ttk.Frame):
             w.grab_release()
 
     def skill_message(self, data: str):
-        """Insert skill message into User query.
+        """Insert snippet response into the query text.
 
-        :param data: message to insert
-        :return:
+        Called when a snippet returns a response, inserting it
+        at the current cursor position.
+
+        :param data: The snippet response to insert
         """
         self.unblock()
         self.text.insert(self.text.index(tk.INSERT), data)
 
-    def unblock(self, data=None):
+    def unblock(self, data=None):  # noqa: ARG002
+        """Unblock the query interface.
+
+        Decrements the block counter and re-enables input when
+        all blocking operations are complete.
+
+        :param data: Additional data (unused)
+        """
         self.block_events -= 1
         if self.block_events == 0:
             self.pb.stop()
@@ -496,7 +643,14 @@ class UserQuery(ttk.Frame):
             self.text.bind("<Return>", self._handle_return)
             self.text.bind("<KP_Enter>", self._handle_return)
 
-    def block(self, data=None):
+    def block(self, data=None):  # noqa: ARG002
+        """Block the query interface.
+
+        Increments the block counter and disables input during
+        processing operations.
+
+        :param data: Additional data (unused)
+        """
         self.block_events += 1
         if str(self.send_btn.config("state")[4]) == tk.NORMAL:
             self.pb.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -507,9 +661,10 @@ class UserQuery(ttk.Frame):
 
     def _handle_return(self, event):
         """Handle Return and KP_Enter key presses.
+
         If Shift is pressed, insert a newline, otherwise invoke the assistant.
 
-        :param event: The key event
+        :param event: The key event object
         :return: 'break' to prevent default handling or None to allow it
         """
         if event.state & 0x1:  # Check if Shift is pressed (0x1 is the mask for Shift)
@@ -519,11 +674,19 @@ class UserQuery(ttk.Frame):
 
 
 class ChatFrame(tk.PanedWindow):
-    """Right side chat frame."""
+    """Main chat interface frame.
+
+    Combines the chat history view and user query interface in a
+    resizable paned window layout.
+    """
 
     def __init__(self, parent):
         """Initialize the chat frame.
-        :param parent: Main App
+
+        Sets up the paned window with chat history and user query
+        components, including title display and sash positioning.
+
+        :param parent: The main application window
         """
         super().__init__(parent, orient=tk.VERTICAL, opaqueresize=False, sashpad=2, sashwidth=4)
         self.root = parent
@@ -545,7 +708,14 @@ class ChatFrame(tk.PanedWindow):
         self.userW = UserQuery(self)
         self.add(self.userW)
 
-        def _set_sashpos(event):
+        def _set_sashpos(event):  # noqa: ARG001
+            """Set the sash position from saved settings.
+
+            Restores the saved sash position when the widget is fully
+            configured and ready.
+
+            :param event: The configure event object
+            """
             # I have no idea how to set sash pos other way.
             # It must be done when the widget is fully updated.
             # Thus, do this one time on Configure event

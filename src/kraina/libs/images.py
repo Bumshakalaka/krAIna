@@ -1,3 +1,18 @@
+"""Image management module for the Kraina application.
+
+This module provides functionality for handling images in a chat application context.
+It includes classes and utilities for:
+
+- Loading images from files, URLs, and base64 strings
+- Storing and caching images with multiple resolutions
+- Converting images for Tkinter GUI display
+- Image manipulation (resizing, color inversion)
+- Persistent storage of images on disk
+
+The main class ChatImages provides a dictionary-like interface for managing
+images with automatic caching, resizing, and storage capabilities.
+"""
+
 import base64
 import hashlib
 import logging
@@ -9,14 +24,14 @@ from pathlib import Path
 from typing import Dict, Tuple, Union
 
 import requests
-from PIL import Image, ImageChops, ImageTk
+from PIL import Image, ImageChops, ImageTk  # type: ignore
 
 from kraina.libs.paths import STORE_PATH_IMAGES
 
 logger = logging.getLogger(__name__)
 
 
-class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
+class ChatImages(Dict[str, ImageTk.PhotoImage | str | None]):
     """A dictionary-like class to manage images in a chat application.
 
     This class extends a dictionary to store images with unique keys generated from file paths
@@ -66,7 +81,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
                 return False
         return False
 
-    def create_from_file(self, fn: Union[Path, BytesIO], img: str = None, image_tk=True) -> str:
+    def create_from_file(self, fn: Union[Path, BytesIO], img: str, image_tk=True) -> str:
         """Create an image from a file and store it in the dictionary.
 
         If the image already exists, it returns the existing key.
@@ -132,7 +147,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             div = max(self.pil_image[img]["org"].height, self.pil_image[img]["org"].width) // max_height
         return self.pil_image[img]["org"].width // div, self.pil_image[img]["org"].height // div
 
-    def create_from_url(self, url: str, img: str = None, image_tk=True) -> str:
+    def create_from_url(self, url: str, img: str, image_tk=True) -> str:
         """Create an image from a URL, file path, or base64 string.
 
         This function fetches image data from a given URL, file path, or base64 encoded string,
@@ -162,7 +177,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             buffer.seek(0)
             return self.create_from_file(buffer, img, image_tk)
 
-    def _invert_rgba_image_chops(self, img_obj: Image) -> Image:
+    def _invert_rgba_image_chops(self, img_obj: Image.Image) -> Image.Image:
         """Invert the colors of an RGBA image while preserving the alpha channel.
 
         This function creates a white image of the same size as the input image,
@@ -233,10 +248,11 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str]):
             fd.seek(0)
             return fd.name
 
-    def get(self, img: str) -> Union[ImageTk.PhotoImage, str, None]:
+    def get(self, img: str, default=None) -> Union[ImageTk.PhotoImage, str, None]:  # noqa: ARG002
         """Get an image from the dictionary, checking storage if not in memory.
 
         :param img: The image identifier
+        :param default: The default value to return if the image is not found
         :return: The image if found, None if not found
         """
         # First check if image exists in memory

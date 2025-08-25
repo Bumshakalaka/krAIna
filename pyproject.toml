@@ -75,6 +75,8 @@ lint.select = ["E","W","D","ARG","TC","RSE","Q","PT","I","F"]
 lint.ignore = []
 line-length = 120
 target-version = "py312"
+exclude = ["src/kraina/libs/klembord/**"]
+
 
 [tool.pyright]
 exclude = ["**/__pycache__",
@@ -82,5 +84,6 @@ exclude = ["**/__pycache__",
     "**/.ruff_cache",
     "**/.vscode",
     "**/.venv",
-    "**/temp"
+    "**/temp",
+    "src/kraina/libs/klembord/**"
     ]

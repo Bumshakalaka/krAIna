@@ -1,4 +1,8 @@
-"""Chat with LLM."""
+"""Chat with LLM.
+
+This module provides the main application for KrAIna CHAT, a desktop application
+for interacting with AI assistants and managing chat conversations.
+"""
 
 import collections
 import functools
@@ -13,7 +17,7 @@ from dataclasses import asdict, replace
 from json import JSONDecodeError
 from pathlib import Path
 from tkinter import ttk
-from typing import Any, Callable, Dict, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Union
 
 import sv_ttk
 import yaml
@@ -32,16 +36,16 @@ logging.basicConfig(format=loggerFormat, level=loggerLevel, handlers=[console_ha
 console_handler.setLevel(logging.ERROR)
 
 
-import kraina.libs.images as images
-import kraina.libs.klembord as klembord
-import kraina_chat.chat_persistence as chat_persistence
-import kraina_chat.chat_settings as chat_settings
-from kraina.assistants.assistant import AssistantResp, AssistantType
-from kraina.assistants.base import Assistants
-from kraina.libs.db.controller import Db
-from kraina.libs.llm import read_model_settings
-from kraina.libs.paths import ENV_FILE, config_file_validation
-from kraina.libs.utils import (
+import kraina.libs.images as images  # noqa: E402
+import kraina.libs.klembord as klembord  # noqa: E402
+import kraina_chat.chat_persistence as chat_persistence  # noqa: E402
+import kraina_chat.chat_settings as chat_settings  # noqa: E402
+from kraina.assistants.assistant import AssistantResp, AssistantType  # noqa: E402
+from kraina.assistants.base import Assistants  # noqa: E402
+from kraina.libs.db.controller import Db  # noqa: E402
+from kraina.libs.llm import read_model_settings  # noqa: E402
+from kraina.libs.paths import ENV_FILE, config_file_validation  # noqa: E402
+from kraina.libs.utils import (  # noqa: E402
     CONFIG_FILE,
     IMAGE_DATA_URL_MARKDOWN_RE,
     _convert_data_url_to_file_url,
@@ -50,14 +54,16 @@ from kraina.libs.utils import (
     str_shortening,
     to_md,
 )
-from kraina.snippets.base import Snippets
-from kraina.snippets.snippet import BaseSnippet
-from kraina_chat.base import APP_EVENTS, SETTINGS_FILE, get_windows_version, ipc_event
-from kraina_chat.chat_history import ChatFrame
-from kraina_chat.leftsidebar import LeftSidebar
-from kraina_chat.menu import Menu
-from kraina_chat.status_bar import StatusBar
-from kraina_chat.watch_files import watch_exit_event, watch_my_files
+from kraina.snippets.base import Snippets  # noqa: E402
+from kraina_chat.base import APP_EVENTS, SETTINGS_FILE, get_windows_version, ipc_event  # noqa: E402
+from kraina_chat.chat_history import ChatFrame  # noqa: E402
+from kraina_chat.leftsidebar import LeftSidebar  # noqa: E402
+from kraina_chat.menu import Menu  # noqa: E402
+from kraina_chat.status_bar import StatusBar  # noqa: E402
+from kraina_chat.watch_files import watch_exit_event, watch_my_files  # noqa: E402
+
+if TYPE_CHECKING:
+    from kraina.snippets.snippet import BaseSnippet
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +71,11 @@ EVENT = namedtuple("EVENT", "event data")
 
 
 def handle_thread_exception(args):
-    """Log unexpected exception in the slave threads."""
+    """Log unexpected exception in the slave threads.
+
+    :param args: Thread exception arguments containing thread info and exception details.
+    :return: None.
+    """
     logger.exception(
         f"Uncaught exception occurred in thread: {args.thread}",
         exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
@@ -79,10 +89,19 @@ class NotifyErrorFilter(logging.Filter):
     """Execute function on every error log message."""
 
     def __init__(self, error_cbk: Callable):
+        """Initialize the error filter.
+
+        :param error_cbk: Callback function to execute on error logs.
+        """
         super().__init__()
         self.error_cbk = error_cbk
 
     def filter(self, record: logging.LogRecord):
+        """Filter log records and execute callback on errors.
+
+        :param record: Log record to filter.
+        :return: True to allow the record through, False to filter it out.
+        """
         if record.levelno >= 40:
             self.error_cbk()
         return True
@@ -92,21 +111,28 @@ class QueueHandler(logging.Handler):
     """Class to send logging records to a queue."""
 
     def __init__(self, log_queue):
+        """Initialize the queue handler.
+
+        :param log_queue: Queue to store log records in.
+        """
         super().__init__()
         self.log_queue = log_queue
 
     def emit(self, record):
-        """Store log record in queue."""
+        """Store log record in queue.
+
+        :param record: Log record to store.
+        """
         self.log_queue.append(record)
 
 
 class App(TkinterDnD.Tk):
-    """Main application."""
+    """Main application class for KrAIna CHAT."""
 
     def __init__(self):
         """Create application.
 
-        IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init
+        IMPORTANT: the application is in withdraw state. `app.deiconify()` method must be called after init.
         """
         super().__init__()
         self._bind_table = defaultdict(list)
@@ -142,7 +168,7 @@ class App(TkinterDnD.Tk):
         self.tk.call(
             "wm",
             "iconphoto",
-            self._w,
+            self._w,  # type: ignore
             ImageTk.PhotoImage(Image.open(str(Path(__file__).parent / "img/logo_big.png"))),
         )
         self.selected_assistant = tk.StringVar(self, list(self.ai_assistants.keys())[0])
@@ -159,7 +185,7 @@ class App(TkinterDnD.Tk):
         self.pw_main.add(self.chatW)
         self.pw_main.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        def _set_sashpos(event):
+        def _set_sashpos(event):  # noqa: ARG001
             # I have no idea how to set sash pos other way.
             # It must be done when the widget is fully updated.
             # Thus, do this one time on Configure event
@@ -185,11 +211,11 @@ class App(TkinterDnD.Tk):
         self.bind_on_event(APP_EVENTS.SHOW_APP, self.show_app)
         self.bind_on_event(APP_EVENTS.HIDE_APP, self.hide_app)
         self.bind_on_event(APP_EVENTS.RELOAD_AI, self.reload_ai)
-        self.bind_on_event(APP_EVENTS.GET_LIST_OF_SNIPPETS, lambda x: ",".join(self.ai_snippets.keys()))
+        self.bind_on_event(APP_EVENTS.GET_LIST_OF_SNIPPETS, lambda x: ",".join(self.ai_snippets.keys()))  # noqa: ARG005
         self.bind_on_event(APP_EVENTS.COPY_TO_CLIPBOARD, self.copy_to_clipboard)
         self.bind_on_event(
             APP_EVENTS.RELOAD_CHAT_LIST,
-            lambda x: self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats()),
+            lambda x: self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats()),  # noqa: ARG005
         )
         self.bind("<Escape>", self.hide_app)
         self.bind_class(
@@ -209,7 +235,7 @@ class App(TkinterDnD.Tk):
         else:
             chat_persistence.SETTINGS.last_conv_id = {Path(kraina_db()).name: None}
         if chat_persistence.SETTINGS.last_assistant:
-            self.selected_assistant.set(chat_persistence.SETTINGS.last_assistant)
+            self.selected_assistant.set(str(chat_persistence.SETTINGS.last_assistant))
         self.setvar(
             "selected_api_type",
             "-" if chat_persistence.SETTINGS.last_api_type == "" else chat_persistence.SETTINGS.last_api_type,
@@ -226,7 +252,7 @@ class App(TkinterDnD.Tk):
         ID is found for the new database, it initiates a new chat.
 
         :param database: The name of the database to switch to.
-        :return: None
+        :return: None.
         :raises KeyError: If the environment variable 'KRAINA_DB' is not set.
         """
         if Path(kraina_db()).name != database:
@@ -236,9 +262,14 @@ class App(TkinterDnD.Tk):
             self.post_event(APP_EVENTS.RELOAD_AI, None)
             self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
-            conv_id = chat_persistence.SETTINGS.last_conv_id.get(Path(kraina_db()).name, None)
+            conv_id = (
+                chat_persistence.SETTINGS.last_conv_id.get(Path(kraina_db()).name, None)
+                if chat_persistence.SETTINGS.last_conv_id
+                else None
+            )
             if conv_id is None:
-                chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = None
+                if chat_persistence.SETTINGS.last_conv_id:
+                    chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = None
                 # New chat
                 self.post_event(APP_EVENTS.NEW_CHAT, None)
                 self.post_event(
@@ -258,7 +289,7 @@ class App(TkinterDnD.Tk):
         Depending on the type of file change, the function reloads different settings and posts relevant events.
 
         :param what: The type of file change. Expected values are "assistants", "snippets", "main", or "macros".
-        :return: None
+        :return: None.
         :raises KeyError: If the `what` parameter is not one of the expected values.
         """
         if what in ["assistants", "snippets"]:
@@ -281,7 +312,10 @@ class App(TkinterDnD.Tk):
 
     @property
     def current_assistant(self):
-        """Get current assistant."""
+        """Get current assistant.
+
+        :return: The currently selected AI assistant.
+        """
         try:
             self.ai_assistants[self.selected_assistant.get()]
         except KeyError as e:
@@ -301,8 +335,8 @@ class App(TkinterDnD.Tk):
     def copy_to_clipboard(self, text: str):
         """Copy Last AI response to system clipboard in Text and HTML format.
 
-        :param text:
-        :return:
+        :param text: Text content to copy to clipboard.
+        :return: None.
         """
         if not chat_persistence.SETTINGS.copy_to_clipboard:
             return
@@ -330,9 +364,12 @@ class App(TkinterDnD.Tk):
             )
 
     def set_title_bar_color(self, theme):
-        """Set background color of title on Windows only."""
+        """Set background color of title on Windows only.
+
+        :param theme: Theme name to apply to the title bar.
+        """
         if get_windows_version() == 10:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             if "dark" in theme:
                 pywinstyles.apply_style(self, "dark")
@@ -343,7 +380,7 @@ class App(TkinterDnD.Tk):
             self.wm_attributes("-alpha", 0.99)
             self.wm_attributes("-alpha", 1)
         elif get_windows_version() == 11:
-            import pywinstyles
+            import pywinstyles  # type: ignore
 
             if "dark" in theme:
                 take_from = "dark"
@@ -354,7 +391,12 @@ class App(TkinterDnD.Tk):
             pywinstyles.change_header_color(self, col)
 
     def get_theme_color(self, col_name, theme=None) -> str:
-        """Get theme color based on actual theme."""
+        """Get theme color based on actual theme.
+
+        :param col_name: Color name to retrieve.
+        :param theme: Optional theme name, defaults to current theme.
+        :return: Color value as string.
+        """
         if not theme:
             theme = ttk.Style(self).theme_use()
         if "dark" in theme:
@@ -373,16 +415,29 @@ class App(TkinterDnD.Tk):
             col = col_map[col_name]
         return col
 
-    def report_callback_exception(self, exc, val, tb):
-        """Handle tkinter callback errors"""
+    def report_callback_exception(self, exc, val, tb):  # noqa: ARG001, ARG002, ARG003
+        """Handle tkinter callback errors.
+
+        :param exc: Exception type.
+        :param val: Exception value.
+        :param tb: Traceback object.
+        """
         logger.exception(exc)
 
-    def reload_ai(self, *args):
+    def reload_ai(self, *args):  # noqa: ARG002
+        """Reload AI assistants and snippets.
+
+        :param args: Variable arguments (unused).
+        """
         self.ai_assistants = Assistants()
         self.ai_snippets = Snippets()
         self.post_event(APP_EVENTS.UPDATE_AI, None)
 
-    def show_app(self, *args):
+    def show_app(self, *args):  # noqa: ARG002
+        """Show the application window.
+
+        :param args: Variable arguments (unused).
+        """
         self.withdraw()
         self.deiconify()
         # workaround to lift window on Linux and Windows
@@ -394,14 +449,18 @@ class App(TkinterDnD.Tk):
             self.wm_attributes("-topmost", False)
         self.chatW.userW.text.focus_force()
 
-    def hide_app(self, *args):
+    def hide_app(self, *args):  # noqa: ARG002
+        """Hide the application window.
+
+        :param args: Variable arguments (unused).
+        """
         self.iconify()
 
     def describe_chat(self, chat_dump: str):
-        """Callback on DESCRIBE_NEW_CHAT event to set name and description of the chat.
+        """DESCRIBE_NEW_CHAT event callback to set name and description of the chat.
 
-        :param chat_dump:
-        :return:
+        :param chat_dump: Chat content to describe.
+        :return: None.
         """
         if self.ai_db.get_conversation(self.conv_id).name:
             return
@@ -420,7 +479,7 @@ class App(TkinterDnD.Tk):
                     out = (
                         self.ai_snippets["nameit"]
                         .run(query)
-                        .removesuffix("```")
+                        .removesuffix("```")  # type: ignore
                         .removeprefix("```")
                         .removeprefix("json")
                     )
@@ -442,17 +501,19 @@ class App(TkinterDnD.Tk):
         ).start()
 
     def delete_chat(self, conv_id: Union[int, Dict]):
-        """Callback on DEL_CHAT event.
+        """DEL_CHAT event callback.
 
         Permanent delete conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
 
-        :param conv_id:
-        :return:
+        :param conv_id: Conversation ID to delete or dict containing the ID.
+        :return: None.
         """
         if isinstance(conv_id, Dict):
             # If the event comes from IPC, the params are serialized to Dict
-            conv_id = conv_id["par0"]
-        self.ai_db.delete_conversation(conv_id)
+            actual_conv_id: int = conv_id["par0"]
+        else:
+            actual_conv_id = conv_id
+        self.ai_db.delete_conversation(actual_conv_id)
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
         self.post_event(APP_EVENTS.NEW_CHAT, None)
         self.post_event(
@@ -465,12 +526,12 @@ class App(TkinterDnD.Tk):
         )
 
     def modify_chat(self, data: Dict):
-        """Callback on MODIFY_CHAT event.
+        """MODIFY_CHAT event callback.
 
         Modify conv_id chat and post ADD_NEW_CHAT_ENTRY event to update chat entries.
 
-        :param data:
-        :return:
+        :param data: Dictionary containing conversation ID and action to perform.
+        :return: None.
         """
         conv_id = data["conv_id"]
         action = data["action"]  # type: Dict
@@ -478,12 +539,12 @@ class App(TkinterDnD.Tk):
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
     def update_chat_lists(self, active: Union[bool, None]):
-        """Callback in ADD_NEW_CHAT_ENTRY event to get the conversation list.
+        """ADD_NEW_CHAT_ENTRY event callback to get the conversation list.
 
         ADD_NEW_CHAT_ENTRY is post without data.
 
-        :param active: Get active(True), inactive(False) or both(None) conversations
-        :return:
+        :param active: Get active(True), inactive(False) or both(None) conversations.
+        :return: None.
         """
         self.post_event(
             APP_EVENTS.UPDATE_SAVED_CHATS,
@@ -491,15 +552,15 @@ class App(TkinterDnD.Tk):
         )
 
     def get_chat(self, data: dict):
-        """Callback on GET_CHAT event.
+        """GET_CHAT event callback.
 
-        :param conv_id: conversation_id from GET_CHAT event
-        :return:
+        :param data: Dictionary containing conversation ID and event type.
+        :return: None.
         """
         if self.ai_db.is_conversation_id_valid(data["conv_id"]):
             self.conv_id = data["conv_id"]
             self.post_event(APP_EVENTS[data["ev"]], self.ai_db.get_conversation(data["conv_id"]))
-            if data["ev"] == "LOAD_CHAT":
+            if data["ev"] == "LOAD_CHAT" and chat_persistence.SETTINGS.last_conv_id:
                 chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = self.conv_id
         else:
             logger.error("conversation_id not know")
@@ -509,7 +570,7 @@ class App(TkinterDnD.Tk):
     def _persistent_write(self):
         """Save settings on application exit.
 
-        :return:
+        :return: None.
         """
         chat_persistence.SETTINGS.sashpos_main = list(self.pw_main.sash_coord(0))[0]
         chat_persistence.SETTINGS.sashpos_chat = list(self.chatW.sash_coord(0))[1]
@@ -519,7 +580,7 @@ class App(TkinterDnD.Tk):
     def _persistent_read(self):
         """Restore settings from persistence if exists.
 
-        :return:
+        :return: None.
         """
         if not SETTINGS_FILE.exists():
             return
@@ -537,7 +598,7 @@ class App(TkinterDnD.Tk):
     def _settings_read(self) -> bool:
         """Get settings from config.yaml file.
 
-        :return: True if config.yaml is valid, False otherwise
+        :return: True if config.yaml is valid, False otherwise.
         """
         try:
             config_file_validation()
@@ -554,6 +615,7 @@ class App(TkinterDnD.Tk):
             return True
 
     def _update_geometry(self):
+        """Update application geometry based on saved settings."""
         if chat_persistence.SETTINGS.geometry == "zoomed":
             self.wm_state("zoomed")
         else:
@@ -569,8 +631,11 @@ class App(TkinterDnD.Tk):
             self.wm_geometry(chat_persistence.SETTINGS.geometry)
         self.update()
 
-    def quit_app(self, *args):
-        """Quit application handler."""
+    def quit_app(self, *args):  # noqa: ARG002
+        """Quit application handler.
+
+        :param args: Variable arguments (unused).
+        """
         watch_exit_event.set()
         if self.macro_window:
             self.macro_window.hide()
@@ -587,9 +652,9 @@ class App(TkinterDnD.Tk):
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         """Bind virtual event to callable.
 
-        :param ev: APP_EVENT
-        :param cmd: command to execute on event
-        :return:
+        :param ev: APP_EVENT to bind.
+        :param cmd: Command to execute on event.
+        :return: None.
         """
         self._bind_table[ev].append(self._event(cmd))
         self.bind(ev.value, self._event(cmd))
@@ -597,9 +662,9 @@ class App(TkinterDnD.Tk):
     def post_event(self, ev: "APP_EVENTS", data: Any):
         """Post virtual event with data.
 
-        :param ev: APP_EVENT to post
-        :param data: data to pass to bind callable
-        :return:
+        :param ev: APP_EVENT to post.
+        :param data: Data to pass to bind callable.
+        :return: None.
         """
         if len(self._bind_table[ev]) == 0:
             logger.warning(f"{ev} not bind")
@@ -609,7 +674,13 @@ class App(TkinterDnD.Tk):
         logger.info(f"Post event={ev.name} with data='{str_shortening(str(data))}'")
 
     def _event(self, ev_cmd):
-        def wrapper(event):
+        """Create event wrapper function.
+
+        :param ev_cmd: Event command to wrap.
+        :return: Wrapped event function.
+        """
+
+        def wrapper(event):  # noqa: ARG001
             """Decorate bind callable."""
             _data: EVENT = self._event_queue.get()
 
@@ -637,8 +708,8 @@ class App(TkinterDnD.Tk):
 
         Post APP_EVENTS.RESP_FROM_ASSISTANT event when response is ready.
 
-        :param data: Query to be answered by assistant
-        :return:
+        :param data: Query to be answered by assistant.
+        :return: None.
         """
 
         def _call(assistant, query, conv_id):
@@ -669,12 +740,12 @@ class App(TkinterDnD.Tk):
         ).start()
 
     def call_snippet(self, data: Dict):
-        """Call AI snippet in separate thread to transform data
+        """Call AI snippet in separate thread to transform data.
 
         Post APP_EVENTS.RESP_FROM_SNIPPET event when response is ready.
 
-        :param data: Dict(entity=snippet name, query=data to transform)
-        :return:
+        :param data: Dict(entity=snippet name, query=data to transform).
+        :return: None.
         """
 
         def _call(snippet, query):
@@ -693,8 +764,8 @@ class App(TkinterDnD.Tk):
     def call_snippet_ipc(self, data: Dict) -> str:
         """Call AI snippet in separate thread to transform data and wait for finish.
 
-        :param data: Dict(par0=snippet name, par1=data to transform)
-        :return: transformed data
+        :param data: Dict(par0=snippet name, par1=data to transform).
+        :return: Transformed data.
         """
 
         def _call(snippet, query, result_var):
@@ -719,8 +790,8 @@ class App(TkinterDnD.Tk):
     def call_snippet_ipc_with_file(self, data: Dict) -> str:
         """Call AI snippet in separate thread to transform data and wait for finish.
 
-        :param data: Dict(par0=snippet name, par1=file path to read content from)
-        :return: transformed data
+        :param data: Dict(par0=snippet name, par1=file path to read content from).
+        :return: Transformed data.
         """
 
         def _call(snippet, query, result_var):
