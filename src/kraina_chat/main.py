@@ -4,6 +4,7 @@ This module provides the main application for KrAIna CHAT, a desktop application
 for interacting with AI assistants and managing chat conversations.
 """
 
+import asyncio
 import collections
 import functools
 import json
@@ -164,6 +165,10 @@ class App(TkinterDnD.Tk):
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
         self.conv_id: Union[int, None] = None
+
+        # AsyncIO task cancellation support
+        self.current_assistant_task = None
+        self.assistant_loop = None
         self.title("KrAIna CHAT")
         self.tk.call(
             "wm",
@@ -704,7 +709,7 @@ class App(TkinterDnD.Tk):
         return wrapper
 
     def call_assistant(self, data: Dict):
-        """Call AI assistant in separate thread.
+        """Call AI assistant using asyncio task for better cancellation.
 
         Post APP_EVENTS.RESP_FROM_ASSISTANT event when response is ready.
 
@@ -712,7 +717,7 @@ class App(TkinterDnD.Tk):
         :return: None.
         """
 
-        def _call(assistant, query, conv_id):
+        async def _async_call(assistant, query, conv_id):
             try:
                 if self.ai_assistants[assistant].type == AssistantType.WITH_TOOLS:
                     # When assistant with tools is called,
@@ -724,20 +729,56 @@ class App(TkinterDnD.Tk):
                         ai_observation=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_OBSERVATION),
                         output=None,
                     )
-                ret = self.ai_assistants[assistant].run(query, conv_id=conv_id)
+
+                # Use asyncio.timeout for built-in cancellation support
+                async with asyncio.timeout(300):  # 5 minute timeout
+                    ret = await self.ai_assistants[assistant].arun(query, conv_id=conv_id)
+
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
-                ret = AssistantResp(self.conv_id, "", {}, _err)
-            self.conv_id = ret.conv_id
-            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.content)
-            self.after_idle(self.status.update_statusbar, ret)
+                ret = AssistantResp(conv_id, "", {}, _err)
 
-        threading.Thread(
-            target=_call,
-            args=(self.selected_assistant.get(), data, self.conv_id),
-            daemon=True,
-        ).start()
+            # Post result to UI thread
+            self.after_idle(lambda: self._handle_assistant_response(ret))
+            return ret
+
+        def _thread_runner():
+            # Create new event loop for this thread
+            self.assistant_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.assistant_loop)
+
+            try:
+                self.current_assistant_task = self.assistant_loop.create_task(
+                    _async_call(self.selected_assistant.get(), data, self.conv_id)
+                )
+                self.assistant_loop.run_until_complete(self.current_assistant_task)
+            except asyncio.CancelledError:
+                logger.info("Assistant task was cancelled")
+            finally:
+                self.assistant_loop.close()
+                self.current_assistant_task = None
+                self.assistant_loop = None
+
+        threading.Thread(target=_thread_runner, daemon=True).start()
+
+    def _handle_assistant_response(self, ret: "AssistantResp"):
+        """Handle assistant response in the main UI thread."""
+        self.conv_id = ret.conv_id
+        self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.content)
+        self.status.update_statusbar(ret)
+
+    def interrupt_assistant(self):
+        """Cancel the currently running assistant task."""
+        if self.current_assistant_task and not self.current_assistant_task.done():
+            if self.assistant_loop and self.assistant_loop.is_running():
+                # Schedule cancellation on the event loop
+                self.assistant_loop.call_soon_threadsafe(self.current_assistant_task.cancel)
+                logger.info("Assistant cancellation requested")
+            else:
+                logger.warning("Assistant loop not running, cannot cancel task")
+        else:
+            logger.info("No active assistant task to cancel")
 
     def call_snippet(self, data: Dict):
         """Call AI snippet in separate thread to transform data.

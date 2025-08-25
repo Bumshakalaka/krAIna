@@ -218,8 +218,43 @@ class BaseAssistant:
             content.append(dict(type="text", text=msg[start_idx:]))
         return content
 
+    @staticmethod
+    def _last_agent_step(response_metadata: Dict) -> bool:
+        """Determine if the agent's response indicates the last step in a sequence.
+
+        This method checks the response metadata for specific keys that indicate
+        a finishing reason and returns True if the reason matches predefined stop signals.
+
+        :param response_metadata: A dictionary containing metadata about the agent's response.
+        :return: True if the response indicates the last step, False otherwise.
+        """
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            if reason in response_metadata:
+                finish_reason: str = response_metadata[reason]
+                break
+        else:
+            finish_reason = "unknown"
+        stop_str = ["stop", "end_turn", "stop_sequence"]
+        # TODO: check other LLM providers
+        logger.info(response_metadata)
+        return finish_reason in stop_str
+
     def run(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
-        """Query LLM as assistant.
+        """Query LLM as assistant (sync).
+
+        This is a synchronous wrapper around the async `arun` method.
+        Assistant uses the database to handle chat history.
+
+        :param query: Text which is passed as Human text to LLM chat
+        :param use_db: Use long-term memory of not. Default is True
+        :param conv_id: Conversation ID. If None, new conversation is started
+        :param kwargs: Additional key-value pairs to substitute in System prompt
+        :return: AssistantResp dataclass
+        """
+        return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
+
+    async def arun(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
+        """Query LLM as assistant (async).
 
         Assistant uses the database to handle chat history.
 
@@ -228,6 +263,7 @@ class BaseAssistant:
         :param conv_id: Conversation ID. If None, new conversation is started
         :param kwargs: Additional key-value pairs to substitute in System prompt
         :return: AssistantResp dataclass
+            The asyncio.CancelledError and asyncio.TimeoutError will return the AssistantResp with cancellation message
         """
         logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
         ai_db = None
@@ -248,30 +284,45 @@ class BaseAssistant:
         used_tokens["input"] = len(self.encoding.encode(query)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total_input"] = used_tokens["prompt"] + used_tokens["history"] + used_tokens["input"]
         used_tokens["output"] = 0
-        if self.type == AssistantType.SIMPLE:
-            ret = self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
-        else:
-            ret = self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
-        if isinstance(ret, list):
-            # anthropic returns here list of dict(text, index, type)
-            if ret and isinstance(ret[0], dict) and "text" in ret[0]:
-                ret = ret[0]["text"]  # type: ignore
+        try:
+            if self.type == AssistantType.SIMPLE:
+                ret = await self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
             else:
-                ret = str(ret)
-        used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
-        used_tokens["tools_input"] = self.used_tools  # type: ignore
-        used_tokens["total"] = sum([v for k, v in used_tokens.items() if k not in ["api", "tools_input"]])
+                ret = await self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
 
-        if ai_db:
-            ai_db.add_message(LlmMessageType.AI, ret)
-        logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
-        content = self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret
-        return AssistantResp(conv_id, content, used_tokens)  # type: ignore
+            if isinstance(ret, list):
+                # anthropic returns here list of dict(text, index, type)
+                if ret and isinstance(ret[0], dict) and "text" in ret[0]:
+                    ret = ret[0]["text"]  # type: ignore
+                else:
+                    ret = str(ret)
+            used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
+            used_tokens["tools_input"] = self.used_tools  # type: ignore
+            used_tokens["total"] = sum([v for k, v in used_tokens.items() if k not in ["api", "tools_input"]])
 
-    def _run_simple_assistant(
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, ret)
+            logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
+            content = self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret
+            return AssistantResp(conv_id, content, used_tokens)  # type: ignore
+
+        except asyncio.CancelledError:
+            ret = AssistantResp(conv_id, "[Execution cancelled by user]", used_tokens)
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, str(ret.content))
+            logger.info(f"{self.name}: {ret.content}")
+            return ret
+        except asyncio.TimeoutError:
+            ret = AssistantResp(conv_id, "[Execution timed out]", used_tokens)
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, str(ret.content))
+            logger.info(f"{self.name}: {ret.content}")
+            return ret
+
+    async def _run_simple_assistant(
         self, query: str, hist: List, _ai_db: Optional[Db], _tokens: Dict[str, int], **kwargs
     ) -> str:
-        """Run a simple assistant query.
+        """Run a simple assistant query (async).
 
         :param query: User query string
         :param hist: Conversation history
@@ -297,34 +348,16 @@ class BaseAssistant:
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
         if hist:
             kwargs["hist"] = hist
-        return chat.invoke(
+
+        response = await chat.ainvoke(
             prompt.format_prompt(**kwargs),
             config={
                 "callbacks": [langfuse_handler],
             },
-        ).content  # type: ignore
+        )
+        return response.content  # type: ignore
 
-    def _last_agent_step(self, response_metadata: Dict) -> bool:
-        """Determine if the agent's response indicates the last step in a sequence.
-
-        This method checks the response metadata for specific keys that indicate
-        a finishing reason and returns True if the reason matches predefined stop signals.
-
-        :param response_metadata: A dictionary containing metadata about the agent's response.
-        :return: True if the response indicates the last step, False otherwise.
-        """
-        for reason in ["finish_reason", "stop_reason", "done_reason"]:
-            if reason in response_metadata:
-                finish_reason: str = response_metadata[reason]
-                break
-        else:
-            finish_reason = "unknown"
-        stop_str = ["stop", "end_turn", "stop_sequence"]
-        # TODO: check other LLM providers
-        logger.info(response_metadata)
-        return finish_reason in stop_str
-
-    async def _run_assistant_with_tools_async(
+    async def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
     ) -> str:
         """Run an assistant with the tools query in async.
@@ -337,6 +370,7 @@ class BaseAssistant:
         :param tokens: Token usage tracking
         :param kwargs: Additional keyword arguments for prompt formatting
         :return: Assistant response string
+        :raises: asyncio.CancelledError or asyncio.TimeoutError when execution is interrupted
         """
         llm = chat_llm(
             force_api_type=self.force_api,
@@ -354,15 +388,24 @@ class BaseAssistant:
 
         # init tools - first call of the assistant initialize tools
         # It is used to reuse MCP connections between calls and maintain async context.
-        if self.tools and not self._initialized_tools:
-            self._initialized_tools = get_and_init_langchain_tools(self.tools, self)
-            self._initialized_tools += await get_and_init_mcp_tools(self.tools)
-            for tool in self._initialized_tools:
-                self._tools_tokens = 0
-                self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
-            self._tools_number = len(self._initialized_tools) + 1
+        try:
+            if self.tools and not self._initialized_tools:
+                self._initialized_tools = get_and_init_langchain_tools(self.tools, self)
+                self._initialized_tools += await get_and_init_mcp_tools(self.tools)
+                for tool in self._initialized_tools:
+                    self._tools_tokens = 0
+                    self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
+                self._tools_number = len(self._initialized_tools) + 1
 
-        agent_executor = create_react_agent(llm, self._initialized_tools, prompt=prompt_string)
+            agent_executor = create_react_agent(llm, self._initialized_tools, prompt=prompt_string)
+        except asyncio.CancelledError:
+            self._initialized_tools = []
+            logger.info("Assistant init tools was cancelled")
+            raise
+        except asyncio.TimeoutError:
+            self._initialized_tools = []
+            logger.info("Assistant init tools was timed out")
+            raise
 
         # Convert input format from kwargs to LangGraph messages format
         messages = []
@@ -425,17 +468,3 @@ class BaseAssistant:
 
         # corner case: if final_response is empty, use content_str which will be direct result from tool call
         return final_response or content_str
-
-    def _run_assistant_with_tools(
-        self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
-    ) -> str:
-        """Run an assistant with the tools query.
-
-        :param query: User query string
-        :param hist: Conversation history
-        :param ai_db: Database instance for conversation storage
-        :param tokens: Token usage tracking
-        :param kwargs: Additional keyword arguments for prompt formatting
-        :return: Assistant response string
-        """
-        return asyncio.run(self._run_assistant_with_tools_async(query, hist, ai_db, tokens, **kwargs))
