@@ -198,8 +198,12 @@ async def get_and_init_mcp_tools(tools: List[str]) -> List[BaseTool]:
     logger.info(f"Initializing MultiServerMCPClient with {len(server_configs)} servers")
     matching_tools = []
     for server, server_config in server_configs.items():
-        client = MultiServerMCPClient(connections={server: server_config})
-        toolkit = await client.get_tools()
+        client = MultiServerMCPClient(connections={server: server_config})  # type: ignore
+        try:
+            toolkit = await client.get_tools()
+        except Exception:
+            logger.error(f"{server} error. Check server_config in config.yaml and reload assistant")
+            continue
         if server_include_tools.get(server, []):
             for tool in toolkit:
                 if any(pattern.lower() in tool.name.lower() for pattern in server_include_tools[server]):

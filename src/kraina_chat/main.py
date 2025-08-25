@@ -103,7 +103,7 @@ class NotifyErrorFilter(logging.Filter):
         :return: True to allow the record through, False to filter it out.
         """
         if record.levelno >= 40:
-            self.error_cbk()
+            self.error_cbk(f"{record.exc_info[1] if record.exc_info else record.message}")
         return True
 
 
@@ -142,7 +142,7 @@ class App(TkinterDnD.Tk):
         self.log_queue = collections.deque(maxlen=1000)
         self.queue_handler = QueueHandler(self.log_queue)
         self.queue_handler.addFilter(
-            NotifyErrorFilter(lambda: self.after_idle(self.post_event, APP_EVENTS.WE_HAVE_ERROR, None))
+            NotifyErrorFilter(lambda err_str: self.after_idle(self.post_event, APP_EVENTS.WE_HAVE_ERROR, err_str))
         )
         self.queue_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"))
         self.queue_handler.setLevel(logging.INFO)
