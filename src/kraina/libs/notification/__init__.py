@@ -8,6 +8,6 @@ appropriate implementation based on the current platform.
 The package consists of:
 - MyNotifyInterface: Abstract base class defining the notification contract
 - MyNotify: Factory function for creating platform-specific notifications
-- MyLinuxNotify: Linux implementation using GObject introspection
+- MyLinuxNotify: Linux implementation using DBus interface
 - MyWindowsNotify: Windows implementation using Windows Toasts API
 """
