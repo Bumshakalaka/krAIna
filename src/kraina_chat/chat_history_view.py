@@ -299,7 +299,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         try:
             hovered = self.get_currently_hovered_element()
         except Exception as e:
-            logger.error(f"Error getting hovered element: {e}")
+            logger.debug(f"Error getting hovered element: {e}")
             hovered = None
         if hovered and getattr(hovered, "tagName", None) == "img":
             url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None

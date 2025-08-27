@@ -201,7 +201,7 @@ class App(TkinterDnD.Tk):
         self.dbg_window = None
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.BOTH)
-        self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
+        self.update_chat_lists(chat_persistence.show_also_hidden_chats())
 
         self.bind_on_event(APP_EVENTS.CHANGE_DATABASE, self._change_database)
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
@@ -519,16 +519,6 @@ class App(TkinterDnD.Tk):
         else:
             actual_conv_id = conv_id
         self.ai_db.delete_conversation(actual_conv_id)
-        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
-        self.post_event(APP_EVENTS.NEW_CHAT, None)
-        self.post_event(
-            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
-            AssistantResp(
-                None,
-                "not used",
-                self.current_assistant.tokens_used(None),
-            ),
-        )
 
     def modify_chat(self, data: Dict):
         """MODIFY_CHAT event callback.
@@ -543,18 +533,28 @@ class App(TkinterDnD.Tk):
         self.ai_db.update_conversation(conv_id, **action)
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
-    def update_chat_lists(self, active: Union[bool, None]):
+    def update_chat_lists(self, data: Union[bool, None, dict]):
         """ADD_NEW_CHAT_ENTRY event callback to get the conversation list.
 
         ADD_NEW_CHAT_ENTRY is post without data.
 
-        :param active: Get active(True), inactive(False) or both(None) conversations.
+        :param data: Dictionary containing active(True), inactive(False) or both(None) conversations and
+                     select_conv: Conversation ID to select after update.
+                     if data is not dict, is assumed to be active(True) and select_conv is the last known conv_id.
         :return: None.
         """
+        if isinstance(data, dict):
+            active = data.get("active", None)
+            select_conv = data.get("select_conv", None)
+        else:
+            active = data
+            select_conv = self.conv_id  # get the last known conv_id
         self.post_event(
             APP_EVENTS.UPDATE_SAVED_CHATS,
             self.ai_db.list_conversations(active=active, limit=chat_settings.SETTINGS.visible_last_chats),
         )
+        if select_conv:
+            self.post_event(APP_EVENTS.SELECT_NEXT_CHAT, select_conv)
 
     def get_chat(self, data: dict):
         """GET_CHAT event callback.
@@ -568,7 +568,7 @@ class App(TkinterDnD.Tk):
             if data["ev"] == "LOAD_CHAT" and chat_persistence.SETTINGS.last_conv_id:
                 chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = self.conv_id
         else:
-            logger.error("conversation_id not know")
+            logger.warning("conversation_id not know")
             if data["ev"] == "LOAD_CHAT":
                 self.conv_id = None
 

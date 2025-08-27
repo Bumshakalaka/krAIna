@@ -155,6 +155,7 @@ class LeftSidebar(ttk.Frame):
         self.root.bind_on_event(APP_EVENTS.UPDATE_SAVED_CHATS, self.list_saved_chats)
         self.root.bind_on_event(APP_EVENTS.UPDATE_AI, self.list_assistants)
         self.root.bind_on_event(APP_EVENTS.SELECT_CHAT, self.select_chat)
+        self.root.bind_on_event(APP_EVENTS.SELECT_NEXT_CHAT, self.select_next_chat)
         self.root.bind("<Control-n>", lambda x: self.new_chat())  # noqa: ARG005
         self.root.bind("<Control-N>", lambda x: self.new_chat())  # noqa: ARG005
         # Create Treeview inside Frame
@@ -409,7 +410,7 @@ class LeftSidebar(ttk.Frame):
         )
         w.add_command(label="Edit...", command=functools.partial(self.edit_chat_tv, conversation))
         w.add_separator()
-        w.add_command(label="Delete", command=functools.partial(self.delete_chat, conv_id))
+        w.add_command(label="Delete", command=functools.partial(self.delete_chat, conv_id, item))
         w.add_separator()
         w.add_command(
             label=f"{'Hide' if chat_persistence.SETTINGS.show_also_hidden_chats else 'Show'} inactive chats",
@@ -445,7 +446,7 @@ class LeftSidebar(ttk.Frame):
         if selection:
             conversation = self.chat_data.get(selection[0])
             if conversation:
-                self.delete_chat(conversation.conversation_id)
+                self.delete_chat(conversation.conversation_id, selection[0])
 
     def pin_unpin_chat_tv(self, conversation: Conversations):
         """Pin or unpin chat conversation (Treeview version).
@@ -481,14 +482,53 @@ class LeftSidebar(ttk.Frame):
         chat_persistence.SETTINGS.show_also_hidden_chats = not chat_persistence.SETTINGS.show_also_hidden_chats
         self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
-    def delete_chat(self, conv_id: int):
+    def select_next_chat(self, conv_to_select: int):
+        """Select the next chat in the list.
+
+        :param conv_to_select: The conversation ID to select
+        """
+        children = self.chats.get_children()
+        for child in children:
+            if self.chat_data.get(child) and self.chat_data.get(child).conversation_id == conv_to_select:  # type: ignore
+                self.chats.focus(child)
+                self.chats.selection_set(child)
+                break
+
+    def _next_item_after_sel(self, selection: str):
+        """Get the next item in the tree after the current selection.
+
+        :param selection: The current selection
+        :return: The next item in the tree
+        """
+        next_item = None
+        if selection:
+            children = self.chats.get_children()
+            try:
+                idx = children.index(selection)
+                if idx + 1 < len(children):
+                    next_item = children[idx + 1]
+            except (ValueError, IndexError):
+                next_item = None
+        return next_item
+
+    def delete_chat(self, conv_id: int, item: str):
         """Delete a chat conversation.
 
         Posts a delete event for the specified conversation.
 
         :param conv_id: The conversation ID to delete
         """
+        if next_item := self._next_item_after_sel(item):
+            next_conv_id = self.chat_data.get(next_item).conversation_id  # type: ignore
+        else:
+            next_conv_id = None
+
+        self.chats.delete(item)
         self.root.post_event(APP_EVENTS.DEL_CHAT, int(conv_id))
+        self.root.post_event(
+            APP_EVENTS.ADD_NEW_CHAT_ENTRY,
+            dict(active=chat_persistence.show_also_hidden_chats(), select_conv=next_conv_id),
+        )
 
     def modify_chat(self, conv_id: int, action: Dict):
         """Modify chat conversation properties.
@@ -506,6 +546,7 @@ class LeftSidebar(ttk.Frame):
         Posts events to start a new chat, update token status,
         and focus the user input area.
         """
+        self.chats.selection_clear()
         self.root.post_event(APP_EVENTS.NEW_CHAT, None)
         self.root.post_event(
             APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
@@ -523,8 +564,15 @@ class LeftSidebar(ttk.Frame):
         Posts events to reload AI components and refresh the
         chat history list.
         """
+        selection = self.chats.selection()
+        if selection:
+            conv_id = self.chat_data.get(selection[0]).conversation_id  # type: ignore
+        else:
+            conv_id = None
         self.root.post_event(APP_EVENTS.RELOAD_AI, None)
-        self.root.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
+        self.root.post_event(
+            APP_EVENTS.ADD_NEW_CHAT_ENTRY, dict(active=chat_persistence.show_also_hidden_chats(), select_conv=conv_id)
+        )
 
     def select_chat(self, data: Dict):
         """Select and show a chat conversation.
