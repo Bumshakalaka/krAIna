@@ -234,7 +234,7 @@ class BaseAssistant:
                 break
         else:
             finish_reason = "unknown"
-        stop_str = ["stop", "end_turn", "stop_sequence"]
+        stop_str = ["stop", "end_turn", "stop_sequence", "done"]
         # TODO: check other LLM providers
         logger.info(response_metadata)
         return finish_reason in stop_str

@@ -88,7 +88,7 @@ class BaseSnippet:
                 raise last_exception
             raise KeyError("No finish reason found in response metadata")
 
-        stop_str = ["stop", "end_turn", "stop_sequence"]
+        stop_str = ["stop", "end_turn", "stop_sequence", "done"]
         if finish_reason in stop_str:
             # complete response received
             return ret
