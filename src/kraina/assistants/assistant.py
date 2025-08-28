@@ -239,6 +239,27 @@ class BaseAssistant:
         logger.info(response_metadata)
         return finish_reason in stop_str
 
+    @staticmethod
+    def _tool_usage_agent_step(response_metadata: Dict) -> bool:
+        """Determine if the agent's response indicates the tool usage.
+
+        This method checks the response metadata for specific keys that indicate
+        a finishing reason and returns True if the reason matches predefined stop signals.
+
+        :param response_metadata: A dictionary containing metadata about the agent's response.
+        :return: True if the response indicates the tool usage, False otherwise.
+        """
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            if reason in response_metadata:
+                finish_reason: str = response_metadata[reason]
+                break
+        else:
+            finish_reason = "unknown"
+        stop_str = ["tool_calls", "tool_use"]
+        # TODO: check other LLM providers
+        logger.info(response_metadata)
+        return finish_reason in stop_str
+
     def run(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
         """Query LLM as assistant (sync).
 
@@ -432,15 +453,28 @@ class BaseAssistant:
                         # Handle AI messages (reasoning/tool calls)
                         if message.content:
                             # Convert content to string for token counting and storage
-                            content_str = message.content if isinstance(message.content, str) else str(message.content)
-                            tokens["output"] += len(self.encoding.encode(content_str)) + ADDITIONAL_TOKENS_PER_MSG
-                            if self.callbacks["ai_observation"] and not self._last_agent_step(
-                                message.response_metadata
+                            tokens["output"] += (
+                                len(self.encoding.encode(str(message.content))) + ADDITIONAL_TOKENS_PER_MSG
+                            )
+                            if isinstance(message.content, str):
+                                content_str = message.content
+                            elif isinstance(message.content, list):
+                                # handle Antropic observation
+                                content_text = []
+                                for el in message.content:
+                                    if el.get("type") == "text":  # type: ignore
+                                        content_text.append(el.get("text"))  # type: ignore
+                                content_str = "\n".join(content_text)
+                            final_response = content_str
+                            if (
+                                self.callbacks["ai_observation"]
+                                and hasattr(message, "tool_calls")
+                                and message.tool_calls
                             ):
+                                # observation to the tool call
                                 if ai_db:
                                     ai_db.add_message(LlmMessageType.AI, content_str)
                                 self.callbacks["ai_observation"](content_str)
-                            final_response = content_str
 
                         # Handle tool calls
                         if hasattr(message, "tool_calls") and message.tool_calls:
