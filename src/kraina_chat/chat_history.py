@@ -414,6 +414,7 @@ class UserQuery(ttk.Frame):
         self.text.bind("<ButtonRelease-3>", self._snippets_menu)
         self.text.bind("<KeyRelease>", self._show_tokens)
         self.text.bind("<<Paste>>", self._on_paste)
+        self.text.bind("<Control-c>", self._handle_interrupt)
         self.text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.text.tag_config("IMAGES")
@@ -431,8 +432,15 @@ class UserQuery(ttk.Frame):
 
         self.pb = ttk.Progressbar(f, orient="horizontal", mode="indeterminate")
 
-        self.send_btn = ttk.Button(f, text="SEND", width=12, command=functools.partial(self.invoke, "assistant"))
-        ToolTip(self.send_btn, msg="<Enter> Ask Assistant", follow=False, delay=0.5, x_offset=-200, y_offset=-20)
+        self.send_btn = ttk.Button(f, text="SEND", width=12, command=self._handle_send_button)
+        ToolTip(
+            self.send_btn,
+            msg="<Enter> Ask Assistant / <Ctrl+C> Stop Assistant",
+            follow=False,
+            delay=0.5,
+            x_offset=-200,
+            y_offset=-20,
+        )
         self.send_btn.pack(side=tk.RIGHT, padx=2, pady=2)
 
         self.add_file_btn = ttk.Button(f, text="ADD FILE...", width=12, command=self.add_file)
@@ -441,6 +449,7 @@ class UserQuery(ttk.Frame):
 
         f.pack(side=tk.TOP, fill=tk.X)
         self.block_events = 0
+        self.is_processing = False  # Track if LLM is currently processing
         self.drop_target_register(DND_FILES)  # type: ignore
         self.dnd_bind("<<Drop>>", self._dnd_drop)  # type: ignore
 
@@ -639,7 +648,8 @@ class UserQuery(ttk.Frame):
         if self.block_events == 0:
             self.pb.stop()
             self.pb.forget()
-            self.send_btn.configure(state=tk.NORMAL)
+            self.send_btn.configure(text="SEND", state=tk.NORMAL)
+            self.is_processing = False
             self.text.bind("<Return>", self._handle_return)
             self.text.bind("<KP_Enter>", self._handle_return)
 
@@ -655,7 +665,8 @@ class UserQuery(ttk.Frame):
         if str(self.send_btn.config("state")[4]) == tk.NORMAL:
             self.pb.pack(side=tk.LEFT, fill=tk.X, expand=True)
             self.pb.start(interval=20)
-            self.send_btn.configure(state=tk.DISABLED)
+            self.send_btn.configure(text="STOP", state=tk.NORMAL)
+            self.is_processing = True
             self.text.unbind("<Return>")
             self.text.unbind("<KP_Enter>")
 
@@ -671,6 +682,24 @@ class UserQuery(ttk.Frame):
             return None  # Allow default behavior (insert newline)
         else:
             return self.invoke("assistant", event)
+
+    def _handle_send_button(self):
+        """Handle SEND button click - either send query or stop processing."""
+        if self.is_processing:
+            self.root.interrupt_assistant()
+        else:
+            self.invoke("assistant")
+
+    def _handle_interrupt(self, event):  # noqa: ARG002
+        """Handle Ctrl+C key press to interrupt assistant.
+
+        :param event: The key event object
+        :return: 'break' to prevent default handling
+        """
+        if self.is_processing:
+            self.root.interrupt_assistant()
+            return "break"  # Prevent default Ctrl+C behavior
+        return None
 
 
 class ChatFrame(tk.PanedWindow):

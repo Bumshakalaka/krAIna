@@ -30,6 +30,8 @@ A modern Chat GUI application built with tkinter featuring:
 - **IPC** - Control application from Python scripts or from kraina_cli
 - **Drag & Drop** - Drag & drop files to chat
 - **Debuging** - Debugging window with logs and troubleshooting
+- **MCP Tools Integration** - Model Context Protocol tools for enhanced AI capabilities
+- **LangGraph Support** - Advanced agent workflows and multi-step reasoning
 
 ### kraina_cli - Command Line Interface
 A fast and small CLI tool for interactive with kraina_app via IPC:
@@ -81,6 +83,9 @@ options:
    
    # Ollama (optional - leave empty for local server)
    OLLAMA_ENDPOINT=http://server:11434
+   
+   # MCP Tools (optional)
+   FIRECRAWL_API_KEY=...
    ```
 4. Edit `config.yaml` file to configure for you needs:
     ```yaml
@@ -111,6 +116,33 @@ options:
         model: dall-e-3
       vector-search:
         model: embed
+      context7:
+        type: mcp
+        url: https://mcp.context7.com/mcp
+        transport: streamable_http
+      firecrawl:
+        type: mcp
+        command: npx
+        args:
+          - -y
+          - firecrawl-mcp
+        env:
+          FIRECRAWL_API_KEY: "{env-FIRECRAWL_API_KEY}"
+        include_tools:
+          - firecrawl_scrape
+
+    assistants:
+      samantha:
+        tools:
+          - text-to-image
+          - vector-search
+          - audio-to-text
+          - text-to-text
+          - brave_web
+          - joplin-search
+          - file_mgmt
+          - context7
+          - firecrawl
     ```
 
 The files are automaticly reloaded. No need to re-run the app.
@@ -187,17 +219,19 @@ contexts:
 ```
 
 ### Assistants
-Specialized AI personas for different tasks:
+Specialized AI personas for different tasks with enhanced tool integration:
 - **Conversational Memory** - Remember chat history
-- **Tool Integration** - Use built-in and custom tools
+- **Tool Integration** - Use built-in, custom, and MCP tools
 - **Context Awareness** - Include custom knowledge
 - **Flexible Configuration** - Customize behavior per assistant
+- **LangGraph Support** - Advanced multi-step reasoning and workflows
+- **Token Tracking** - Monitor usage across all tool types
 
 #### Built-in Assistants
 
 KrAIna includes these specialized assistants:
 
-- **`samantha`** - General-purpose assistant with full tool access (text-to-image, vector-search, web search, audio transcription, file management, and more)
+- **`samantha`** - General-purpose assistant with full tool access including MCP tools (text-to-image, vector-search, web search, audio transcription, file management, context7, firecrawl, and more)
 - **`kodi`** - Professional software development specialist focused on coding best practices, debugging, and optimization
 - **`promcreat`** - Prompt engineering expert that helps create, modify, and enhance system prompts using proven techniques
 
@@ -218,6 +252,8 @@ tools:
   - text-to-image
   - vector-search
   - web-search
+  - context7
+  - firecrawl
 contexts:
   string: "You are a helpful coding assistant"
   file: ./knowledge_base.md
@@ -247,7 +283,8 @@ def run(topic: str, depth: str = "basic") -> str:
 
 ## Built-in Tools
 
-Tools that can be used by Assistants to extend their capabilities:
+Tools that can be used by Assistants to extend their capabilities.
+Tools are attached to assistants by name in the config.yaml file.
 
 ### Text-to-Image
 Generate images using DALL-E API.
@@ -306,6 +343,39 @@ tools:
     count: 3  # Number of results
 ```
 
+### MCP Tools Integration
+
+KrAIna now supports Model Context Protocol (MCP) tools for enhanced AI capabilities:
+
+
+Add your own MCP tools by configuring them in the tools section:
+```yaml
+tools:
+  tool_stdio:
+    type: mcp
+    command: your_mcp_command
+    args: [arg1, arg2, ...]
+    env:
+      API_KEY: "{env-API_KEY}"
+    include_tools:
+      # list of tools to attach to assistants
+      # if not specified, all tools are attached
+      - tool_name1
+      - tool_name2
+      - ...
+  tool_remote_server:
+    type: mcp
+    url: https://x.server/mcp or https://x.server/mcp
+    # transport is optional - it will be set based on url
+    transport: streamable_http or stdio
+    include_tools:
+      # list of tools to attach to assistants
+      # if not specified, all tools are attached
+      - tool_name1
+      - tool_name2
+      - ...
+```
+
 ## CopyQ Integration
 
 Boost productivity with clipboard-based AI transformations:
@@ -359,6 +429,40 @@ tools:
     model: dall-e-3
   vector-search:
     model: embed
+  context7:
+    # MCP tool configuration, 
+    # exampe context7 http-streamable server
+    type: mcp
+    url: https://mcp.context7.com/mcp
+  firecrawl:
+    # MCP tool configuration
+    # example firecrawl stdio server
+    type: mcp
+    command: npx
+    args:
+      - -y
+      - firecrawl-mcp
+    env:
+      # the {env-VAR_NAME} is replaced with the value of the VAR_NAME environment variable
+      FIRECRAWL_API_KEY: "{env-FIRECRAWL_API_KEY}"
+    include_tools:
+      - firecrawl_scrape
+
+assistants:
+# configuration of assistants tools
+  samantha:
+  # assistant name - built-in or custom
+    tools:
+      # list of tools to use by assistant
+      - text-to-image
+      - vector-search
+      - audio-to-text
+      - text-to-text
+      - brave_web
+      - joplin-search
+      - file_mgmt
+      - context7
+      - firecrawl
 ```
 
 ## LangFuse Integration

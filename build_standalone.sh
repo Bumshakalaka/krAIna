@@ -57,13 +57,6 @@ pyinstaller \
     --hidden-import=PIL._tkinter_finder \
     --hidden-import=aenum \
     --exclude-module pkg_resources \
-    --exclude-module gi \
-    --exclude-module gi.repository.Rsvg \
-    --exclude-module gi.repository.GdkPixbuf \
-    --exclude-module gi.repository.cairo \
-    --exclude-module gi.repository.Gio \
-    --exclude-module gi.repository.GLib \
-    --exclude-module gi.repository.GObject \
     --icon=img/logo.ico \
     --splash=img/kraina_banner_loading.png
 
@@ -72,12 +65,6 @@ pyinstaller \
     app/kraina_cli.py \
     --add-data "src/kraina/templates:kraina/templates" \
     --exclude-module pkg_resources \
-    --exclude-module gi.repository.Rsvg \
-    --exclude-module gi.repository.GdkPixbuf \
-    --exclude-module gi.repository.cairo \
-    --exclude-module gi.repository.Gio \
-    --exclude-module gi.repository.GLib \
-    --exclude-module gi.repository.GObject \
     --strip \
     --icon=img/logo.ico
 

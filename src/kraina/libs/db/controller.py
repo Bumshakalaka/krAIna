@@ -2,7 +2,6 @@
 
 import datetime
 import enum
-from functools import lru_cache
 from typing import List, Optional, Tuple, Union
 
 from sqlalchemy import Engine, and_, create_engine, delete, event, select, update
@@ -77,7 +76,6 @@ class Db:
             data = s.execute(select(Conversations.active).where(Conversations.conversation_id == conv_id)).scalar()
         return bool(data)
 
-    @lru_cache
     def is_conversation_id_valid(self, conv_id: Union[int, None] = None) -> bool:
         """Return true if conversation_id is valid, otherwise False.
 

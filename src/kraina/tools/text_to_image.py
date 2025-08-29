@@ -133,5 +133,5 @@ def init_text_to_image(tool_setting: Dict) -> BaseTool:
         description="A wrapper around text-to-image API. "
         "Useful for when you need to generate images from a text description.",
         args_schema=TextToImageInput,
-        return_direct=True,
+        return_direct=False,
     )

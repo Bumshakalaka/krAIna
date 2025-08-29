@@ -16,7 +16,7 @@ The module supports:
 import enum
 import logging
 import os
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 from jsonschema import ValidationError
@@ -28,10 +28,69 @@ from langchain_ollama import ChatOllama
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings, ChatOpenAI, OpenAIEmbeddings
 from langchain_voyageai import VoyageAIEmbeddings
 from openai import AzureOpenAI, OpenAI
+from pydantic import Field
 
 from kraina.libs.paths import CONFIG_FILE, config_file_validation
 
 logger = logging.getLogger(__name__)
+
+
+class MyChatOpenAI(ChatOpenAI):
+    """Custom Chat OpenAI class with overwrite temperature for o-series models."""
+
+    def _get_request_payload(
+        self,
+        input_,
+        *,
+        stop: Optional[list[str]] = None,
+        **kwargs: Any,
+    ) -> dict:
+        payload = super()._get_request_payload(input_, stop=stop, **kwargs)
+        if self.model_name and (self.model_name.startswith("o") or self.model_name.startswith("gpt-5")):
+            # o-series models require temperature=1.0, overwrite it if it is set
+            if "temperature" in payload:
+                payload["temperature"] = 1.0
+        return payload
+
+
+class MyAzureChatOpenAI(AzureChatOpenAI):
+    """Custom Azure Chat OpenAI class with max_tokens alias and overwrite temperature for o-series models."""
+
+    max_tokens: Optional[int] = Field(default=None, alias="max_completion_tokens")
+    """Maximum number of tokens to generate."""
+
+    @property
+    def _default_params(self) -> dict[str, Any]:
+        """Get the default parameters for calling OpenAI API."""
+        params = super()._default_params
+        if "max_tokens" in params:
+            params["max_completion_tokens"] = params.pop("max_tokens")
+
+        return params
+
+    def _get_request_payload(
+        self,
+        input_,
+        *,
+        stop: Optional[list[str]] = None,
+        **kwargs: Any,
+    ) -> dict:
+        payload = super()._get_request_payload(input_, stop=stop, **kwargs)
+        # max_tokens was deprecated in favor of max_completion_tokens
+        # in September 2024 release
+        if "max_tokens" in payload:
+            payload["max_completion_tokens"] = payload.pop("max_tokens")
+
+        # Mutate system message role to "developer" for o-series models
+        # Mutate temperature to 1.0 for o-series models
+        if self.model_name and (self.model_name.startswith("o") or self.model_name.startswith("gpt-5")):
+            # o-series models require temperature=1.0, overwrite it if it is set
+            if "temperature" in payload:
+                payload["temperature"] = 1.0
+            for message in payload.get("messages", []):
+                if message["role"] == "system":
+                    message["role"] = "developer"
+        return payload
 
 
 class MyBedrockEmbeddings(BedrockEmbeddings):
@@ -214,7 +273,7 @@ def get_llm_type(
 
 def chat_llm(
     **kwargs,
-) -> Union[ChatOpenAI, AzureChatOpenAI, ChatAnthropic, ChatBedrock, MyChatOllama, ChatGoogleGenerativeAI]:
+) -> Union[MyChatOpenAI, MyAzureChatOpenAI, ChatAnthropic, ChatBedrock, MyChatOllama, ChatGoogleGenerativeAI]:
     """Create a chat LLM instance based on configuration and parameters.
 
     Creates and configures a chat model instance for the appropriate API provider.
@@ -246,8 +305,8 @@ def chat_llm(
             kwargs[k] = v
     kwargs["model"] = map_model(kwargs["model"], force)
     models = {
-        SUPPORTED_API_TYPE.AZURE: AzureChatOpenAI,
-        SUPPORTED_API_TYPE.OPENAI: ChatOpenAI,
+        SUPPORTED_API_TYPE.AZURE: MyAzureChatOpenAI,
+        SUPPORTED_API_TYPE.OPENAI: MyChatOpenAI,
         SUPPORTED_API_TYPE.ANTHROPIC: ChatAnthropic,
         SUPPORTED_API_TYPE.AWS: ChatBedrock,
         SUPPORTED_API_TYPE.OLLAMA: MyChatOllama,
