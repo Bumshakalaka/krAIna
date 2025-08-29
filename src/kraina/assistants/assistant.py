@@ -465,7 +465,6 @@ class BaseAssistant:
                                     if el.get("type") == "text":  # type: ignore
                                         content_text.append(el.get("text"))  # type: ignore
                                 content_str = "\n".join(content_text)
-                            final_response = content_str
                             if (
                                 self.callbacks["ai_observation"]
                                 and hasattr(message, "tool_calls")
@@ -475,6 +474,8 @@ class BaseAssistant:
                                 if ai_db:
                                     ai_db.add_message(LlmMessageType.AI, content_str)
                                 self.callbacks["ai_observation"](content_str)
+                            else:
+                                final_response = content_str
 
                         # Handle tool calls
                         if hasattr(message, "tool_calls") and message.tool_calls:
@@ -488,9 +489,9 @@ class BaseAssistant:
             elif "tools" in chunk:
                 for message in chunk["tools"]["messages"]:
                     # Handle tool results (ToolMessage)
-                    content_str = message.content if isinstance(message.content, str) else str(message.content)
-                    tokens["tools"] += len(self.encoding.encode(content_str)) + ADDITIONAL_TOKENS_PER_MSG
-                    msg = f"Tool Result: `{content_str}`"
+                    tool_content_str = message.content if isinstance(message.content, str) else str(message.content)
+                    tokens["tools"] += len(self.encoding.encode(tool_content_str)) + ADDITIONAL_TOKENS_PER_MSG
+                    msg = f"Tool Result: `{tool_content_str}`"
                     if ai_db:
                         ai_db.add_message(LlmMessageType.TOOL, msg)
                     if self.callbacks["observation"]:
@@ -501,4 +502,4 @@ class BaseAssistant:
             self.callbacks["output"](final_response)
 
         # corner case: if final_response is empty, use content_str which will be direct result from tool call
-        return final_response or content_str
+        return final_response or tool_content_str
