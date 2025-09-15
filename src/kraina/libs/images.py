@@ -81,7 +81,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str | None]):
                 return False
         return False
 
-    def create_from_file(self, fn: Union[Path, BytesIO], img: str, image_tk=True) -> str:
+    def create_from_file(self, fn: Union[Path, BytesIO], img: Union[str, None] = None, image_tk=True) -> str:
         """Create an image from a file and store it in the dictionary.
 
         If the image already exists, it returns the existing key.
@@ -147,7 +147,7 @@ class ChatImages(Dict[str, ImageTk.PhotoImage | str | None]):
             div = max(self.pil_image[img]["org"].height, self.pil_image[img]["org"].width) // max_height
         return self.pil_image[img]["org"].width // div, self.pil_image[img]["org"].height // div
 
-    def create_from_url(self, url: str, img: str, image_tk=True) -> str:
+    def create_from_url(self, url: str, img: Union[str, None] = None, image_tk=True) -> str:
         """Create an image from a URL, file path, or base64 string.
 
         This function fetches image data from a given URL, file path, or base64 encoded string,
