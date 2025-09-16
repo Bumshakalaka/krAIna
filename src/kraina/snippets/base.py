@@ -6,7 +6,7 @@ from typing import Dict
 
 import yaml
 
-from kraina.libs.utils import find_assets, import_module
+from kraina.libs.utils import find_assets, get_os_info, import_module
 from kraina.snippets.snippet import BaseSnippet
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ class Snippets(Dict[str, BaseSnippet]):
                                         else:
                                             contexts.append(fd.read_text())
                     contexts.append("Current date: {date}")
+                    contexts.append("Current OS info: {" + get_os_info() + "}")
                     settings["contexts"] = contexts
                     prompt += "\nTake into consideration the context below while generating answers.\n# Context:"
                     for idx, context in enumerate(contexts):

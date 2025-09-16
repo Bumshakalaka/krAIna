@@ -7,7 +7,7 @@ from typing import Dict, TypeAlias
 import yaml
 
 from kraina.assistants.assistant import AssistantType, BaseAssistant
-from kraina.libs.utils import find_assets, import_module
+from kraina.libs.utils import find_assets, get_os_info, import_module
 from kraina.tools.base import get_assistant_tools, get_available_tools
 
 logger = logging.getLogger(__name__)
@@ -76,6 +76,7 @@ class Assistants(Dict[str, BaseAssistant]):
                                         else:
                                             contexts.append(fd.read_text())
                     contexts.append("Current date: {date}")
+                    contexts.append("Current OS info: {" + get_os_info() + "}")
                     settings["contexts"] = contexts
 
                     prompt += "\nTake into consideration the context below while generating answers.\n# Context:"

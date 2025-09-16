@@ -4,8 +4,10 @@ import hashlib
 import importlib.util
 import inspect
 import io
+import json
 import logging
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -591,3 +593,20 @@ def latex_to_image(latex_input: str, output_format: str = "PNG", output_scale: s
         ret = {"error": f"Request failed: {str(e)}"}
     logger.debug(f"latex_to_image: {ret}")
     return ret
+
+
+
+def get_os_info() -> str:
+    """Get information about the operating system.
+
+    :return: A string containing the operating system information in JSON format.
+    """
+    info = {
+        "system": platform.system(),      # 'Windows', 'Linux', etc.
+        "release": platform.release(),    # OS release version
+        "version": platform.version(),    # OS version
+        "architecture": platform.architecture()[0],  # '64bit', '32bit'
+        "hostname": platform.node(),          # Hostname
+        "processor": platform.processor(),# CPU info
+    }
+    return json.dumps(info)
