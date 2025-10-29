@@ -6,10 +6,11 @@ views, including text-based and HTML-based rendering options.
 
 import abc
 import logging
-from pathlib import Path
 import tkinter as tk
 import webbrowser
+from pathlib import Path
 from tkinter import ttk
+from urllib.parse import urlparse
 
 from tkinterweb.htmlwidgets import HtmlFrame
 
@@ -299,7 +300,7 @@ class HtmlChatView(HtmlFrame, ChatView):
         """
         try:
             hovered = self.get_currently_hovered_element()
-        except Exception as e:
+        except Exception:
             hovered = None
         if hovered and getattr(hovered, "tagName", None) == "img":
             url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None
@@ -309,7 +310,13 @@ class HtmlChatView(HtmlFrame, ChatView):
             alt = hovered.attributes.get("alt") if hasattr(hovered, "attributes") else None
             if alt:
                 file_path = self.root.images.get_file_uri(alt)
-                if not Path(file_path).exists() and url:
+                # Convert URI to filesystem path for existence check
+                if file_path.startswith("file://"):
+                    parsed = urlparse(file_path)
+                    filesystem_path = Path(parsed.path)
+                else:
+                    filesystem_path = Path(file_path)
+                if not filesystem_path.exists() and url:
                     file_path = self.root.images.get_file_uri(Path(url).parts[-2])
                 self._open_webbrowser(file_path)
                 return

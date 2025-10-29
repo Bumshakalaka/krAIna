@@ -413,8 +413,8 @@ class BaseAssistant:
             if self.tools and not self._initialized_tools:
                 self._initialized_tools = get_and_init_langchain_tools(self.tools, self)
                 self._initialized_tools += await get_and_init_mcp_tools(self.tools)
+                self._tools_tokens = 0
                 for tool in self._initialized_tools:
-                    self._tools_tokens = 0
                     self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
                 self._tools_number = len(self._initialized_tools) + 1
 
@@ -444,6 +444,7 @@ class BaseAssistant:
         # Use LangGraph streaming for compatibility with callbacks
         chunks = []
         final_response = ""
+        tool_content_str = ""
         async for chunk in agent_executor.astream({"messages": messages}, config={"callbacks": [langfuse_handler]}):
             chunks.append(chunk)
 

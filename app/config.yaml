@@ -28,7 +28,7 @@ llm:
       C: claude-3-5-haiku-latest
       embed: voyage-3
     aws:
-      A: aanthropic.claude-sonnet-4-20250514-v1:0
+      A: anthropic.claude-sonnet-4-20250514-v1:0
       B: anthropic.claude-3-7-sonnet-20250219-v1:0
       C: anthropic.claude-3-5-haiku-20241022-v1:0
       embed: cohere.embed-multilingual-v3
