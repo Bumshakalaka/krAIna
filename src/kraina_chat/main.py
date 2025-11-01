@@ -731,7 +731,7 @@ class App(TkinterDnD.Tk):
                     )
 
                 # Use asyncio.timeout for built-in cancellation support
-                async with asyncio.timeout(300):  # 5 minute timeout
+                async with asyncio.timeout(600):  # 10 minute timeout
                     ret = await self.ai_assistants[assistant].arun(query, conv_id=conv_id)
 
             except Exception as e:
