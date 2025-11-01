@@ -17,3 +17,8 @@ __pycache__/
 temp/
 build/
 dist/
+app/snippets/
+app/assistants/
+.cursor/
+/.specstory/
+.cursorindexingignore

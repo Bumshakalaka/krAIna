@@ -494,6 +494,7 @@ git clone <repository>
 cd krAIna/
 
 ## Linux
+## for compile python-debus, the libdbus-1-dev is required
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .

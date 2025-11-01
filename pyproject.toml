@@ -46,7 +46,7 @@ dependencies = [
     "windows-toasts>=1.2.0,<1.3.0; os_name != 'posix'",
     "wolframalpha>=5.1.3,<5.2.0",
     "jsonschema>=4.24.0,<5.0.0",
-    "stopit2>=1.1.2,<1.2.0",
+    "stopit2 @ git+https://github.com/randylabs/stopit2@c662a75cbd8f968cb4dac43653206cc66f6bed6c", # stopit2 from pypi is not compatible with Python >= 3.12
     "dbus-python>=1.4.0,<1.5.0; os_name == 'posix'",
 ]
 

@@ -1,4 +1,9 @@
-"""KrAIna chat."""
+"""KrAIna application CLI module.
+
+This module provides command-line interface functionality for the KrAIna
+application, allowing users to interact with the application through IPC
+commands and manage the application lifecycle.
+"""
 
 import argparse
 import subprocess
@@ -12,6 +17,25 @@ from kraina_chat.base import app_interface
 
 
 def run_cmd(args):
+    """Send command to the KrAIna application via IPC and print the result.
+
+    Resolves file paths for RUN_SNIPPET_WITH_FILE commands and sends the
+    command to the application through IPC. Outputs the result to stdout
+    or stderr depending on the response type.
+
+    Parameters
+    ----------
+    args : list or tuple
+        Command arguments to send to the application. If the first argument
+        is "RUN_SNIPPET_WITH_FILE" and the third argument is a file path,
+        the path will be resolved to an absolute path.
+
+    Raises
+    ------
+    ConnectionRefusedError
+        If the application is not running and cannot be reached via IPC.
+
+    """
     if isinstance(args, list) and args[0] == "RUN_SNIPPET_WITH_FILE" and len(args) == 3 and Path(args[2]).is_file():
         # resolve last argument to file path if it is a file
         args[2] = str(Path(args[2]).resolve())
@@ -25,6 +49,25 @@ def run_cmd(args):
 
 
 def run_app_and_cmd(args=None):
+    """Run the application if not running and execute the specified command.
+
+    Attempts to send a command to the application via IPC. If the application
+    is not running, it starts the application in a separate process and waits
+    up to 45 seconds for it to become available before executing the command.
+
+    Parameters
+    ----------
+    args : list, optional
+        Command arguments to send to the application. If None, defaults to
+        ["SHOW_APP"] to show the application window.
+
+    Raises
+    ------
+    FileNotFoundError
+        If running as a frozen executable and the application executable
+        cannot be found at the expected location.
+
+    """
     if not args:
         args = ["SHOW_APP"]
     try:

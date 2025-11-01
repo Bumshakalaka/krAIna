@@ -420,7 +420,7 @@ class App(TkinterDnD.Tk):
             col = col_map[col_name]
         return col
 
-    def report_callback_exception(self, exc, val, tb):  # noqa: ARG001, ARG002, ARG003
+    def report_callback_exception(self, exc, *args, **kwargs):  # noqa: ARG002, ARG003
         """Handle tkinter callback errors.
 
         :param exc: Exception type.

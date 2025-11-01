@@ -253,7 +253,7 @@ class TextChatView(ScrolledText, ChatView):
             self._insert_message(message.message, LlmMessageType(message.type).name)
 
 
-class HtmlChatView(HtmlFrame, ChatView):
+class HtmlChatView(HtmlFrame, ChatView):  # pyright: ignore[reportIncompatibleMethodOverride]
     """HTML-based chat history view implementation.
 
     Provides an HTML-rendered view for displaying chat messages with

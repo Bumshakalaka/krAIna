@@ -457,6 +457,7 @@ class BaseAssistant:
                             tokens["output"] += (
                                 len(self.encoding.encode(str(message.content))) + ADDITIONAL_TOKENS_PER_MSG
                             )
+                            content_str = ""
                             if isinstance(message.content, str):
                                 content_str = message.content
                             elif isinstance(message.content, list):
