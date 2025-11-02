@@ -1,5 +1,6 @@
 """Debug window for managing and running macros with parameter configuration."""
 
+import asyncio
 import collections
 import copy
 import functools
@@ -54,7 +55,14 @@ class LogFilter(logging.Filter):
         :param record: The log record to filter.
         :return: False if record should be filtered out, True otherwise.
         """
-        if record.name in ["__main__", "IPyCClient", "IPyCHost", "chat.main", "httpx"]:
+        if record.name in [
+            "__main__",
+            "IPyCClient",
+            "IPyCHost",
+            "kraina_chat.main",
+            "httpx",
+            "kraina_chat.watch_files",
+        ]:
             return False
         return True
 
@@ -362,7 +370,14 @@ class MacroWindow(tk.Toplevel):
         self.root.post_event(APP_EVENTS.MACRO_RUNNING, True)
 
         def _call(_cmd, *args, **kwargs):
+            # Create persistent event loop for this macro execution
+            # This prevents "Event loop is closed" errors from httpx cleanup tasks
+            loop = None
             try:
+                # Set up event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
                 ret = _cmd(*args, **kwargs)
                 logger.info("*" * (len(str(ret)) + 4))
                 logger.info("* " + str(ret) + " *")
@@ -371,6 +386,18 @@ class MacroWindow(tk.Toplevel):
                 logger.info("*" * 40)
                 logger.exception(e)
                 logger.info("*" * 40)
+            finally:
+                # Properly close the event loop and cleanup pending tasks
+                if loop:
+                    try:
+                        # Give pending tasks a chance to complete
+                        pending = asyncio.all_tasks(loop)
+                        if pending:
+                            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    except Exception:
+                        pass
+                    finally:
+                        loop.close()
 
         self.macro_thread = threading.Thread(
             target=_call,

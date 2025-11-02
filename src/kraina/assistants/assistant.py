@@ -272,7 +272,31 @@ class BaseAssistant:
         :param kwargs: Additional key-value pairs to substitute in System prompt
         :return: AssistantResp dataclass
         """
-        return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
+        # Check if we're inside a running event loop
+        try:
+            asyncio.get_running_loop()
+            raise RuntimeError("Cannot call sync run() from async context. Use arun() instead.")
+        except RuntimeError as e:
+            if "no running event loop" not in str(e).lower():
+                raise
+
+        # Try to reuse existing event loop in current thread (e.g., from macro runner)
+        # This prevents "Event loop is closed" errors when httpx clients cleanup
+        try:
+            loop = asyncio.get_event_loop()
+            # Check if loop is closed or if we got the default loop
+            if loop.is_closed():
+                # Create new loop and set it for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                # Use asyncio.run for proper cleanup since we created the loop
+                return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
+            else:
+                # Reuse existing loop (macro thread scenario)
+                return loop.run_until_complete(self.arun(query, use_db, conv_id, **kwargs))
+        except RuntimeError:
+            # Fallback: no event loop policy, use asyncio.run
+            return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
 
     async def arun(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
         """Query LLM as assistant (async).
