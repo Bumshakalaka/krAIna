@@ -281,6 +281,8 @@ def run(topic: str, depth: str = "basic") -> str:
     return result
 ```
 
+Check out the [topic_overview.py](app/macros/topic_overview.py) example macro.
+
 ## Built-in Tools
 
 Tools that can be used by Assistants to extend their capabilities.
@@ -381,7 +383,7 @@ tools:
 Boost productivity with clipboard-based AI transformations:
 
 ### Setup
-1. Install [CopyQ](https://github.com/hluk/CopyQ) 7.1.0
+1. Install [CopyQ](https://github.com/hluk/CopyQ)
 2. Import custom actions from `copyQ/` directory:
    - `ai_select.ini` - Transform selected text (ALT+SHIFT+1)
    - `kraina_run.ini` - Show/hide KrAIna (ALT+SHIFT+~)
