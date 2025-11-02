@@ -56,6 +56,7 @@ pyinstaller \
     --hidden-import=tiktoken_ext \
     --hidden-import=PIL._tkinter_finder \
     --hidden-import=aenum \
+    --hidden-import=kraina_chat.cli \
     --exclude-module pkg_resources \
     --icon=img/logo.ico \
     --splash=img/kraina_banner_loading.png
