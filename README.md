@@ -147,6 +147,21 @@ options:
 
 The files are automaticly reloaded. No need to re-run the app.
 
+On Linux you can add shortcuts to the application by creating a desktop file:
+```desktop
+[Desktop Entry]
+Encoding=UTF-8
+Name=krAIna
+Comment=KrAIna
+Exec=<path_to_kraina_app>
+Icon=<get icon from https://github.com/Bumshakalaka/krAIna/blob/main/img/logo.png and refer to it here>
+Type=Application
+Categories=Office;
+StartupWMClass=Tk
+
+```
+Save it to `~/.local/share/applications/kraina.desktop` .
+
 ### User Extensibility
 
 Create your own components alongside the executables without modifying core code:
@@ -383,7 +398,7 @@ tools:
 Boost productivity with clipboard-based AI transformations:
 
 ### Setup
-1. Install [CopyQ](https://github.com/hluk/CopyQ)
+1. Install [CopyQ](https://github.com/hluk/CopyQ). For Linux users, you must use x11 window manager.
 2. Import custom actions from `copyQ/` directory:
    - `ai_select.ini` - Transform selected text (ALT+SHIFT+1)
    - `kraina_run.ini` - Show/hide KrAIna (ALT+SHIFT+~)
