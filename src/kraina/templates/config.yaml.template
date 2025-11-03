@@ -73,8 +73,8 @@ assistants:
 snippets:
   # snippets settings
   # snippet name:
-  #    settings
-  # aren't implemented yet
+  #    settings (global overrides)
+  # Snippet tools are configured per snippet in snippets/<name>/config.yaml
 tools:
   # tools settings
   # tool name:
