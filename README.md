@@ -173,11 +173,11 @@ your_kraina_deployment/
 ├── .env               # Your API keys
 ├── config.yaml        # Configuration
 ├── snippets/          # Your custom snippets
-│   └── my_snippet/
+│   └── solver/
 │       ├── prompt.md
 │       └── config.yaml
 ├── assistants/        # Your custom assistants
-│   └── my_assistant/
+│   └── bob/
 │       ├── prompt.md
 │       └── config.yaml
 └── macros/            # Your custom macros
@@ -233,6 +233,8 @@ contexts:
     - ./context.md
 ```
 
+Check out the [solver](app/snippets/solver/) example snippet.
+
 ### Assistants
 Specialized AI personas for different tasks with enhanced tool integration:
 - **Conversational Memory** - Remember chat history
@@ -273,6 +275,8 @@ contexts:
   string: "You are a helpful coding assistant"
   file: ./knowledge_base.md
 ```
+
+Check out the [bob](app/assistants/bob/) example assistant.
 
 ### Macros
 Python scripts for complex AI-powered workflows:

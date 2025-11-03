@@ -4,4 +4,3 @@ max_tokens: 16384
 description: |
   Hi, I'm your very simple assistant.
   You ask, I'm answering. That's it.
-__buildin__: true
