@@ -15,6 +15,7 @@ from kraina.assistants.assistant import AssistantResp
 from kraina.libs.llm import get_llm_type
 from kraina_chat.base import APP_EVENTS
 from kraina_chat.log_window import DbgLogWindow
+from kraina_chat.toast_popup import Toast
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,7 @@ class StatusBar(tk.Frame):
         """
         if self.root.dbg_window and self.root.dbg_window.visible:
             return
+        Toast.show(self, data)
         self.blink_stop()
         self.blink_after_id = self.after(300, self.blink)
 

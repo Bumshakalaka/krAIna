@@ -1,5 +1,6 @@
 """Base assistant class."""
 
+import asyncio
 import enum
 import json
 import logging
@@ -10,10 +11,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Type, Union
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
 from tiktoken import Encoding, encoding_for_model, get_encoding
 
@@ -21,7 +23,7 @@ from kraina.libs.db.controller import Db, LlmMessageType
 from kraina.libs.langfuse import langfuse_handler
 from kraina.libs.llm import chat_llm, map_model
 from kraina.libs.utils import IMAGE_DATA_URL_MARKDOWN_RE
-from kraina.tools.base import get_and_init_tools
+from kraina.tools.base import get_and_init_langchain_tools, get_and_init_mcp_tools
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +90,12 @@ class BaseAssistant:
     """Serialize JSON output into Pydantic model. The best is to use with json_mode"""
     __buildin__: bool = False
     """If True, assistant is built-in and cannot be removed"""
+    _tools_tokens: int = -1
+    """Number of tokens used by tools. Updated on LLM call."""
+    _initialized_tools: List[BaseTool] = field(default_factory=list)
+    """Internal list of initialized MCP and langchain tools."""
+    _tools_number: int = -1
+    """Number of tools used by assistant."""
 
     def __init_subclass__(cls, **kwargs):
         """Automatically add all subclasses of this class to `SPECIALIZED_ASSISTANT` dict.
@@ -97,6 +105,11 @@ class BaseAssistant:
         super().__init_subclass__(**kwargs)
         if not cls.__name__.startswith("_"):
             SPECIALIZED_ASSISTANT[cls.__name__] = cls
+
+    @property
+    def used_tools(self) -> str:
+        """Get the number of tools ad token usage by assistant."""
+        return f"{self._tools_tokens} ({self._tools_number})"
 
     @property
     def encoding(self) -> Encoding:
@@ -139,6 +152,7 @@ class BaseAssistant:
                 "temp": self.temperature,
             },
             "prompt": 0,
+            "tools_input": self.used_tools,
             "history": 0,
         }
         msgs = []
@@ -151,9 +165,6 @@ class BaseAssistant:
                     if isinstance(el, dict) and el.get("type") == "text":
                         msgs.append(el.get("text", ""))
         ret["prompt"] += self._calc_tokens(self.prompt) + ADDITIONAL_TOKENS_PER_MSG
-        if self.tools:
-            for tool in get_and_init_tools(self.tools, self):
-                ret["prompt"] += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
         ret["history"] += sum([self._calc_tokens(msg) for msg in msgs]) + len(msgs) * ADDITIONAL_TOKENS_PER_MSG
         return ret
 
@@ -207,8 +218,88 @@ class BaseAssistant:
             content.append(dict(type="text", text=msg[start_idx:]))
         return content
 
+    @staticmethod
+    def _last_agent_step(response_metadata: Dict) -> bool:
+        """Determine if the agent's response indicates the last step in a sequence.
+
+        This method checks the response metadata for specific keys that indicate
+        a finishing reason and returns True if the reason matches predefined stop signals.
+
+        :param response_metadata: A dictionary containing metadata about the agent's response.
+        :return: True if the response indicates the last step, False otherwise.
+        """
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            if reason in response_metadata:
+                finish_reason: str = response_metadata[reason]
+                break
+        else:
+            finish_reason = "unknown"
+        stop_str = ["stop", "end_turn", "stop_sequence", "done"]
+        # TODO: check other LLM providers
+        logger.info(response_metadata)
+        return finish_reason in stop_str
+
+    @staticmethod
+    def _tool_usage_agent_step(response_metadata: Dict) -> bool:
+        """Determine if the agent's response indicates the tool usage.
+
+        This method checks the response metadata for specific keys that indicate
+        a finishing reason and returns True if the reason matches predefined stop signals.
+
+        :param response_metadata: A dictionary containing metadata about the agent's response.
+        :return: True if the response indicates the tool usage, False otherwise.
+        """
+        for reason in ["finish_reason", "stop_reason", "done_reason"]:
+            if reason in response_metadata:
+                finish_reason: str = response_metadata[reason]
+                break
+        else:
+            finish_reason = "unknown"
+        stop_str = ["tool_calls", "tool_use"]
+        # TODO: check other LLM providers
+        logger.info(response_metadata)
+        return finish_reason in stop_str
+
     def run(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
-        """Query LLM as assistant.
+        """Query LLM as assistant (sync).
+
+        This is a synchronous wrapper around the async `arun` method.
+        Assistant uses the database to handle chat history.
+
+        :param query: Text which is passed as Human text to LLM chat
+        :param use_db: Use long-term memory of not. Default is True
+        :param conv_id: Conversation ID. If None, new conversation is started
+        :param kwargs: Additional key-value pairs to substitute in System prompt
+        :return: AssistantResp dataclass
+        """
+        # Check if we're inside a running event loop
+        try:
+            asyncio.get_running_loop()
+            raise RuntimeError("Cannot call sync run() from async context. Use arun() instead.")
+        except RuntimeError as e:
+            if "no running event loop" not in str(e).lower():
+                raise
+
+        # Try to reuse existing event loop in current thread (e.g., from macro runner)
+        # This prevents "Event loop is closed" errors when httpx clients cleanup
+        try:
+            loop = asyncio.get_event_loop()
+            # Check if loop is closed or if we got the default loop
+            if loop.is_closed():
+                # Create new loop and set it for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                # Use asyncio.run for proper cleanup since we created the loop
+                return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
+            else:
+                # Reuse existing loop (macro thread scenario)
+                return loop.run_until_complete(self.arun(query, use_db, conv_id, **kwargs))
+        except RuntimeError:
+            # Fallback: no event loop policy, use asyncio.run
+            return asyncio.run(self.arun(query, use_db, conv_id, **kwargs))
+
+    async def arun(self, query: str, use_db=True, conv_id: Optional[int] = None, **kwargs) -> AssistantResp:
+        """Query LLM as assistant (async).
 
         Assistant uses the database to handle chat history.
 
@@ -217,6 +308,7 @@ class BaseAssistant:
         :param conv_id: Conversation ID. If None, new conversation is started
         :param kwargs: Additional key-value pairs to substitute in System prompt
         :return: AssistantResp dataclass
+            The asyncio.CancelledError and asyncio.TimeoutError will return the AssistantResp with cancellation message
         """
         logger.info(f"{self.name}: query={query[0:80]}..., {kwargs=}")
         ai_db = None
@@ -237,29 +329,45 @@ class BaseAssistant:
         used_tokens["input"] = len(self.encoding.encode(query)) + ADDITIONAL_TOKENS_PER_MSG
         used_tokens["total_input"] = used_tokens["prompt"] + used_tokens["history"] + used_tokens["input"]
         used_tokens["output"] = 0
-        if self.type == AssistantType.SIMPLE:
-            ret = self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
-        else:
-            ret = self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
-        if isinstance(ret, list):
-            # anthropic returns here list of dict(text, index, type)
-            if ret and isinstance(ret[0], dict) and "text" in ret[0]:
-                ret = ret[0]["text"]  # type: ignore
+        try:
+            if self.type == AssistantType.SIMPLE:
+                ret = await self._run_simple_assistant(query, hist, ai_db, used_tokens, **kwargs)
             else:
-                ret = str(ret)
-        used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
-        used_tokens["total"] = sum([v for k, v in used_tokens.items() if k != "api"])
+                ret = await self._run_assistant_with_tools(query, hist, ai_db, used_tokens, **kwargs)
 
-        if ai_db:
-            ai_db.add_message(LlmMessageType.AI, ret)
-        logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
-        content = self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret
-        return AssistantResp(conv_id, content, used_tokens)  # type: ignore
+            if isinstance(ret, list):
+                # anthropic returns here list of dict(text, index, type)
+                if ret and isinstance(ret[0], dict) and "text" in ret[0]:
+                    ret = ret[0]["text"]  # type: ignore
+                else:
+                    ret = str(ret)
+            used_tokens["output"] += len(self.encoding.encode(ret)) + ADDITIONAL_TOKENS_PER_MSG
+            used_tokens["tools_input"] = self.used_tools  # type: ignore
+            used_tokens["total"] = sum([v for k, v in used_tokens.items() if k not in ["api", "tools_input"]])
 
-    def _run_simple_assistant(
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, ret)
+            logger.info(f"{self.name}: ret={str(AssistantResp(conv_id, ret, used_tokens))[0:80]}...")
+            content = self.pydantic_output.model_validate_json(ret) if self.pydantic_output else ret
+            return AssistantResp(conv_id, content, used_tokens)  # type: ignore
+
+        except asyncio.CancelledError:
+            ret = AssistantResp(conv_id, "[Execution cancelled by user]", used_tokens)
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, str(ret.content))
+            logger.info(f"{self.name}: {ret.content}")
+            return ret
+        except asyncio.TimeoutError:
+            ret = AssistantResp(conv_id, "[Execution timed out]", used_tokens)
+            if ai_db:
+                ai_db.add_message(LlmMessageType.AI, str(ret.content))
+            logger.info(f"{self.name}: {ret.content}")
+            return ret
+
+    async def _run_simple_assistant(
         self, query: str, hist: List, _ai_db: Optional[Db], _tokens: Dict[str, int], **kwargs
     ) -> str:
-        """Run a simple assistant query.
+        """Run a simple assistant query (async).
 
         :param query: User query string
         :param hist: Conversation history
@@ -285,17 +393,21 @@ class BaseAssistant:
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
         if hist:
             kwargs["hist"] = hist
-        return chat.invoke(
+
+        response = await chat.ainvoke(
             prompt.format_prompt(**kwargs),
             config={
                 "callbacks": [langfuse_handler],
             },
-        ).content  # type: ignore
+        )
+        return response.content  # type: ignore
 
-    def _run_assistant_with_tools(
+    async def _run_assistant_with_tools(
         self, query: str, hist: List, ai_db: Optional[Db], tokens: Dict[str, int], **kwargs
     ) -> str:
-        """Run an assistant with the tools query.
+        """Run an assistant with the tools query in async.
+
+        Async is required to have working MCP tools.
 
         :param query: User query string
         :param hist: Conversation history
@@ -303,6 +415,7 @@ class BaseAssistant:
         :param tokens: Token usage tracking
         :param kwargs: Additional keyword arguments for prompt formatting
         :return: Assistant response string
+        :raises: asyncio.CancelledError or asyncio.TimeoutError when execution is interrupted
         """
         llm = chat_llm(
             force_api_type=self.force_api,
@@ -311,72 +424,108 @@ class BaseAssistant:
             max_tokens=float(self.max_tokens),
             json_mode=self.json_mode,
         )
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self.prompt),
-                MessagesPlaceholder("chat_history", optional=True),
-                HumanMessage(content=self._format_message(query)),  # type: ignore
-                MessagesPlaceholder("agent_scratchpad"),
-            ]
-        )
+
+        # Prepare prompt string with date substitution for LangGraph
         kwargs["date"] = datetime.now().strftime("%Y-%m-%d")
-        if hist:
-            kwargs["chat_history"] = hist
+        prompt_string = self.prompt.format(**kwargs)
+
         tokens["tools"] = 0
-        tools = get_and_init_tools(self.tools or [], self)
-        agent = create_tool_calling_agent(llm, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
+
+        # init tools - first call of the assistant initialize tools
+        # It is used to reuse MCP connections between calls and maintain async context.
+        try:
+            if self.tools and not self._initialized_tools:
+                self._initialized_tools = get_and_init_langchain_tools(self.tools, self)
+                self._initialized_tools += await get_and_init_mcp_tools(self.tools)
+                self._tools_tokens = 0
+                for tool in self._initialized_tools:
+                    self._tools_tokens += self._calc_tokens(json.dumps(convert_to_openai_tool(tool)))
+                self._tools_number = len(self._initialized_tools) + 1
+
+            agent_executor = create_react_agent(llm, self._initialized_tools, prompt=prompt_string)
+        except asyncio.CancelledError:
+            self._initialized_tools = []
+            logger.info("Assistant init tools was cancelled")
+            raise
+        except asyncio.TimeoutError:
+            self._initialized_tools = []
+            logger.info("Assistant init tools was timed out")
+            raise
+
+        # Convert input format from kwargs to LangGraph messages format
+        messages = []
+        if hist:
+            messages.extend(hist)
+        # Handle multimodal content properly
+        formatted_query = self._format_message(query)
+        if len(formatted_query) == 1 and formatted_query[0].get("type") == "text":
+            # Simple text message
+            messages.append(HumanMessage(content=formatted_query[0]["text"]))
+        else:
+            # Multimodal content - cast to proper type
+            messages.append(HumanMessage(content=formatted_query))  # type: ignore
+
+        # Use LangGraph streaming for compatibility with callbacks
         chunks = []
-        action_msg_id = ""
-        for chunk in agent_executor.stream(kwargs, config={"callbacks": [langfuse_handler]}):
+        final_response = ""
+        tool_content_str = ""
+        async for chunk in agent_executor.astream({"messages": messages}, config={"callbacks": [langfuse_handler]}):
             chunks.append(chunk)
-            # Agent Action
-            if "actions" in chunk:
-                for message in chunk["messages"]:
-                    if action_msg_id != message.id:
-                        action_msg_id = message.id
-                        tokens["output"] += len(self.encoding.encode(message.content)) + ADDITIONAL_TOKENS_PER_MSG
-                        if ai_db:
-                            ai_db.add_message(LlmMessageType.AI, message.content)
-                        if self.callbacks["ai_observation"]:
-                            self.callbacks["ai_observation"](message.content)
-                for action in chunk["actions"]:
-                    tokens["tools"] += (
-                        len(
-                            self.encoding.encode(
-                                str(
-                                    dict(
-                                        function=dict(
-                                            arguments=action.tool_input,
-                                            name=action.tool,
-                                            id=action.tool_call_id,
-                                            index=0,
-                                            type="function",
-                                        )
-                                    )
-                                )
+
+            if "agent" in chunk:
+                for message in chunk["agent"]["messages"]:
+                    if isinstance(message, AIMessage):
+                        # Handle AI messages (reasoning/tool calls)
+                        if message.content:
+                            # Convert content to string for token counting and storage
+                            tokens["output"] += (
+                                len(self.encoding.encode(str(message.content))) + ADDITIONAL_TOKENS_PER_MSG
                             )
-                        )
-                        + ADDITIONAL_TOKENS_PER_MSG
-                    )
-                    msg = f"Invoking Tool: '{action.tool}' with input '{action.tool_input}'"
-                    if ai_db:
-                        ai_db.add_message(LlmMessageType.TOOL, msg)
-                    if self.callbacks["action"]:
-                        self.callbacks["action"](msg)
-            # Observation
-            elif "steps" in chunk:
-                for step in chunk["steps"]:
-                    tokens["tools"] += len(self.encoding.encode(step.observation)) + ADDITIONAL_TOKENS_PER_MSG
-                    msg = f"Tool Result: `{step.observation}`"
+                            content_str = ""
+                            if isinstance(message.content, str):
+                                content_str = message.content
+                            elif isinstance(message.content, list):
+                                # handle Antropic observation
+                                content_text = []
+                                for el in message.content:
+                                    if el.get("type") == "text":  # type: ignore
+                                        content_text.append(el.get("text"))  # type: ignore
+                                content_str = "\n".join(content_text)
+                            if (
+                                self.callbacks["ai_observation"]
+                                and hasattr(message, "tool_calls")
+                                and message.tool_calls
+                            ):
+                                # observation to the tool call
+                                if ai_db:
+                                    ai_db.add_message(LlmMessageType.AI, content_str)
+                                self.callbacks["ai_observation"](content_str)
+                            else:
+                                final_response = content_str
+
+                        # Handle tool calls
+                        if hasattr(message, "tool_calls") and message.tool_calls:
+                            for tool_call in message.tool_calls:
+                                tokens["tools"] += len(self.encoding.encode(str(tool_call))) + ADDITIONAL_TOKENS_PER_MSG
+                                msg = f'Invoking Tool: "{tool_call["name"]}" with input "{tool_call["args"]}"'
+                                if ai_db:
+                                    ai_db.add_message(LlmMessageType.TOOL, msg)
+                                if self.callbacks["action"]:
+                                    self.callbacks["action"](msg)
+            elif "tools" in chunk:
+                for message in chunk["tools"]["messages"]:
+                    # Handle tool results (ToolMessage)
+                    tool_content_str = message.content if isinstance(message.content, str) else str(message.content)
+                    tokens["tools"] += len(self.encoding.encode(tool_content_str)) + ADDITIONAL_TOKENS_PER_MSG
+                    msg = f"Tool Result: `{tool_content_str}`"
                     if ai_db:
                         ai_db.add_message(LlmMessageType.TOOL, msg)
                     if self.callbacks["observation"]:
                         self.callbacks["observation"](msg)
-            # Final result
-            elif "output" in chunk:
-                if self.callbacks["output"]:
-                    self.callbacks["output"](chunk["output"])
-            else:
-                raise ValueError
-        return chunks[-1]["output"]
+
+        # Trigger final output callback
+        if self.callbacks["output"]:
+            self.callbacks["output"](final_response)
+
+        # corner case: if final_response is empty, use content_str which will be direct result from tool call
+        return final_response or tool_content_str

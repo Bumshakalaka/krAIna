@@ -7,8 +7,8 @@ from typing import Dict, TypeAlias
 import yaml
 
 from kraina.assistants.assistant import AssistantType, BaseAssistant
-from kraina.libs.utils import find_assets, import_module
-from kraina.tools.base import get_available_tools
+from kraina.libs.utils import find_assets, get_os_info, import_module
+from kraina.tools.base import get_assistant_tools, get_available_tools
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ class Assistants(Dict[str, BaseAssistant]):
                     with open(assistant / "config.yaml") as fd:
                         settings = yaml.safe_load(fd.read())
                     settings["type"] = AssistantType.SIMPLE
-                    if settings.get("tools", None):
-                        settings["tools"] = [x.lower() for x in settings["tools"]]
+                    if tools_ := get_assistant_tools(assistant.name):
+                        settings["tools"] = [x.lower() for x in tools_]
                         if not set(settings["tools"]).issubset(get_available_tools()):
                             raise KeyError(
                                 f"[{assistant.name}] One of the tools={settings['tools']} is "
@@ -76,6 +76,7 @@ class Assistants(Dict[str, BaseAssistant]):
                                         else:
                                             contexts.append(fd.read_text())
                     contexts.append("Current date: {date}")
+                    contexts.append("Current OS info: {" + get_os_info() + "}")
                     settings["contexts"] = contexts
 
                     prompt += "\nTake into consideration the context below while generating answers.\n# Context:"

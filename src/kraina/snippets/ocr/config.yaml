@@ -1,4 +1,4 @@
-model: A
+model: B
 temperature: 0.5
 specialisation:
   file: overwrite.py

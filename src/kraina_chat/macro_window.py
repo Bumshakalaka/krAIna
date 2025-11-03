@@ -1,5 +1,6 @@
 """Debug window for managing and running macros with parameter configuration."""
 
+import asyncio
 import collections
 import copy
 import functools
@@ -10,7 +11,7 @@ import tkinter as tk
 import webbrowser
 from pathlib import Path
 from tkinter import ttk
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 from tktooltip import ToolTip
 
@@ -54,7 +55,14 @@ class LogFilter(logging.Filter):
         :param record: The log record to filter.
         :return: False if record should be filtered out, True otherwise.
         """
-        if record.name in ["__main__", "IPyCClient", "IPyCHost", "chat.main", "httpx"]:
+        if record.name in [
+            "__main__",
+            "IPyCClient",
+            "IPyCHost",
+            "kraina_chat.main",
+            "httpx",
+            "kraina_chat.watch_files",
+        ]:
             return False
         return True
 
@@ -185,24 +193,24 @@ class MacroWindow(tk.Toplevel):
 
         self.get_logs()
 
-    def _enter_hyper(self, event):
+    def _enter_hyper(self, _event):
         """Change the cursor to a hand when hovering over a hyperlink.
 
-        :param event: The event object containing information about the hover event.
+        :param _event: The event object containing information about the hover event.
         """
         self.text.config(cursor="hand2")
 
-    def _leave_hyper(self, event):
+    def _leave_hyper(self, _event):
         """Revert the cursor back to default when leaving a hyperlink.
 
-        :param event: The event object containing information about the leave event.
+        :param _event: The event object containing information about the leave event.
         """
         self.text.config(cursor="")
 
-    def _click_hyper(self, event):
+    def _click_hyper(self, _event):
         """Open the hyperlink in a web browser when clicked.
 
-        :param event: The event object containing information about the click event.
+        :param _event: The event object containing information about the click event.
         :raises ValueError: If the hyperlink text cannot be retrieved.
         """
         link = self.text.get(*self.text.tag_prevrange("hyper", tk.CURRENT))
@@ -223,7 +231,7 @@ class MacroWindow(tk.Toplevel):
         self.macro_list.selection_set(self.macro_list.nearest(event.y))
         self.macro_list.activate(self.macro_list.nearest(event.y))
         idx = self.macro_list.curselection()
-        self.current_macro_name: str = event.widget.get(idx)
+        self.current_macro_name: str = cast("tk.Listbox", event.widget).get(idx)
         self.macro_params_update()
         self.edit_macro(self.macros[self.current_macro_name].path)
 
@@ -292,9 +300,9 @@ class MacroWindow(tk.Toplevel):
 
         :param event: The event object containing information about the selection.
         """
-        idx = event.widget.curselection()
+        idx = cast("tk.Listbox", event.widget).curselection()
         if idx:
-            self.current_macro_name = event.widget.get(idx)
+            self.current_macro_name = cast("tk.Listbox", event.widget).get(idx)
             self.macro_params_update()
 
     def macro_params_update(self):
@@ -334,7 +342,7 @@ class MacroWindow(tk.Toplevel):
         """Toggle always on top window setting."""
         self.wm_attributes("-topmost", self._always_on_top.get())
 
-    def hide(self, *args):
+    def hide(self, *_args):
         """Hide the window and save its geometry."""
         if self.visible:
             if int(self.geometry().split("x")[0]) > 10:
@@ -362,7 +370,14 @@ class MacroWindow(tk.Toplevel):
         self.root.post_event(APP_EVENTS.MACRO_RUNNING, True)
 
         def _call(_cmd, *args, **kwargs):
+            # Create persistent event loop for this macro execution
+            # This prevents "Event loop is closed" errors from httpx cleanup tasks
+            loop = None
             try:
+                # Set up event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
                 ret = _cmd(*args, **kwargs)
                 logger.info("*" * (len(str(ret)) + 4))
                 logger.info("* " + str(ret) + " *")
@@ -371,6 +386,18 @@ class MacroWindow(tk.Toplevel):
                 logger.info("*" * 40)
                 logger.exception(e)
                 logger.info("*" * 40)
+            finally:
+                # Properly close the event loop and cleanup pending tasks
+                if loop:
+                    try:
+                        # Give pending tasks a chance to complete
+                        pending = asyncio.all_tasks(loop)
+                        if pending:
+                            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    except Exception:
+                        pass
+                    finally:
+                        loop.close()
 
         self.macro_thread = threading.Thread(
             target=_call,

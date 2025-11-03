@@ -4,6 +4,7 @@ This module provides the main application for KrAIna CHAT, a desktop application
 for interacting with AI assistants and managing chat conversations.
 """
 
+import asyncio
 import collections
 import functools
 import json
@@ -103,7 +104,7 @@ class NotifyErrorFilter(logging.Filter):
         :return: True to allow the record through, False to filter it out.
         """
         if record.levelno >= 40:
-            self.error_cbk()
+            self.error_cbk(f"{record.exc_info[1] if record.exc_info else record.message}")
         return True
 
 
@@ -142,7 +143,7 @@ class App(TkinterDnD.Tk):
         self.log_queue = collections.deque(maxlen=1000)
         self.queue_handler = QueueHandler(self.log_queue)
         self.queue_handler.addFilter(
-            NotifyErrorFilter(lambda: self.after_idle(self.post_event, APP_EVENTS.WE_HAVE_ERROR, None))
+            NotifyErrorFilter(lambda err_str: self.after_idle(self.post_event, APP_EVENTS.WE_HAVE_ERROR, err_str))
         )
         self.queue_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"))
         self.queue_handler.setLevel(logging.INFO)
@@ -164,6 +165,10 @@ class App(TkinterDnD.Tk):
         self.ai_assistants = Assistants()
         self.ai_snippets: Dict[str, BaseSnippet] = Snippets()
         self.conv_id: Union[int, None] = None
+
+        # AsyncIO task cancellation support
+        self.current_assistant_task = None
+        self.assistant_loop = None
         self.title("KrAIna CHAT")
         self.tk.call(
             "wm",
@@ -196,7 +201,7 @@ class App(TkinterDnD.Tk):
         self.dbg_window = None
         self.status = StatusBar(self)
         self.status.pack(side=tk.BOTTOM, fill=tk.BOTH)
-        self.update_chat_lists(active=chat_persistence.show_also_hidden_chats())
+        self.update_chat_lists(chat_persistence.show_also_hidden_chats())
 
         self.bind_on_event(APP_EVENTS.CHANGE_DATABASE, self._change_database)
         self.bind_on_event(APP_EVENTS.QUERY_TO_ASSISTANT, self.call_assistant)
@@ -415,7 +420,7 @@ class App(TkinterDnD.Tk):
             col = col_map[col_name]
         return col
 
-    def report_callback_exception(self, exc, val, tb):  # noqa: ARG001, ARG002, ARG003
+    def report_callback_exception(self, exc, *args, **kwargs):  # noqa: ARG002, ARG003
         """Handle tkinter callback errors.
 
         :param exc: Exception type.
@@ -514,16 +519,6 @@ class App(TkinterDnD.Tk):
         else:
             actual_conv_id = conv_id
         self.ai_db.delete_conversation(actual_conv_id)
-        self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
-        self.post_event(APP_EVENTS.NEW_CHAT, None)
-        self.post_event(
-            APP_EVENTS.UPDATE_STATUS_BAR_TOKENS,
-            AssistantResp(
-                None,
-                "not used",
-                self.current_assistant.tokens_used(None),
-            ),
-        )
 
     def modify_chat(self, data: Dict):
         """MODIFY_CHAT event callback.
@@ -538,18 +533,28 @@ class App(TkinterDnD.Tk):
         self.ai_db.update_conversation(conv_id, **action)
         self.post_event(APP_EVENTS.ADD_NEW_CHAT_ENTRY, chat_persistence.show_also_hidden_chats())
 
-    def update_chat_lists(self, active: Union[bool, None]):
+    def update_chat_lists(self, data: Union[bool, None, dict]):
         """ADD_NEW_CHAT_ENTRY event callback to get the conversation list.
 
         ADD_NEW_CHAT_ENTRY is post without data.
 
-        :param active: Get active(True), inactive(False) or both(None) conversations.
+        :param data: Dictionary containing active(True), inactive(False) or both(None) conversations and
+                     select_conv: Conversation ID to select after update.
+                     if data is not dict, is assumed to be active(True) and select_conv is the last known conv_id.
         :return: None.
         """
+        if isinstance(data, dict):
+            active = data.get("active", None)
+            select_conv = data.get("select_conv", None)
+        else:
+            active = data
+            select_conv = self.conv_id  # get the last known conv_id
         self.post_event(
             APP_EVENTS.UPDATE_SAVED_CHATS,
             self.ai_db.list_conversations(active=active, limit=chat_settings.SETTINGS.visible_last_chats),
         )
+        if select_conv:
+            self.post_event(APP_EVENTS.SELECT_NEXT_CHAT, select_conv)
 
     def get_chat(self, data: dict):
         """GET_CHAT event callback.
@@ -563,7 +568,7 @@ class App(TkinterDnD.Tk):
             if data["ev"] == "LOAD_CHAT" and chat_persistence.SETTINGS.last_conv_id:
                 chat_persistence.SETTINGS.last_conv_id[Path(kraina_db()).name] = self.conv_id
         else:
-            logger.error("conversation_id not know")
+            logger.warning("conversation_id not know")
             if data["ev"] == "LOAD_CHAT":
                 self.conv_id = None
 
@@ -704,7 +709,7 @@ class App(TkinterDnD.Tk):
         return wrapper
 
     def call_assistant(self, data: Dict):
-        """Call AI assistant in separate thread.
+        """Call AI assistant using asyncio task for better cancellation.
 
         Post APP_EVENTS.RESP_FROM_ASSISTANT event when response is ready.
 
@@ -712,7 +717,7 @@ class App(TkinterDnD.Tk):
         :return: None.
         """
 
-        def _call(assistant, query, conv_id):
+        async def _async_call(assistant, query, conv_id):
             try:
                 if self.ai_assistants[assistant].type == AssistantType.WITH_TOOLS:
                     # When assistant with tools is called,
@@ -724,20 +729,56 @@ class App(TkinterDnD.Tk):
                         ai_observation=functools.partial(self.post_event, APP_EVENTS.RESP_FROM_OBSERVATION),
                         output=None,
                     )
-                ret = self.ai_assistants[assistant].run(query, conv_id=conv_id)
+
+                # Use asyncio.timeout for built-in cancellation support
+                async with asyncio.timeout(600):  # 10 minute timeout
+                    ret = await self.ai_assistants[assistant].arun(query, conv_id=conv_id)
+
             except Exception as e:
                 logger.exception(e)
                 _err = f"FAIL: {type(e).__name__}: {e}"
-                ret = AssistantResp(self.conv_id, "", {}, _err)
-            self.conv_id = ret.conv_id
-            self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.content)
-            self.after_idle(self.status.update_statusbar, ret)
+                ret = AssistantResp(conv_id, "", {}, _err)
 
-        threading.Thread(
-            target=_call,
-            args=(self.selected_assistant.get(), data, self.conv_id),
-            daemon=True,
-        ).start()
+            # Post result to UI thread
+            self.after_idle(lambda: self._handle_assistant_response(ret))
+            return ret
+
+        def _thread_runner():
+            # Create new event loop for this thread
+            self.assistant_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.assistant_loop)
+
+            try:
+                self.current_assistant_task = self.assistant_loop.create_task(
+                    _async_call(self.selected_assistant.get(), data, self.conv_id)
+                )
+                self.assistant_loop.run_until_complete(self.current_assistant_task)
+            except asyncio.CancelledError:
+                logger.info("Assistant task was cancelled")
+            finally:
+                self.assistant_loop.close()
+                self.current_assistant_task = None
+                self.assistant_loop = None
+
+        threading.Thread(target=_thread_runner, daemon=True).start()
+
+    def _handle_assistant_response(self, ret: "AssistantResp"):
+        """Handle assistant response in the main UI thread."""
+        self.conv_id = ret.conv_id
+        self.post_event(APP_EVENTS.RESP_FROM_ASSISTANT, ret.content)
+        self.status.update_statusbar(ret)
+
+    def interrupt_assistant(self):
+        """Cancel the currently running assistant task."""
+        if self.current_assistant_task and not self.current_assistant_task.done():
+            if self.assistant_loop and self.assistant_loop.is_running():
+                # Schedule cancellation on the event loop
+                self.assistant_loop.call_soon_threadsafe(self.current_assistant_task.cancel)
+                logger.info("Assistant cancellation requested")
+            else:
+                logger.warning("Assistant loop not running, cannot cancel task")
+        else:
+            logger.info("No active assistant task to cancel")
 
     def call_snippet(self, data: Dict):
         """Call AI snippet in separate thread to transform data.

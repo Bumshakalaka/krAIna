@@ -4,8 +4,10 @@ import hashlib
 import importlib.util
 import inspect
 import io
+import json
 import logging
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -46,6 +48,24 @@ LATEX_RE = re.compile(
     r"\\\[(?P<latex>.*?)\\\]|\\\((?P<latex2>.*?)\\\)",
     re.DOTALL,  # Enable multiline matching with dot matching newlines
 )
+
+
+class MyMermaid(md.Mermaid):
+    """Custom Mermaid class with overwrite _make_request_to_mermaid to set 3s timeout."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize MyMermaid class."""
+        super().__init__(*args, **kwargs)
+
+    def _make_request_to_mermaid(self) -> None:
+        """Make GET requests to the Mermaid IMG API.
+
+        Make GET requests to the Mermaid IMG APIs only using the base64 encoded string of the Mermaid diagram script
+         and set 3s timeout.
+        """
+        mermaid_server_adress: str = os.getenv("MERMAID_INK_SERVER", "https://mermaid.ink")
+
+        self.img_response = requests.get(mermaid_server_adress + "/img/" + self._diagram, timeout=3)
 
 
 def import_module(path: Path) -> ModuleType:
@@ -188,7 +208,7 @@ def to_md(text: str, col: Optional[str] = None) -> str:
             )
         else:
             graph = Graph("first-graph", m.group("graph"))
-            temp = md.Mermaid(graph)
+            temp = MyMermaid(graph)
             if temp.img_response.status_code == 200:
                 name = images.chat_images.create_from_url(temp.img_response.url, name, False)
                 width, height = images.chat_images.pil_image[name]["resized-600"].size
@@ -591,3 +611,19 @@ def latex_to_image(latex_input: str, output_format: str = "PNG", output_scale: s
         ret = {"error": f"Request failed: {str(e)}"}
     logger.debug(f"latex_to_image: {ret}")
     return ret
+
+
+def get_os_info() -> str:
+    """Get information about the operating system.
+
+    :return: A string containing the operating system information in JSON format.
+    """
+    info = {
+        "system": platform.system(),  # 'Windows', 'Linux', etc.
+        "release": platform.release(),  # OS release version
+        "version": platform.version(),  # OS version
+        "architecture": platform.architecture()[0],  # '64bit', '32bit'
+        "hostname": platform.node(),  # Hostname
+        "processor": platform.processor(),  # CPU info
+    }
+    return json.dumps(info)

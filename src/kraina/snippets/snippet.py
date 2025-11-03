@@ -4,11 +4,10 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Type
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel
 
 from kraina.libs.langfuse import langfuse_handler
@@ -65,9 +64,7 @@ class BaseSnippet:
     def model(self, value: str):
         self._model = value
 
-    def invoke(
-        self, chat: Union[ChatOpenAI, AzureChatOpenAI], prompt: ChatPromptTemplate, text, **kwargs
-    ) -> BaseMessage:
+    def invoke(self, chat, prompt: ChatPromptTemplate, text, **kwargs) -> BaseMessage:
         """LLM request for completions with support to continue generation when max_tokens response has been reached.
 
         :param chat: LLM Chat object
@@ -91,7 +88,7 @@ class BaseSnippet:
                 raise last_exception
             raise KeyError("No finish reason found in response metadata")
 
-        stop_str = ["stop", "end_turn", "stop_sequence"]
+        stop_str = ["stop", "end_turn", "stop_sequence", "done"]
         if finish_reason in stop_str:
             # complete response received
             return ret
@@ -132,10 +129,7 @@ class BaseSnippet:
             model=self.model,
             json_mode=self.json_mode,
         )
-        if self.model.startswith("o"):  # reasoning models
-            llm_kwargs.update(dict(model_kwargs=dict(max_completion_tokens=self.max_tokens), temperature=1))
-        else:
-            llm_kwargs.update(dict(temperature=self.temperature, max_tokens=self.max_tokens))
+        llm_kwargs.update(dict(temperature=self.temperature, max_tokens=self.max_tokens))
         logger.info(f"{self.name}: llm_kwargs={llm_kwargs}, {self.force_api=} {FORCE_API_FOR_SNIPPETS=}")
         chat = chat_llm(**llm_kwargs)
         if self.prompt is None:

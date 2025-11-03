@@ -8,7 +8,9 @@ import abc
 import logging
 import tkinter as tk
 import webbrowser
+from pathlib import Path
 from tkinter import ttk
+from urllib.parse import urlparse
 
 from tkinterweb.htmlwidgets import HtmlFrame
 
@@ -251,7 +253,7 @@ class TextChatView(ScrolledText, ChatView):
             self._insert_message(message.message, LlmMessageType(message.type).name)
 
 
-class HtmlChatView(HtmlFrame, ChatView):
+class HtmlChatView(HtmlFrame, ChatView):  # pyright: ignore[reportIncompatibleMethodOverride]
     """HTML-based chat history view implementation.
 
     Provides an HTML-rendered view for displaying chat messages with
@@ -296,7 +298,10 @@ class HtmlChatView(HtmlFrame, ChatView):
 
         :param event: The mouse click event object
         """
-        hovered = self.get_currently_hovered_element()
+        try:
+            hovered = self.get_currently_hovered_element()
+        except Exception:
+            hovered = None
         if hovered and getattr(hovered, "tagName", None) == "img":
             url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None
             if url and url.startswith("https://"):
@@ -304,7 +309,16 @@ class HtmlChatView(HtmlFrame, ChatView):
                 return
             alt = hovered.attributes.get("alt") if hasattr(hovered, "attributes") else None
             if alt:
-                self._open_webbrowser(self.root.images.get_file_uri(alt))
+                file_path = self.root.images.get_file_uri(alt)
+                # Convert URI to filesystem path for existence check
+                if file_path.startswith("file://"):
+                    parsed = urlparse(file_path)
+                    filesystem_path = Path(parsed.path)
+                else:
+                    filesystem_path = Path(file_path)
+                if not filesystem_path.exists() and url:
+                    file_path = self.root.images.get_file_uri(Path(url).parts[-2])
+                self._open_webbrowser(file_path)
                 return
 
     @staticmethod
