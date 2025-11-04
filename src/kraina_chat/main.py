@@ -41,13 +41,16 @@ import kraina.libs.images as images  # noqa: E402
 import kraina.libs.klembord as klembord  # noqa: E402
 import kraina_chat.chat_persistence as chat_persistence  # noqa: E402
 import kraina_chat.chat_settings as chat_settings  # noqa: E402
-from kraina.assistants.assistant import AssistantResp, AssistantType  # noqa: E402
+from kraina.assistants.assistant import (
+    AssistantResp,  # noqa: E402
+    AssistantType,
+)
 from kraina.assistants.base import Assistants  # noqa: E402
 from kraina.libs.db.controller import Db  # noqa: E402
 from kraina.libs.llm import read_model_settings  # noqa: E402
 from kraina.libs.paths import ENV_FILE, config_file_validation  # noqa: E402
-from kraina.libs.utils import (  # noqa: E402
-    CONFIG_FILE,
+from kraina.libs.utils import (
+    CONFIG_FILE,  # noqa: E402
     IMAGE_DATA_URL_MARKDOWN_RE,
     _convert_data_url_to_file_url,
     kraina_db,
@@ -56,12 +59,20 @@ from kraina.libs.utils import (  # noqa: E402
     to_md,
 )
 from kraina.snippets.base import Snippets  # noqa: E402
-from kraina_chat.base import APP_EVENTS, SETTINGS_FILE, get_windows_version, ipc_event  # noqa: E402
+from kraina_chat.base import (
+    APP_EVENTS,
+    SETTINGS_FILE,  # noqa: E402
+    get_windows_version,
+    ipc_event,
+)
 from kraina_chat.chat_history import ChatFrame  # noqa: E402
 from kraina_chat.leftsidebar import LeftSidebar  # noqa: E402
 from kraina_chat.menu import Menu  # noqa: E402
 from kraina_chat.status_bar import StatusBar  # noqa: E402
-from kraina_chat.watch_files import watch_exit_event, watch_my_files  # noqa: E402
+from kraina_chat.watch_files import (
+    watch_exit_event,  # noqa: E402
+    watch_my_files,
+)
 
 if TYPE_CHECKING:
     from kraina.snippets.snippet import BaseSnippet
@@ -652,7 +663,9 @@ class App(TkinterDnD.Tk):
             chat_persistence.SETTINGS.geometry = self.wm_geometry()
 
         self._persistent_write()
-        self.destroy()
+        self.withdraw()
+        self.update()
+        self.after_idle(self.destroy)
 
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         """Bind virtual event to callable.

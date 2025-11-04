@@ -21,8 +21,14 @@ else:
 
     load_dotenv(ENV_FILE)
     app = App()
-    AppHost(app).start()
+    _ipc_host = AppHost(app)
+    _ipc_host.start()
     app.deiconify()
     if getattr(sys, "frozen", False):
         pyi_splash.close()  # type: ignore
-    app.mainloop()
+    try:
+        app.mainloop()
+    finally:
+        # Gracefully stop the IPC host when the application exits
+        _ipc_host.stop()
+        sys.exit(0)
