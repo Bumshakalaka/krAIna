@@ -149,6 +149,13 @@ class App(TkinterDnD.Tk):
         self.queue_handler.setLevel(logging.INFO)
         logging.getLogger().addHandler(self.queue_handler)
 
+        # INSERT_YOUR_CODE
+        # Add a stdout logger to also print log messages to the console.
+        stdout_handler = logging.StreamHandler()
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)8s] [%(name)10s]: %(message)s"))
+        logging.getLogger().addHandler(stdout_handler)
+
         self._settings_read()
         self._persistent_read()
         style = ttk.Style(self)
@@ -652,7 +659,9 @@ class App(TkinterDnD.Tk):
             chat_persistence.SETTINGS.geometry = self.wm_geometry()
 
         self._persistent_write()
-        self.destroy()
+        self.withdraw()
+        self.update()
+        self.after_idle(self.destroy)
 
     def bind_on_event(self, ev: "APP_EVENTS", cmd: Callable):
         """Bind virtual event to callable.
