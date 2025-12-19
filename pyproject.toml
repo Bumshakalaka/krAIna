@@ -48,6 +48,7 @@ dependencies = [
     "jsonschema>=4.24.0,<5.0.0",
     "stopit2 @ git+https://github.com/randylabs/stopit2@c662a75cbd8f968cb4dac43653206cc66f6bed6c", # stopit2 from pypi is not compatible with Python >= 3.12
     "dbus-python>=1.4.0,<1.5.0; os_name == 'posix'",
+    "httpx-system-certs>=1.0.0,<2.0.0",
 ]
 
 [build-system]
