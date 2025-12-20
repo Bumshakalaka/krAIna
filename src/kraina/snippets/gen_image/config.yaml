@@ -1,0 +1,6 @@
+force_api: azure
+model: A
+temperature: 0.5
+max_tokens: 4096
+tools:
+  - text-to-image
