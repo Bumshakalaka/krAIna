@@ -302,7 +302,7 @@ class HtmlChatView(HtmlFrame, ChatView):  # pyright: ignore[reportIncompatibleMe
             hovered = None
         if hovered and getattr(hovered, "tagName", None) == "img":
             url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None
-            if url and url.startswith("https://"):
+            if url and (url.startswith("https://") or url.startswith("file://")):
                 self._open_webbrowser(url)
                 return
             alt = hovered.attributes.get("alt") if hasattr(hovered, "attributes") else None
