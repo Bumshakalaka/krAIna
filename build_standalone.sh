@@ -66,6 +66,7 @@ pyinstaller \
     app/kraina_cli.py \
     --add-data "src/kraina/templates:kraina/templates" \
     --exclude-module pkg_resources \
+    --exclude-module httpx-system-certs \
     --strip \
     --icon=img/logo.ico
 

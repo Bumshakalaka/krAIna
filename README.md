@@ -235,6 +235,21 @@ contexts:
 
 Check out the [solver](app/snippets/solver/) example snippet.
 
+#### Using Tools in Snippets
+Snippets can attach the same LangChain and MCP tools available to assistants by listing them in their local `snippets/<name>/config.yaml` file. Tools are initialized on first use and reused for subsequent calls, while snippets still return a single final response (no streaming telemetry).
+
+```yaml
+# snippets/my_snippet/config.yaml
+model: gpt-4o
+max_tokens: 512
+tools:
+  - text-to-image
+  - vector-search
+  - brave_web
+```
+
+Only tool names registered under `kraina.tools` are supported. Invalid entries raise a configuration error when the snippet is loaded.
+
 ### Assistants
 Specialized AI personas for different tasks with enhanced tool integration:
 - **Conversational Memory** - Remember chat history

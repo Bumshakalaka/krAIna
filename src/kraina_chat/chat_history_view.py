@@ -8,9 +8,7 @@ import abc
 import logging
 import tkinter as tk
 import webbrowser
-from pathlib import Path
 from tkinter import ttk
-from urllib.parse import urlparse
 
 from tkinterweb.htmlwidgets import HtmlFrame
 
@@ -304,21 +302,12 @@ class HtmlChatView(HtmlFrame, ChatView):  # pyright: ignore[reportIncompatibleMe
             hovered = None
         if hovered and getattr(hovered, "tagName", None) == "img":
             url = hovered.attributes.get("src") if hasattr(hovered, "attributes") else None
-            if url and url.startswith("https://"):
+            if url and (url.startswith("https://") or url.startswith("file://")):
                 self._open_webbrowser(url)
                 return
             alt = hovered.attributes.get("alt") if hasattr(hovered, "attributes") else None
             if alt:
-                file_path = self.root.images.get_file_uri(alt)
-                # Convert URI to filesystem path for existence check
-                if file_path.startswith("file://"):
-                    parsed = urlparse(file_path)
-                    filesystem_path = Path(parsed.path)
-                else:
-                    filesystem_path = Path(file_path)
-                if not filesystem_path.exists() and url:
-                    file_path = self.root.images.get_file_uri(Path(url).parts[-2])
-                self._open_webbrowser(file_path)
+                self._open_webbrowser(self.root.images.get_file_uri(alt))
                 return
 
     @staticmethod

@@ -11,7 +11,7 @@ import logging
 import queue
 import threading
 
-from ipyc import IPyCHost
+from ipyc import IPyCClient, IPyCHost
 
 from kraina.libs.ipc.base import APP_KEY
 from kraina_chat.base import APP_EVENTS, app_interface, ipc_event
@@ -60,6 +60,7 @@ class AppHost(threading.Thread):
         self._host = IPyCHost(port=8998)
         self._app = app
         self.daemon = True
+        self._stopped = False
 
     def run(self):
         """Start to listen for the clients.
@@ -71,13 +72,13 @@ class AppHost(threading.Thread):
 
         The method runs indefinitely until the thread is terminated.
         """
-        while True:
-            logger.debug("waiting for connection")
+        while not self._stopped:
+            logger.info("IPC: waiting for connection")
             client = self._host.wait_for_client()  # blocking
             if client.poll(None):  # type: ignore # blocking
                 q = queue.Queue(maxsize=1)
                 if self.dispatcher(client.receive(return_on_error=True), q):
-                    logger.debug("command posted, waiting for execution")
+                    logger.info("IPC: command posted, waiting for execution")
                     try:
                         # synchronize threads by queue
                         ret = q.get(timeout=30.0)
@@ -91,6 +92,10 @@ class AppHost(threading.Thread):
                     except KeyError:
                         # client already disconnected
                         pass
+            # break as soon as stop requested after handling a wake-up client
+            if self._stopped:
+                logger.info("IPC: stop requested, exiting host loop")
+                break
 
     def dispatcher(self, payload, q: queue.Queue) -> bool:
         """Handle received messages.
@@ -114,9 +119,42 @@ class AppHost(threading.Thread):
             return False
         if message[1] not in app_interface().keys():
             return False
+        # If app is already destroyed or we are stopping, do not schedule callbacks
+        try:
+            if self._stopped or (self._app and hasattr(self._app, "winfo_exists") and not self._app.winfo_exists()):
+                return False
+        except Exception:
+            return False
         params = None
         if len(message) > 2:
             params = json.loads(base64.b64decode(message[2].encode("utf-8")))
         # schedule to execute IPC action when tk event-loop is idle
         self._app.after_idle(self._app.post_event, APP_EVENTS[message[1]], ipc_event(q, params))
         return True
+
+    def stop(self):
+        """Request the host thread to stop and unblock the accept loop.
+
+        Attempts to connect once to wake the waiting server so it can exit
+        the loop cleanly. Safe to call multiple times.
+        """
+        if self._stopped:
+            return
+        self._stopped = True
+        logger.info("IPC: stopping host")
+        # Best-effort: wake the blocking wait by connecting once
+        try:
+            client = IPyCClient(port=8998)
+            conn = client.connect()
+            try:
+                conn.send(f"{APP_KEY}|__STOP__")
+            finally:
+                client.close()
+        except Exception:
+            # Ignore any errors during wake-up
+            pass
+        # Try to join quickly to avoid lingering thread during interpreter teardown
+        try:
+            self.join(timeout=1.0)
+        except Exception:
+            pass

@@ -8,6 +8,7 @@ import yaml
 
 from kraina.libs.utils import find_assets, get_os_info, import_module
 from kraina.snippets.snippet import BaseSnippet
+from kraina.tools.base import get_available_tools
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,18 @@ class Snippets(Dict[str, BaseSnippet]):
                 if (snippet / "config.yaml").exists():
                     with open(snippet / "config.yaml") as fd:
                         settings = yaml.safe_load(fd.read())
+                    if settings.get("tools"):
+                        tools = settings["tools"]
+                        if not isinstance(tools, list) or not all(isinstance(tool, str) for tool in tools):
+                            raise TypeError(f"[{snippet.name}] tools must be a list of strings")
+                        normalized_tools = [tool.lower() for tool in tools]
+                        unsupported = sorted(set(normalized_tools) - set(get_available_tools()))
+                        if unsupported:
+                            raise KeyError(
+                                f"[{snippet.name}] Unsupported tools: {unsupported}. "
+                                f"Supported tools: {get_available_tools()}"
+                            )
+                        settings["tools"] = normalized_tools
                     contexts = []
                     if settings.get("contexts", None):
                         for name, context in settings["contexts"].items():
